@@ -1404,7 +1404,7 @@ var objEgg = {
     },
     show: function () {
         document.getElementById("eggs").innerHTML = "<p> Je hebt op dit moment nog plek voor: " + FixNumber(((+objEgg.storageUnits * +objEgg.storageCap) - +objEgg.amount)) +
-            " eieren. Eventueel overschot wordt direct verkocht voor de helft van de huidge prijs. De huidige prijs is: " + FixMoney(+objEgg.price) + "</p>";
+            " eieren. Eventueel overschot wordt direct verkocht voor 50% onder de huidige marktprijs. De huidige prijs is: " + FixMoney(+objEgg.price) + "</p>";
         objEgg.visual();
     },
     init: function () {
@@ -2717,7 +2717,7 @@ var objSteel = {
         document.getElementById('steelStats').innerHTML = "<p>Stats:<br>Aantal loodsen: " + FixNumber(objSteel.storage) + "<br>Staal in voorraad: " + FixNumber(objSteel.amount) +
             "<br>Totale ruimte: " + FixNumber((+objSteel.storage * +objSteel.storageCap)) + "<br>Beschikbare ruimte: " + FixNumber(((+objSteel.storage * +objSteel.storageCap) - +objSteel.amount));
         document.getElementById('steelStorage').innerHTML = "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='steelStorage'>Koop staalopslag</button> " +
-            "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop Staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
+            "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop Staal</button><p>Staal dat niet in de opslag past wordt direct verkocht voor 80% onder de huidige marktprijs!</p>";
 
     },
     showPrice: function () {
@@ -3141,7 +3141,7 @@ var objFuelCellFactory = {
         document.getElementById("fuelRod").innerHTML = "<h2>Splijtstofstavenproductie</h2><p>Uranium kan worden omgezet in brandstof voor kencentrales. Dit omzetten kost je de volgende resources (per fabriek): <br>" +
             "Energie: " + FixNumber(objFuelCellFactory.energy) + " <br>Staal: " + FixNumber(objFuelCellFactory.steelNeeded) + "<br>Uranium: " + FixNumber(objFuelCellFactory.urianiumOreNeeded) +
             "<br>Tijd: " + FixNumber(objFuelCellFactory.timeNeeded) + " ticks</p>" +
-            "<p>Deze fabrieken kunnen niet stilgelegd worden, dus alle resources die benodigd zijn worden in 1x opgenomen bij de start van een run! Iedere fabriek produceert 1 staaf per keer</p>" +
+            "<p>Deze fabrieken kunnen niet stilgelegd worden, dus alle resources die benodigd zijn worden in 1x opgenomen bij de start van een run! Iedere fabriek produceert 1 staaf per run.</p>" +
             "<p>Je hebt momenteel " + FixNumber(objFuelCellFactory.amount) + " fabrieken waar splijtstofstaven kunnen produceren. Een extra fabriek kost: " + FixMoney(objFuelCellFactory.cost) +
             "<br>Je kan een fabriek ook weer verkopen voor 75% van de waarde.</p>";
         document.getElementById("fuelRod2").innerHTML = "<p>Het huidige (maximale) verbruik per batch:<br>Energie: " + FixNumber((objFuelCellFactory.amount * +objFuelCellFactory.energy)) + "<br>Staal: " +
@@ -3233,7 +3233,7 @@ var objFuelRod = {
             "<br>Totaalvoorraad splijstsofstaven: " + FixNumber(objFuelRod.amount) + "</p>";
         document.getElementById('fuelStoragePlant').innerHTML = "<p>De opslag in de kerncentrales wordt direct gevuld vanuit de fabrieken.</p>";
         document.getElementById('fuelWaste').innerHTML = "<h3>Afvalopslag</h3><p>Verbruikte splijtstofstaven moeten opgeslagen worden, dit kost geld. Verwerking is op dit moment " +
-            "nog niet mogelijk. Ook wanneer je een fabriek of centrale sluit zullen de staven die daar liggen (ook de nieuwe!) naar de afval opslag gebracht worden, deze staven kunnen " +
+            "nog niet mogelijk. Ook wanneer je een fabriek of centrale sluit zullen de staven die daar liggen (ook de nieuwe!) naar de afval opslag gebracht worden. Deze staven kunnen " +
             "(nog) niet hergebruikt worden!</p><p>Er is onbeperkt ruimte voor de opslag van deze staven. De opslag kost " + FixMoney(objFuelRod.wasteCost) + " per staaf per 60 ticks</p>" +
             "<p>Aantal waste staven in opslag: " + FixNumber(objFuelRod.waste) + "<br>Kosten per 60 ticks: " + FixMoney((+objFuelRod.waste * +objFuelRod.wasteCost)) + "</p>";
     },
@@ -3361,8 +3361,8 @@ var objNuclearPowerPlant = {
         }
         document.getElementById('nppr').innerHTML = "<h3>Reactoren</h3><p>Iedere reactor die je bouwt levert energie (als er brandstof is). Reactoren kunnen niet verkocht worden" +
             " en staan aan of uit, eventueel teveel geproduceerde stroom gaat verloren!</p><p>De kosten van de bouw: <br>Staal: " + FixNumber(objNuclearPowerPlant.reactorSteelNeeded) +
-            "<br>Financiën: " + FixMoney(objNuclearPowerPlant.reactorCost) + "</p><p>Een reactor verbruikt: " + FixNumber(objNuclearPowerPlant.reactorFuelUsage) + " uranium pellets per tick " +
-            "(er zitten 1000 pellets in een splijtstofstaaf). Verbruikte pellets worden opnieuw verpakt in staven (per 1000) gaan automatisch naar de waste opslag</p>";
+            "<br>Financiën: " + FixMoney(objNuclearPowerPlant.reactorCost) + "</p><p>Een reactor verbruikt: " + FixNumber(objNuclearPowerPlant.reactorFuelUsage) + " uranium pellet(s) per tick " +
+            "(er zitten 1000 pellets in een splijtstofstaaf). Verbruikte pellets worden opnieuw verpakt in staven (per 1000) en gaan automatisch naar de waste opslag</p>";
 
 
     },
