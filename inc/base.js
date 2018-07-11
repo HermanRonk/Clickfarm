@@ -372,7 +372,7 @@ var objFarmRobot = {
         }
     },
     timerCountdown: function () {
-        document.getElementById("RobotTimer").innerHTML = "De oogst is klaar over: " + objFarmRobot.robotTimer + " Ticks";
+        document.getElementById("RobotTimer").innerHTML = "De oogst is klaar over: " + objFarmRobot.robotTimer + " Seconden";
     },
     work: function () {
         if (objFarmRobot.amount == 0) {
@@ -724,7 +724,7 @@ var objFarmland = {
         };
     },
     timerCountdown: function () {
-        document.getElementById("FarmlandTimer").innerHTML = "De oogst is klaar over: " + FarmTimer + " Ticks";
+        document.getElementById("FarmlandTimer").innerHTML = "De oogst is klaar over: " + FarmTimer + " Seconden";
     },
     showPrice: function () {
         document.getElementById("FarmlandPrice").innerHTML = "<p>Kosten landbouwgrond: " + FixMoney(objFarmland.cost) + "</p>";
@@ -777,7 +777,7 @@ var objFarmland = {
             StartGrainResearch(+timerStand, 0, objFarmland.GrainResearchProfit);
         }
 
-        document.getElementById("GrainResearchCost").innerHTML = "<p>Het onderzoek zal: " + objFarmland.GrainResearchDuration + " ticks duren en kost: " +
+        document.getElementById("GrainResearchCost").innerHTML = "<p>Het onderzoek zal: " + objFarmland.GrainResearchDuration + " seconden duren en kost: " +
             FixMoney(objFarmland.GrainResearchCostVar) + "</p><p>Opbrengstverbetering: " + objFarmland.GrainResearchProfit + "% (voor deze upgrade)</p><p>Je bent nu op research level: " +
             objFarmland.GrainResearchLevel + "</p>";
     },
@@ -943,10 +943,10 @@ var objWindmill = {
             }, 1000)
     },
     grindTimerCountdown: function () {
-        document.getElementById("GrindTimer").innerHTML = "De molen is klaar over: " + objWindmill.grindTimer + " Ticks";
+        document.getElementById("GrindTimer").innerHTML = "De molen is klaar over: " + objWindmill.grindTimer + " Seconden";
     },
     autoGrindTimerCountdown: function () {
-        document.getElementById("AutoGrindTimer").innerHTML = "De geautomatiseerde molens zijn klaar over: " + objWindmill.autoGrindTimer + " Ticks";
+        document.getElementById("AutoGrindTimer").innerHTML = "De geautomatiseerde molens zijn klaar over: " + objWindmill.autoGrindTimer + " Seconden";
     },
     show: function () {
         document.getElementById("WindmillCost").innerHTML = "<p>Een windmolen kost: " + FixMoney(objWindmill.cost) + "  en kan " + FixNumber(objWindmill.cap) + "kg per run vermalen</p>";
@@ -1618,7 +1618,7 @@ var objPastaHelper = {
     },
     show: function () {
         if (objPlayerInfo.level > 8) {
-            document.getElementById('pastaHelperDiv').innerHTML = "<p>Je kan iemand in dienst nemen om een pastafabriek voor je te bedienen. Hij/Zij drukt iedere 15 ticks op de knop om pasta voor je te maken.</p>" +
+            document.getElementById('pastaHelperDiv').innerHTML = "<p>Je kan iemand in dienst nemen om een pastafabriek voor je te bedienen. Hij/Zij drukt iedere 15 seconden op de knop om pasta voor je te maken.</p>" +
                 "<p>Iedere pastahelper pakt 5% van de pasta mee naar huis om zijn familie te laten eten. Het aannemen van een pastahelper kost je: " + FixMoney(objPastaHelper.cost) + ", " +
                 "je kan hem ook weer ontslaan, je krijgt hier geen geld voor terug! Iedere pastahelper kan 1 fabriek aansturen</p>" +
                 "<p>Je hebt op dit moment " + FixNumber(objPastaHelper.amount) + " pastahelper(s) in dienst</p>" +
@@ -1675,7 +1675,7 @@ function StartGrainResearch(Researchtimer, ResearchCost, ResearchProfit) {
 
             Researchtimer--;
             localStorage.setItem('GrainResearchTimerCount', +Researchtimer);
-            document.getElementById("GrainResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (Researchtimer) + " Ticks</p>";
+            document.getElementById("GrainResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (Researchtimer) + " Seconden</p>";
             if (Researchtimer < 1) {
                 clearInterval(ResearchLoop);
                 objFarmland.harvest = Math.round((+objFarmland.harvest * (1 + (+ResearchProfit / 100))) * 100) / 100;
@@ -2074,7 +2074,7 @@ var objResearch = {
             function () {
                 +objResearch.timer--;
                 localStorage.setItem("rTimer", +objResearch.timer)
-                document.getElementById("ResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objResearch.timer) + " Ticks</p>";
+                document.getElementById("ResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objResearch.timer) + " Seconden</p>";
                 if (objResearch.timer < 1 && objResearch.running == 1) {
                     objResearch.level++;
                     localStorage.setItem('Rlevel', objResearch.level)
@@ -2092,15 +2092,15 @@ var objResearch = {
         switch (+objResearch.level) {
             case 1:
                 document.getElementById("ResDesc").innerHTML = "<p>De eerste fase in het onderzoek naar mijnbouw kost: " + FixMoney(objResearch.cost) +
-                    " en zal " + FixNumber(objResearch.t1) + " ticks duren. " + objResearch.description() + "</p>";
+                    " en zal " + FixNumber(objResearch.t1) + " seconden duren. " + objResearch.description() + "</p>";
                 break;
             case 2:
                 document.getElementById("ResDesc").innerHTML = "<p>De tweede fase in het onderzoek naar mijnbouw kost: " + FixMoney(objResearch.cost) +
-                    " en zal " + FixNumber(objResearch.t2) + " ticks duren. " + objResearch.description() + "</p>";
+                    " en zal " + FixNumber(objResearch.t2) + " seconden duren. " + objResearch.description() + "</p>";
                 break;
             case 3:
                 document.getElementById("ResDesc").innerHTML = "<p>De derde fase in het onderzoek naar mijnbouw kost: " + FixMoney(objResearch.cost) +
-                    " en zal " + FixNumber(objResearch.t3) + " ticks duren. " + objResearch.description() + "</p>";
+                    " en zal " + FixNumber(objResearch.t3) + " seconden duren. " + objResearch.description() + "</p>";
                 break;
             case 4:
                 document.getElementById("ResDesc").innerHTML = "<p>Je bent helemaal klaar voor het volgende level, succes met het vinden van een goed mijngebied! " +
@@ -2195,7 +2195,7 @@ var objMines = {
                 objMines.prospectTimerActive--;
                 localStorage.setItem("pTimer", +objMines.prospectTimerActive);
                 document.getElementById("ProspectingProgress").innerHTML = "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
-                    objMines.prospectTimerActive + " Ticks</p>";
+                    objMines.prospectTimerActive + " Seconden</p>";
                 if (objMines.prospectTimerActive < 1) {
                     //bepalen welke resource er gevonden wordt: (geinspireerd door: http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
 
@@ -2259,7 +2259,7 @@ var objMines = {
             document.getElementById("minesites").style.display = "none";
         };
         document.getElementById("Prospecting").innerHTML = "<p>Zoek hier naar nieuwe gebieden om je mijnen te kunnen openen. De zoektocht duurt: " +
-            objMines.prospectTimer + " ticks en hiervoor betaal je: " + FixMoney(+objMines.prospectCost) + "</p>";
+            objMines.prospectTimer + " seconden en hiervoor betaal je: " + FixMoney(+objMines.prospectCost) + "</p>";
         document.getElementById("minesites").innerHTML =
             "<p>Aantal ijzermijn locaties/mijnen: " + FixNumber(objMines.ironAmountProspected) + "/" + FixNumber(objMines.ironAmountActive) + "</p>" +
             "<p>Aantal steenkoolmijn locaties/mijnen: " + FixNumber(objMines.coalAmountProspected) + "/" + FixNumber(objMines.coalAmountActive) + "</p>" +
@@ -3367,7 +3367,7 @@ var objNuclearPowerPlant = {
     removeFuel: function (amount) {
         objNuclearPowerPlant.pelletsUsed = +objNuclearPowerPlant.pelletsUsed + +amount;
         objNuclearPowerPlant.pelletsActive = +objNuclearPowerPlant.pelletsActive - +amount;
-        while (+objNuclearPowerPlant.pelletsUsed > 1000) {
+        if (+objNuclearPowerPlant.pelletsUsed > 1000) {
 
             if (+objNuclearPowerPlant.fuelRods > 0) {
                 objNuclearPowerPlant.fuelRods = +objNuclearPowerPlant.fuelRods - 1;
