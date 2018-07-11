@@ -1404,7 +1404,7 @@ var objEgg = {
     },
     show: function () {
         document.getElementById("eggs").innerHTML = "<p> Je hebt op dit moment nog plek voor: " + FixNumber(((+objEgg.storageUnits * +objEgg.storageCap) - +objEgg.amount)) +
-            " eieren. Eventueel overschot wordt direct verkocht voor de helft van de huidge prijs. De huidige prijs is: " + FixMoney(+objEgg.price) + "</p>";
+            " eieren. Eventueel overschot wordt direct verkocht voor 50% onder de huidige marktprijs. De huidige prijs is: " + FixMoney(+objEgg.price) + "</p>";
         objEgg.visual();
     },
     init: function () {
@@ -2717,7 +2717,7 @@ var objSteel = {
         document.getElementById('steelStats').innerHTML = "<p>Stats:<br>Aantal loodsen: " + FixNumber(objSteel.storage) + "<br>Staal in voorraad: " + FixNumber(objSteel.amount) +
             "<br>Totale ruimte: " + FixNumber((+objSteel.storage * +objSteel.storageCap)) + "<br>Beschikbare ruimte: " + FixNumber(((+objSteel.storage * +objSteel.storageCap) - +objSteel.amount));
         document.getElementById('steelStorage').innerHTML = "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='steelStorage'>Koop staalopslag</button> " +
-            "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop Staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
+            "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop Staal</button><p>Staal dat niet in de opslag past wordt direct verkocht voor 80% onder de huidige marktprijs!</p>";
 
     },
     showPrice: function () {
