@@ -1821,7 +1821,6 @@ var objSalesComputer = {
             objMoney.use(+objSalesComputer.cpuCost);
             objSalesComputer.cpu++;
             objSalesComputer.cpuCost *= 1;
-            objSalesComputer.cpuCost = Math.round(objSalesComputer.cpuCost * 100) / 100;
             localStorage.setItem('scCPU', objSalesComputer.cpu);
             objSalesComputer.show();
         } else {
@@ -1830,6 +1829,7 @@ var objSalesComputer = {
     },
     remove: function () {
         if (+objSalesComputer.cpu > 0) {
+            objSalesComputer.cpuCost /= 1;
             objMoney.add((+objSalesComputer.cpuCost * 0.75), "Verkoop CPU", 11, 1);
             objSalesComputer.cpu--;
             localStorage.setItem('scCPU', objSalesComputer.cpu);
