@@ -100,6 +100,7 @@ window.onload = function () {
     objPasta.init();
     objSalesComputer.init();
     objPlasticFactory.init();
+    objPlastic.init();
     objResearch.init();
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
@@ -1819,7 +1820,7 @@ var objSalesComputer = {
         if (+objMoney.amount > +objSalesComputer.cpuCost) {
             objMoney.use(+objSalesComputer.cpuCost);
             objSalesComputer.cpu++;
-            objSalesComputer.cpuCost *= 10;
+            objSalesComputer.cpuCost *= 1;
             objSalesComputer.cpuCost = Math.round(objSalesComputer.cpuCost * 100) / 100;
             localStorage.setItem('scCPU', objSalesComputer.cpu);
             objSalesComputer.show();
@@ -1930,7 +1931,7 @@ var objSalesComputer = {
             var autoSellKunststofOn = " ";
         };
         document.getElementById("autoSellKunststof").innerHTML = "<h3>Automatisch verkopen kunststof</h3><p>Kunststof wordt op dit moment" + autoSellKunststofOn + "automatisch verkocht als de prijs " +
-            FixMoney(+inputwaarde) + " of hoger is! De huidige prijs is op dit moment: " + FixMoney(objKunststof.price()) + "</p>";
+            FixMoney(+inputwaarde) + " of hoger is! De huidige prijs is op dit moment: " + FixMoney(objPlastic.price) + "</p>";
     },
     checkOil: function (checkState) {
         localStorage.setItem("autoOilCheck", checkState);
@@ -1973,9 +1974,9 @@ var objSalesComputer = {
             }
         };
         if (objSalesComputer.autoSellKunststof == true && +objSalesComputer.cpu > 3) {
-            var pp = objKunststof.price();
+            var pp = objPlastic.price;
             if (+pp >= +objSalesComputer.kunststofValue) {
-                objKunststof.sell();
+                objPlastic.sell(0);
             }
         };
 
@@ -2911,7 +2912,7 @@ var objPlasticFactory = {
     init: function () {
         objPlasticFactory.amount = localStorage.getItem('plasticFactories') || 0;
         objPlasticFactory.workers = localStorage.getItem('plasticWorkers') || 0;
-        objPlastic.init();
+        // objPlastic.init();
         objPlasticFactory.show();
 
     }
@@ -3899,6 +3900,7 @@ var loopsProduction = setInterval(
                     objSalesComputer.showOil(localStorage.getItem('autoOil'));
                     objSalesComputer.showFlour(localStorage.getItem('autoFlour'));
                     objSalesComputer.showPasta(localStorage.getItem('autoPasta'));
+                    objSalesComputer.showKunststof(localStorage.getItem('autoKunststof'));
                 }
                 if (objChicken.amount >= 1) {
                     objChicken.makeEggs();
