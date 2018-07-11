@@ -1359,7 +1359,7 @@ var objEgg = {
         if (+aantal > +SpaceLeft) {
             objEgg.amount = +eieren + +SpaceLeft;
             var Rest = +aantal - +SpaceLeft;
-            objEgg.sell(Rest, "Overschot Eieren");
+            objEgg.sell(Rest, "Overschot eieren");
         } else {
             objEgg.amount = +eieren + +aantal
         };
@@ -2217,12 +2217,12 @@ var objMines = {
         document.getElementById("Prospecting").innerHTML = "<p>Zoek hier naar nieuwe gebieden om je mijnen te kunnen openen. De zoektocht duurt: " +
             objMines.prospectTimer + " seconden en hiervoor betaal je: " + FixMoney(+objMines.prospectCost) + "</p>";
         document.getElementById("minesites").innerHTML =
-            "<p>Aantal ijzermijn locaties/mijnen: " + FixNumber(objMines.ironAmountProspected) + "/" + FixNumber(objMines.ironAmountActive) + "</p>" +
-            "<p>Aantal steenkoolmijn locaties/mijnen: " + FixNumber(objMines.coalAmountProspected) + "/" + FixNumber(objMines.coalAmountActive) + "</p>" +
-            "<p>Aantal uraniummijn locaties/mijnen: " + FixNumber(objMines.uraniumAmountProspected) + "/" + FixNumber(objMines.uraniumAmountActive) + "</p>" +
-            "<p>Aantal kopermijn locaties/mijnen: " + FixNumber(objMines.copperAmountProspected) + "/" + FixNumber(objMines.copperAmountActive) + "</p>" +
-            "<p>Aantal goudmijn locaties/mijnen: " + FixNumber(objMines.goldAmountProspected) + "/" + FixNumber(objMines.goldAmountActive) + "</p>" +
-            "<p>Aantal diamantmijn locaties/mijnen: " + FixNumber(objMines.diamondAmountProspected) + "/" + FixNumber(objMines.diamondAmountActive) + "</p>";
+            "<p>Aantal ijzererts locaties/mijnen: " + FixNumber(objMines.ironAmountProspected) + "/" + FixNumber(objMines.ironAmountActive) + "</p>" +
+            "<p>Aantal steenkool locaties/mijnen: " + FixNumber(objMines.coalAmountProspected) + "/" + FixNumber(objMines.coalAmountActive) + "</p>" +
+            "<p>Aantal uranium locaties/mijnen: " + FixNumber(objMines.uraniumAmountProspected) + "/" + FixNumber(objMines.uraniumAmountActive) + "</p>" +
+            "<p>Aantal koper locaties/mijnen: " + FixNumber(objMines.copperAmountProspected) + "/" + FixNumber(objMines.copperAmountActive) + "</p>" +
+            "<p>Aantal goud locaties/mijnen: " + FixNumber(objMines.goldAmountProspected) + "/" + FixNumber(objMines.goldAmountActive) + "</p>" +
+            "<p>Aantal diamant locaties/mijnen: " + FixNumber(objMines.diamondAmountProspected) + "/" + FixNumber(objMines.diamondAmountActive) + "</p>";
     },
     addMine: function (typeMine, amount) {
         //functie voor werkelijk toevoegen mijn
@@ -2656,7 +2656,7 @@ var objIronMelter = {
                 "Iedere hoogoven gebruikt " + FixNumber(objIronMelter.ironOreNeeded) + " ton ijzererts, " +
                 FixNumber(objIronMelter.coalNeeded) + " ton steenkool en " + FixNumber(objIronMelter.energy) + " energie</p>" +
                 "<p><button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
-                "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>verkoop hoogoven</button></p>";
+                "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button></p>";
             document.getElementById('steelProductionStats').innerHTML = "<p> Je hebt op dit moment " + FixNumber(objIronMelter.amount) + " hoogovens. Deze hoogovens produceren " +
                 FixNumber((+objIronMelter.amount * +objIronMelter.production)) + " ton staal per run</p><p>" +
                 "Dit kost per run: <br> Steenkool: " + FixNumber((objIronMelter.amount * objIronMelter.coalNeeded)) +
@@ -2717,7 +2717,7 @@ var objSteel = {
         document.getElementById('steelStats').innerHTML = "<p>Stats:<br>Aantal loodsen: " + FixNumber(objSteel.storage) + "<br>Staal in voorraad: " + FixNumber(objSteel.amount) +
             "<br>Totale ruimte: " + FixNumber((+objSteel.storage * +objSteel.storageCap)) + "<br>Beschikbare ruimte: " + FixNumber(((+objSteel.storage * +objSteel.storageCap) - +objSteel.amount));
         document.getElementById('steelStorage').innerHTML = "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='steelStorage'>Koop staalopslag</button> " +
-            "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop Staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
+            "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
 
     },
     showPrice: function () {
@@ -3230,7 +3230,7 @@ var objFuelRod = {
             "fabriek worden opgeslagen. Iedere fabriek heeft plek voor " + FixNumber(objFuelRod.storageFactor) + " staven. De totaalcapaciteit in de fabrieken is op dit moment: " +
             FixNumber((+objFuelCellFactory.amount * +objFuelRod.storageFactor)) + " staven</p><p>Restcapaciteit in de fabrieken (opslag): " +
             FixNumber(((+objFuelCellFactory.amount * +objFuelRod.storageFactor) - +objFuelRod.amount)) +
-            "<br>Totaalvoorraad splijstsofstaven: " + FixNumber(objFuelRod.amount) + "</p>";
+            "<br>Totaalvoorraad splijstofstaven: " + FixNumber(objFuelRod.amount) + "</p>";
         document.getElementById('fuelStoragePlant').innerHTML = "<p>De opslag in de kerncentrales wordt direct gevuld vanuit de fabrieken.</p>";
         document.getElementById('fuelWaste').innerHTML = "<h3>Afvalopslag</h3><p>Verbruikte splijtstofstaven moeten opgeslagen worden, dit kost geld. Verwerking is op dit moment " +
             "nog niet mogelijk. Ook wanneer je een fabriek of centrale sluit zullen de staven die daar liggen (ook de nieuwe!) naar de afval opslag gebracht worden, deze staven kunnen " +
@@ -3359,7 +3359,7 @@ var objNuclearPowerPlant = {
         } else {
             document.getElementById('npprBuild').disabled = false;
         }
-        document.getElementById('nppr').innerHTML = "<h3>Reactoren</h3><p>Iedere reactor die je bouwt levert energie (als er brandstof is). Reactoren kunnen niet verkocht worden" +
+        document.getElementById('nppr').innerHTML = "<h3>Reactoren</h3><p>Iedere reactor die je bouwt, levert energie (als er brandstof is). Reactoren kunnen niet verkocht worden" +
             " en staan aan of uit, eventueel teveel geproduceerde stroom gaat verloren!</p><p>De kosten van de bouw: <br>Staal: " + FixNumber(objNuclearPowerPlant.reactorSteelNeeded) +
             "<br>Financiën: " + FixMoney(objNuclearPowerPlant.reactorCost) + "</p><p>Een reactor verbruikt: " + FixNumber(objNuclearPowerPlant.reactorFuelUsage) + " uranium pellets per tick " +
             "(er zitten 1000 pellets in een splijtstofstaaf). Verbruikte pellets worden opnieuw verpakt in staven (per 1000) gaan automatisch naar de waste opslag</p>";
@@ -3370,7 +3370,7 @@ var objNuclearPowerPlant = {
         document.getElementById('nppsum').innerHTML = "<p>Je hebt op dit moment:<br>Kerncentrales: " + FixNumber(objNuclearPowerPlant.amount) + "<br> Kernreactoren (actief/totaal): " +
             FixNumber(objNuclearPowerPlant.activeReactors) + "/" + FixNumber(objNuclearPowerPlant.reactors) + " <br>Splijtstofstaven (aanwezig/max): " +
             FixNumber(objNuclearPowerPlant.fuelRods) + "/" + FixNumber((+objNuclearPowerPlant.reactors * +objNuclearPowerPlant.reactorFuelCap)) +
-            "<br>waste pellets: " + FixNumber(objNuclearPowerPlant.pelletsUsed) + " <br></p>" +
+            "<br>Waste pellets: " + FixNumber(objNuclearPowerPlant.pelletsUsed) + " <br></p>" +
             "<p>Energieproductie: " + FixNumber((+objNuclearPowerPlant.activeReactors * +objNuclearPowerPlant.reactorProduction)) + " <br>Pelletverbruik (per tick): " +
             FixNumber((+objNuclearPowerPlant.activeReactors * +objNuclearPowerPlant.reactorFuelUsage)) + "</p>";
     },
