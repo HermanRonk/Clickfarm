@@ -3367,7 +3367,7 @@ var objNuclearPowerPlant = {
     removeFuel: function (amount) {
         objNuclearPowerPlant.pelletsUsed = +objNuclearPowerPlant.pelletsUsed + +amount;
         objNuclearPowerPlant.pelletsActive = +objNuclearPowerPlant.pelletsActive - +amount;
-        while (+objNuclearPowerPlant.pelletsUsed > 1000) {
+        while (+objNuclearPowerPlant.pelletsUsed > 999) {
 
             if (+objNuclearPowerPlant.fuelRods > 0) {
                 objNuclearPowerPlant.fuelRods = +objNuclearPowerPlant.fuelRods - 1;
