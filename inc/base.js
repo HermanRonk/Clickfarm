@@ -100,6 +100,7 @@ window.onload = function () {
     objPasta.init();
     objSalesComputer.init();
     objPlasticFactory.init();
+    objPlastic.init();
     objResearch.init();
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
@@ -1807,16 +1808,19 @@ var objSalesComputer = {
     amount: 0,
     cpu: 0,
     cpuCost: 400000,
-    autoSellOil: false,
     oilValue: 19,
     flourValue: 749,
     pastaValue: 450,
+    kunstsofValue: 246,
+    autoSellOil: false,
     autoSellFlour: false,
     autoSellPasta: false,
+    autoSellKunststof: false,
     add: function () {
         if (+objMoney.amount > +objSalesComputer.cpuCost) {
             objMoney.use(+objSalesComputer.cpuCost);
             objSalesComputer.cpu++;
+            objSalesComputer.cpuCost *= 1;
             localStorage.setItem('scCPU', objSalesComputer.cpu);
             objSalesComputer.show();
         } else {
@@ -1825,6 +1829,7 @@ var objSalesComputer = {
     },
     remove: function () {
         if (+objSalesComputer.cpu > 0) {
+            objSalesComputer.cpuCost /= 1;
             objMoney.add((+objSalesComputer.cpuCost * 0.75), "Verkoop CPU", 11, 1);
             objSalesComputer.cpu--;
             localStorage.setItem('scCPU', objSalesComputer.cpu);
@@ -1839,7 +1844,7 @@ var objSalesComputer = {
         } else {
             var cpus = " CPU's ";
         };
-        if (objSalesComputer.cpu <= 2) {
+        if (objSalesComputer.cpu <= 3) {
             document.getElementById("autoSellIntro").innerHTML = "<p>Je salescomputer heeft CPU's nodig om te werken. Voor iedere CPU komt het volgende item beschikbaar. Je hebt op dit moment " +
                 + objSalesComputer.cpu + cpus + ". Koop een extra CPU voor: " + FixMoney(objSalesComputer.cpuCost) + ". Je kan een CPU ook weer verkopen voor: " + FixMoney((objSalesComputer.cpuCost * 0.75)) + "</p>";
             document.getElementById("addCPU").disabled = false;
@@ -1852,21 +1857,31 @@ var objSalesComputer = {
                 document.getElementById("autoOilCheck").disabled = true;
                 document.getElementById("autoFlourCheck").disabled = true;
                 document.getElementById("autoPastaCheck").disabled = true;
+                document.getElementById("autoKunststofCheck").disabled = true;
                 break;
             case 1:
                 document.getElementById("autoOilCheck").disabled = false;
                 document.getElementById("autoFlourCheck").disabled = true;
                 document.getElementById("autoPastaCheck").disabled = true;
+                document.getElementById("autoKunststofCheck").disabled = true;
                 break;
             case 2:
                 document.getElementById("autoOilCheck").disabled = false;
                 document.getElementById("autoFlourCheck").disabled = false;
                 document.getElementById("autoPastaCheck").disabled = true;
+                document.getElementById("autoKunststofCheck").disabled = true;
                 break;
             case 3:
                 document.getElementById("autoOilCheck").disabled = false;
                 document.getElementById("autoFlourCheck").disabled = false;
                 document.getElementById("autoPastaCheck").disabled = false;
+                document.getElementById("autoKunststofCheck").disabled = true;
+                break;
+            case 4:
+                document.getElementById("autoOilCheck").disabled = false;
+                document.getElementById("autoFlourCheck").disabled = false;
+                document.getElementById("autoPastaCheck").disabled = false;
+                document.getElementById("autoKunststofCheck").disabled = false;
                 break;
         }
         var inputOil = document.getElementById("SliderOil").value;
@@ -1875,6 +1890,8 @@ var objSalesComputer = {
         objSalesComputer.showFlour(inputFlour);
         var inputPasta = document.getElementById("SliderPasta").value;
         objSalesComputer.showPasta(inputPasta);
+        var inputKunststof = document.getElementById("SliderKunststof").value;
+        objSalesComputer.showKunststof(inputKunststof);
     },
     showOil: function (inputwaarde) {
         localStorage.setItem("autoOil", inputwaarde);
@@ -1885,11 +1902,6 @@ var objSalesComputer = {
         }
         document.getElementById("autoSellOil").innerHTML = "<h3>Automatisch verkopen olie</h3><p>Olie wordt op dit moment" + autoSellOilOn + "automatisch verkocht als de prijs " +
             FixMoney(+inputwaarde) + " of hoger is! De huidige prijs is op dit moment: " + FixMoney(objOil.price) + "</p>";
-    },
-    checkOil: function (checkState) {
-        localStorage.setItem("autoOilCheck", checkState);
-        objSalesComputer.autoSellOil = JSON.parse(localStorage.getItem('autoOilCheck'));
-        objSalesComputer.showOil(localStorage.getItem('autoOil'));
     },
     showFlour: function (inputwaarde) {
         localStorage.setItem("autoFlour", inputwaarde);
@@ -1911,6 +1923,21 @@ var objSalesComputer = {
         document.getElementById("autoSellPasta").innerHTML = "<h3>Automatisch verkopen pasta</h3><p>Pasta wordt op dit moment" + autoSellPastaOn + "automatisch verkocht als de prijs " +
             FixMoney(+inputwaarde) + " of hoger is! De huidige prijs is op dit moment: " + FixMoney(objPasta.price()) + "</p>";
     },
+    showKunststof: function (inputwaarde) {
+        localStorage.setItem("autoKunststof", inputwaarde);
+        objSalesComputer.kunstsofValue = inputwaarde;
+        var autoSellKunststofOn = " niet ";
+        if (objSalesComputer.autoSellKunststof == true) {
+            var autoSellKunststofOn = " ";
+        };
+        document.getElementById("autoSellKunststof").innerHTML = "<h3>Automatisch verkopen kunststof</h3><p>Kunststof wordt op dit moment" + autoSellKunststofOn + "automatisch verkocht als de prijs " +
+            FixMoney(+inputwaarde) + " of hoger is! De huidige prijs is op dit moment: " + FixMoney(objPlastic.price) + "</p>";
+    },
+    checkOil: function (checkState) {
+        localStorage.setItem("autoOilCheck", checkState);
+        objSalesComputer.autoSellOil = JSON.parse(localStorage.getItem('autoOilCheck'));
+        objSalesComputer.showOil(localStorage.getItem('autoOil'));
+    },
     checkFlour: function (checkState) {
         localStorage.setItem("autoFlourCheck", checkState);
         objSalesComputer.autoSellFlour = JSON.parse(localStorage.getItem('autoFlourCheck'));
@@ -1920,6 +1947,11 @@ var objSalesComputer = {
         localStorage.setItem("autoPastaCheck", checkState);
         objSalesComputer.autoSellPasta = JSON.parse(localStorage.getItem('autoPastaCheck'));
         objSalesComputer.showPasta(localStorage.getItem('autoPasta'));
+    },
+    checkKunststof: function (checkState) {
+        localStorage.setItem("autoKunststofCheck", checkState);
+        objSalesComputer.autoSellKunststof = JSON.parse(localStorage.getItem('autoKunststofCheck'));
+        objSalesComputer.showKunststof(localStorage.getItem('autoKunststof'));
     },
     autoSell: function () {
         if (objSalesComputer.autoSellOil == true && +objSalesComputer.cpu > 0) {
@@ -1939,6 +1971,12 @@ var objSalesComputer = {
             var pp = objPasta.price();
             if (+pp >= +objSalesComputer.pastaValue) {
                 objPasta.sell();
+            }
+        };
+        if (objSalesComputer.autoSellKunststof == true && +objSalesComputer.cpu > 3) {
+            var pp = objPlastic.price;
+            if (+pp >= +objSalesComputer.kunststofValue) {
+                objPlastic.sell(0);
             }
         };
 
@@ -1963,6 +2001,12 @@ var objSalesComputer = {
         objSalesComputer.autoSellPasta = JSON.parse(localStorage.getItem('autoPastaCheck')) || false;
         document.getElementById("autoPastaCheck").checked = objSalesComputer.autoSellPasta;
         document.getElementById("SliderPasta").value = +objSalesComputer.pastaValue;
+
+        //Kunststof
+        objSalesComputer.kunststofValue = localStorage.getItem('autoKunststof') || 876;
+        objSalesComputer.autoSellKunststof = JSON.parse(localStorage.getItem('autoKunststofCheck')) || false;
+        document.getElementById("autoKunststofCheck").checked = objSalesComputer.autoSellKunststof;
+        document.getElementById("SliderKunststof").value = +objSalesComputer.KunststofValue;
 
         objSalesComputer.show();
     }
@@ -2868,7 +2912,7 @@ var objPlasticFactory = {
     init: function () {
         objPlasticFactory.amount = localStorage.getItem('plasticFactories') || 0;
         objPlasticFactory.workers = localStorage.getItem('plasticWorkers') || 0;
-        objPlastic.init();
+        // objPlastic.init();
         objPlasticFactory.show();
 
     }
@@ -3856,6 +3900,7 @@ var loopsProduction = setInterval(
                     objSalesComputer.showOil(localStorage.getItem('autoOil'));
                     objSalesComputer.showFlour(localStorage.getItem('autoFlour'));
                     objSalesComputer.showPasta(localStorage.getItem('autoPasta'));
+                    objSalesComputer.showKunststof(localStorage.getItem('autoKunststof'));
                 }
                 if (objChicken.amount >= 1) {
                     objChicken.makeEggs();
