@@ -33,29 +33,31 @@
                 </li>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
+                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarDonateDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="false">
                         Donatie
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="nav-link" id="donatie1" target="_blank" href="https://paypal.me/clickfarmgame">Donatie PayPal </a>
-                        <a class="nav-link" id="donatie2" target="_blank" href="https://bunq.me/game">Donatie Overig</a>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="navbarDonateDropdown">
+                        <a class="dropdown-item" target="_blank" href="https://paypal.me/clickfarmgame"><i class="fab fa-fw fa-paypal"></i> Donatie PayPal</a>
+                        <a class="dropdown-item" target="_blank" href="https://bunq.me/game"><i class="far fa-fw fa-credit-card"></i> Donatie Overig</a>
                     </div>
 
                 </li>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
+                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarOptionDropdown" data-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="false">
                         Game opties
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a href="javascript:resetGame()" class="dropdown-item">Reset Game</a>
-                        <a href="javascript:changeState()" class="dropdown-item">Pauzeer / start spel</a>
-                        <a href="javascript:showQuickSell(1)" class="dropdown-item">Zet verkooptab aan/uit (lvl9)</a>
-                        <a href="javascript:turnDebug()" class="dropdown-item">Zet debug aan/uit</a>
-                        <a href="javascript:saveFixed()" class="dropdown-item">Exporteer save ID</a>
-                        <a href="javascript:importFile()" class="dropdown-item">Importeer game/save ID</a>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="navbarOptionDropdown">
+                        <button onclick="resetGame()" class="dropdown-item"><i class="fas fa-fw fa-power-off"></i> Reset Game</button>
+                        <hr>
+                        <button id="pauseBTN" onclick="changeState()" class="dropdown-item"><i class="fas fa-fw fa-pause"></i> Pauzeer spel</button>
+                        <button id="verkooptabBTN" onclick="showQuickSell(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)</button>
+                        <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet debug aan</button>
+                        <hr>
+                        <button onclick="saveFixed()" class="dropdown-item"><i class="fas fa-fw fa-upload"></i> Exporteer save ID</button>
+                        <button onclick="importFile()" class="dropdown-item"><i class="fas fa-fw fa-download"></i> Importeer game/save ID</button>
                     </div>
 
                 </li>
@@ -63,9 +65,7 @@
                 <li class="nav-item statsbar" id="GrainTop"> </li>
                 <li class="nav-item statsbar" id="FlourTop"> </li>
                 <li class="nav-item statsbar" id="OilTop"> </li>
-                <div id="EnergyStatsLevel">
-                    <li class="nav-item statsbar" id="EnergyStats"></li>
-                </div>
+                <li class="nav-item statsbar" id="EnergyStats"></li>
             </ul>
 
         </div>
@@ -136,24 +136,24 @@
                 <h2>Landbouw:</h2>
                 <div id="Farmland"></div>
                 <div id="FarmManual">
-                    <button type="button" class="btn btn-success" onClick="objFarmland.work(this)" id="push">Bewerk landbouwgrond</button>
+                    <button type="button" class="btn btn-success" onClick="objFarmland.work(this)">Bewerk landbouwgrond</button>
                     <div id="FarmlandTimer"></div>
                 </div>
                 <div id="FarmHarvestPerField"></div>
                 <h3>Uitbreiden:</h3>
                 <div id="FarmlandPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFarmland.addfarm()" id="push">Koop landbouwgrond</button>
+                <button type="button" class="btn btn-primary" onClick="objFarmland.addfarm()">Koop landbouwgrond</button>
             </div>
 
             <div class="container col-sm" id="grain-col">
                 <h2>Graan:</h2>
                 <div id="GrainAmount"></div>
                 <div id="GrainPrice"></div>
-                <button type="button" class="btn btn-danger" onClick="objGrain.sell()" id="push">Verkoop graan!</button>
+                <button type="button" class="btn btn-danger" onClick="objGrain.sell()">Verkoop graan!</button>
                 <div id="GrainSilo"></div>
                 <h2>Koop extra silo's:</h2>
                 <div id="GrainSiloPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objGrainSilo.add();" id="pushOne">Koop graan silo</button>
+                <button type="button" class="btn btn-primary" onClick="objGrainSilo.add();">Koop graan silo</button>
             </div>
             <div class="container col-sm" id="flour-col">
                 <h2>Bloem:</h2>
@@ -161,10 +161,10 @@
 
                 <div id="Flour"></div>
                 <div id="FlourPrice"></div>
-                <button type="button" class="btn btn-danger" onClick="objFlour.sell()" id="push">Verkoop bloem!</button>
+                <button type="button" class="btn btn-danger" onClick="objFlour.sell()">Verkoop bloem!</button>
                 <h2>Koop extra silo's</h2>
                 <div id="FlourSiloPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();" id="pushOne">Koop bloem silo</button>
+                <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();">Koop bloem silo</button>
 
             </div>
         </div>
@@ -174,14 +174,14 @@
                 <p>Farm robots verbruiken 15 energie en kunnen 10 velden bewerken.</p>
                 <div id="ShowFarmRobot"></div>
                 <div id="FarmRobotPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFarmRobot.add();" id="pushOne">Koop robot</button>
+                <button type="button" class="btn btn-primary" onClick="objFarmRobot.add();">Koop robot</button>
                 <button type="button" class="btn btn-warning" onClick="objFarmRobot.sell();" id="SellFarmRobot">Verkoop robot</button>
                 <div id="RobotTimer"></div>
             </div>
-            <div class="container col-sm" id="windmills">
+            <div class="container col-sm" id="windmills-col">
                 <h2>Windmolens</h2>
                 <div id="WindmillCost"></div>
-                <button type="button" class="btn btn-primary" onClick="objWindmill.add(this)" id="push">Bouw windmolen</button>
+                <button type="button" class="btn btn-primary" onClick="objWindmill.add(this)">Bouw windmolen</button>
                 <div id="Windmills"></div>
                 <div id="WindmillCap"></div>
                 <h2>Maal graan tot bloem</h2>
@@ -193,8 +193,8 @@
                 <div id="WindmillControllerInfo"></div>
                 <div id="WindmillControllerCost"></div>
                 <div id="SellWindmillController"></div>
-                <button type="button" class="btn btn-primary" onClick="objWindmillController.add(this)" id="push">Bouw windmolencontroller</button>
-                <button type="button" class="btn btn-warning" onClick="objWindmillController.sell(this)" id="push">Verkoop windmolencontroller</button>
+                <button type="button" class="btn btn-primary" onClick="objWindmillController.add(this)">Bouw windmolencontroller</button>
+                <button type="button" class="btn btn-warning" onClick="objWindmillController.sell(this)">Verkoop windmolencontroller</button>
                 <div id="AutoGrindTimer"></div>
 
 
@@ -203,12 +203,10 @@
         <div class="row border border-dark rows" id="tier2-row">
             <div class="container col-sm" id="olie-col">
                 <h2>Olie:</h2>
-                <div id="OilTank"></div>
-
-                <button type="button" class="btn btn-dark" onClick="objOilTank.fill(1)" id="push">Pomp olie!</button>
+                <button type="button" class="btn btn-dark" onClick="objOilTank.fill(1)">Pomp olie!</button>
                 <div id="clickCount"></div>
                 <div id="Oilprice"></div>
-                <button type="button" class="btn btn-danger" onClick="objOil.sellOil()" id="push">Verkoop olie!</button>
+                <button type="button" class="btn btn-danger" onClick="objOil.sellOil()">Verkoop olie!</button>
                 <h2>Koop extra olietanks:</h2>
                 <div id="OilTankPrice"></div>
                 <div id="oilTank"></div>
@@ -224,18 +222,18 @@
                     <h2>Automatiseer:</h2>
                     <div id="oil1">
                         <p>Een oliepomp verbruikt 1 energie per tick (en produceert 1 olie per tick</p>
-                        <button type="button" class="btn btn-primary" onClick="objOilPump.add();" id="pushOne">Bouw!</button> <button type="button" class="btn btn-warning" onClick="objOilPump.remove(1);" id="sellOilPump">Verkoop!</button>
+                        <button type="button" class="btn btn-primary" onClick="objOilPump.add();">Bouw!</button> <button type="button" class="btn btn-warning" onClick="objOilPump.remove(1);" id="sellOilPump">Verkoop!</button>
                         <div id="FactoryCost"></div>
                         <div id="FactoryCount"></div>
                     </div>
                     <div id="oil2">
                     <div id="o2intro"></div> 
                     <div id="o2buttons">
-                            <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.add(1,0);' id='o2buy'>Koop v2 oliepomp</button> <button type='button' class='btn btn-warning' onClick='objOilPumpAdv.sell();' id='o2sell'>Verkoop v2 oliepomp</button>
+                            <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.add(1,0);' id='v2buy'>Koop v2 oliepomp</button> <button type='button' class='btn btn-warning' onClick='objOilPumpAdv.sell();' id='o2sell'>Verkoop v2 oliepomp</button>
                     </div><br>
                     <div id="o2upgrade"></div>
                     <div id="o2upgradeButton">
-                            <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(1);' id='o2buy'>Upgrade 1x</button> <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(10);' id='o2buy'>Upgrade 10x</button>
+                            <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(1);' id='v2upgrade'>Upgrade 1x</button> <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(10);' id='o2buy'>Upgrade 10x</button>
                     </div>
 
                     <div id="o2stats"></div>   
@@ -249,16 +247,16 @@
                 <p>Bouw een simpele energiecentrale:</p>
                 <p>(Gebruikt 1 olie per tick, levert 10 energie)</p>
                 <div id="SellPowerPlant"></div>
-                <button type="button" class="btn btn-primary" onClick="objPowerPlant.add();" id="pushOne">Bouw!</button>
+                <button type="button" class="btn btn-primary" onClick="objPowerPlant.add();">Bouw!</button>
                 <button type="button" class="btn btn-warning" onClick="objPowerPlant.sell();" id="powerPlantSell">Verkoop!</button>
 
                 <h2>Energieopslag:</h2>
                 <div id="EnergieOpslag"></div>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1);" id="pushOne">Bouw opslag!</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10);" id="pushOne">x10</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(100);" id="pushOne">x100</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1000);" id="pushOne">x1000</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10000);" id="pushOne">x10000</button>
+                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1);">Bouw opslag!</button>
+                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10);">x10</button>
+                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(100);">x100</button>
+                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1000);">x1000</button>
+                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10000);">x10000</button>
             </div>
             <div class="container col-sm" id="coalPower">
                 <div id="CoalPowerPlantAmount"></div>
@@ -284,22 +282,22 @@
                 <h3>Verkopen:</h3>
                 <div id="eggs"></div>
                 <div id="eggStock"></div>
-                <button type="button" class="btn btn-danger" onClick="objEgg.sell('Alles','-')" id="push">Verkoop alle eieren</button>
+                <button type="button" class="btn btn-danger" onClick="objEgg.sell('Alles','-')">Verkoop alle eieren</button>
             </div>
             <div class="container col-sm" id="pasta-col">
                 <h2>Pasta:</h2>
                 <div id="PastaFactory"></div>
-                <button type="button" class="btn btn-primary" onClick="objPastaFactory.add();" id="pushOne">Bouw pastafabriek</button>
-                <button type="button" class="btn btn-warning" onClick="objPastaFactory.sell();" id="pushOne">Verkoop pastafabriek</button>
+                <button type="button" class="btn btn-primary" onClick="objPastaFactory.add();">Bouw pastafabriek</button>
+                <button type="button" class="btn btn-warning" onClick="objPastaFactory.sell();">Verkoop pastafabriek</button>
                 <h3>Maak pasta:</h3>
                 <div id="PastaInstruction"></div>
-                <button type="button" class="btn btn-dark" onClick="objPastaFactory.produce('manual');" id="pushOne">Maak pasta</button>
+                <button type="button" class="btn btn-dark" onClick="objPastaFactory.produce('manual');">Maak pasta</button>
                 <div id="pastaHelperDiv"></div>
                 <h2>Voorraden:</h2>
                 <div id="StorehousePasta"></div>
                 <h2>Verkopen:</h2>
                 <div id="SellPasta"></div>
-                <button type="button" class="btn btn-danger" onClick="objPasta.sell()" id="push">Verkoop Pasta!</button>
+                <button type="button" class="btn btn-danger" onClick="objPasta.sell()">Verkoop Pasta!</button>
             </div>
         </div>
         <div class="row border border-dark rows" id="onderzoek-row">
@@ -308,7 +306,7 @@
                 <h3>Veredeling graan:</h3>
                 <div id="GrainResearchCost"></div>
                 <div id="GRButton">
-                    <button type="button" class="btn btn-primary" onClick="objFarmland.research();" id="pushOne">Start onderzoek</button>
+                    <button type="button" class="btn btn-primary" onClick="objFarmland.research();">Start onderzoek</button>
                 </div>
                 <div id="GrainResearchTimer"></div>
 
@@ -324,7 +322,7 @@
                 <h2>Automatisch verkopen resources:</h2>
                 <div id="autoSellIntro"></div>
                 <button type="button" class="btn btn-primary" onClick="objSalesComputer.add();" id="addCPU">Implementeer extra CPU</button>
-                <button type="button" class="btn btn-warning" onClick="objSalesComputer.remove();" id="addCPU">Verkoop CPU</button>
+                <button type="button" class="btn btn-warning" onClick="objSalesComputer.remove();" id="sellCPU">Verkoop CPU</button>
                 <div id="autoSellOil"></div>
                 Actief:
                 <input type="checkbox" id="autoOilCheck" onchange="objSalesComputer.checkOil(this.checked)">
@@ -365,9 +363,9 @@
                 <div id="plasticPrice"></div>
                 <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0);" id="sellPlastic">Verkoop kunststof</button>
                 <div id="plasticAuto"></div>
-                <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(1);" id="sellPlastic">Neem aan</button>
+                <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(1);" id="hireWorker">Neem aan</button>
                 <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addWorker(0);"
-                    id="sellPlastic">Ontsla</button>
+                    id="fireWorker">Ontsla</button>
             </div>
         </div>
         <div class="row border border-dark rows" id="mijnbouw-row">
