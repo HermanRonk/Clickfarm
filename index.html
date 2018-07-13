@@ -33,29 +33,31 @@
                 </li>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDonateDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
+                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarDonateDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="false">
                         Donatie
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="nav-link" id="donatie1" target="_blank" href="https://paypal.me/clickfarmgame">Donatie PayPal </a>
-                        <a class="nav-link" id="donatie2" target="_blank" href="https://bunq.me/game">Donatie Overig</a>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="navbarDonateDropdown">
+                        <a class="dropdown-item" target="_blank" href="https://paypal.me/clickfarmgame"><i class="fab fa-fw fa-paypal"></i> Donatie PayPal</a>
+                        <a class="dropdown-item" target="_blank" href="https://bunq.me/game"><i class="far fa-fw fa-credit-card"></i> Donatie Overig</a>
                     </div>
 
                 </li>
 
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarOptionDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
+                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarOptionDropdown" data-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="false">
                         Game opties
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a href="javascript:resetGame()" class="dropdown-item">Reset Game</a>
-                        <a href="javascript:changeState()" class="dropdown-item">Pauzeer / start spel</a>
-                        <a href="javascript:showQuickSell(1)" class="dropdown-item">Zet verkooptab aan/uit (lvl9)</a>
-                        <a href="javascript:turnDebug()" class="dropdown-item">Zet debug aan/uit</a>
-                        <a href="javascript:saveFixed()" class="dropdown-item">Exporteer save ID</a>
-                        <a href="javascript:importFile()" class="dropdown-item">Importeer game/save ID</a>
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="navbarOptionDropdown">
+                        <button onclick="resetGame()" class="dropdown-item"><i class="fas fa-fw fa-power-off"></i> Reset Game</button>
+                        <hr>
+                        <button id="pauseBTN" onclick="changeState()" class="dropdown-item"><i class="fas fa-fw fa-pause"></i> Pauzeer spel</button>
+                        <button id="verkooptabBTN" onclick="showQuickSell(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)</button>
+                        <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet debug aan</button>
+                        <hr>
+                        <button onclick="saveFixed()" class="dropdown-item"><i class="fas fa-fw fa-upload"></i> Exporteer save ID</button>
+                        <button onclick="importFile()" class="dropdown-item"><i class="fas fa-fw fa-download"></i> Importeer game/save ID</button>
                     </div>
 
                 </li>

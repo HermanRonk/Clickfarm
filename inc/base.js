@@ -1,15 +1,19 @@
 //init
-var spend = localStorage.getItem('spend') || 10;
-var made = localStorage.getItem('made') || 0;
+var spend = parseInt(localStorage.getItem('spend')) || 10;
+var made = parseInt(localStorage.getItem('made')) || 0;
 var PriceFactor = 25;
-var debug = localStorage.getItem('debug') || 0;
+var debug = parseInt(localStorage.getItem('debug')) || 0;
 
 // voorbereiding voor debug mogelijkheden.
-function turnDebug() {
-    if (localStorage.getItem('debug') == 0) {
-        localStorage.setItem("debug", 1);
+function turnDebug(inputDB) {
+    var eldebugBTN = document.getElementById("debugBTN");
+    if (inputDB === 1) debug = 1 - debug;
+
+    localStorage.setItem("debug", debug);
+    if (debug === 1) {
+        eldebugBTN.innerHTML = '<i class="far fa-fw fa-check-square"></i> Zet debug uit';
     } else {
-        localStorage.setItem("debug", 0)
+        eldebugBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet debug aan';
     }
 
 };
@@ -105,6 +109,7 @@ window.onload = function () {
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
     showQuickSell(0);
+    turnDebug(0);
     // Initialiseren overige gegevens en display
     showPrice();
 }
@@ -265,7 +270,7 @@ var objMoney = {
         made = +made + +moneyProfit;
         localStorage.setItem('made', made);
         registerSale(tt, amount, moneyProfit);
-        if (quickSell == 1) {
+        if (quickSell === 1) {
             quickSellMenu();
         }
     },
@@ -3771,25 +3776,21 @@ function moneyCheck(amountNeeded) {
 }
 
 // Verkoopmenu
-var quickSell = localStorage.getItem('QS') || 0;
+var quickSell = parseInt(localStorage.getItem('QS')) || 0;
 
 function showQuickSell(inputQS) {
+    var elverkooptabBTN = document.getElementById("verkooptabBTN");
+    if (inputQS === 1) quickSell = 1 - quickSell;
 
-    if (inputQS == 1) {
-        if (quickSell == 0) {
-            quickSell = 1;
-        } else {
-            quickSell = 0;
-        }
-    }
-
-    if (quickSell == 1) {
+    if (quickSell === 1) {
         document.getElementById("sellMenu").style.display = "";
+        elverkooptabBTN.innerHTML = '<i class="far fa-fw fa-check-square"></i> Zet verkooptab uit (lvl9)';
         localStorage.setItem('QS', quickSell);
         quickSellMenu();
         quickSellButtons();
     } else {
         document.getElementById("sellMenu").style.display = "none";
+        elverkooptabBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)';
         localStorage.setItem('QS', quickSell);
     }
 
@@ -3851,9 +3852,12 @@ var generateWeighedList = function (list, weight) {
 
 // Pauzeer functie
 function changeState() {
-    if (paused == 0) {
+    var elpauseBTN = document.getElementById("pauseBTN");
+    if (paused === 0) {
+        elpauseBTN.innerHTML = '<i class="fas fa-fw fa-play"></i> Continueer spel';
         paused = 1;
     } else {
+        elpauseBTN.innerHTML = '<i class="fas fa-fw fa-pause"></i> Pauzeer spel';
         paused = 0;
     }
 }

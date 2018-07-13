@@ -41,12 +41,34 @@ body{
     cursor: pointer;
 }
 
+.navbar
+{
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.10);
+}
+
 .nav-link{
     white-space:nowrap;
 }
-.navbar-nav{
+.navbar-nav {
     -ms-align-items: center;
     align-items: center;
+}
+.navbar-nav button, .navbar-nav a
+{
+    cursor: pointer;
+}
+.navbar-nav svg
+{
+    color: rgba(0,0,0,.5);
+}
+.navbar hr
+{
+    margin-top: 0.3rem;
+    margin-bottom: 0.3rem;
+}
+.dropdown-menu
+{
+    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.24), 0 2px 10px 0 rgba(0,0,0,0.12);
 }
 .notification-container{
     position: fixed;
