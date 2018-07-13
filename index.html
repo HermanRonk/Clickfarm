@@ -10,6 +10,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <script src="./inc/base.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.0.2/css/bootstrap-slider.min.css">
     <link rel="stylesheet" href="./css/style.css">
 </head>
 
@@ -326,22 +327,22 @@
                 <div id="autoSellOil"></div>
                 Actief:
                 <input type="checkbox" id="autoOilCheck" onchange="objSalesComputer.checkOil(this.checked)">
-                <input id="SliderOil" type="range" min="0" max="20" step="1" class="slider" onchange="objSalesComputer.showOil(this.value)"
+                <input class="slider" id="SliderOil" type="text" data-provide="slider" data-slider-min="0" data-slider-max="20" data-slider-step="1" data-slider-value="20" onchange="objSalesComputer.showOil(this.value)"
                 />
                 <div id="autoSellFlour"> </div>
                 Actief:
                 <input type="checkbox" id="autoFlourCheck" onchange="objSalesComputer.checkFlour(this.checked)">
-                <input id="SliderFlour" type="range" min="0" max="875" step="25" class="slider" onchange="objSalesComputer.showFlour(this.value)"
+                <input class="slider" id="SliderFlour" type="text" data-provide="slider" data-slider-min="0" data-slider-max="875" data-slider-step="25" data-slider-value="875" onchange="objSalesComputer.showFlour(this.value)"
                 />
                 <div id="autoSellPasta"> </div>
                 Actief:
                 <input type="checkbox" id="autoPastaCheck" onchange="objSalesComputer.checkPasta(this.checked)">
-                <input id="SliderPasta" type="range" min="0" max="450" step="25" class="slider" onchange="objSalesComputer.showPasta(this.value)"
+                <input class="slider" id="SliderPasta" type="text" data-provide="slider" data-slider-min="0" data-slider-max="450" data-slider-step="25" data-slider-value="450" onchange="objSalesComputer.showPasta(this.value)"
                 />
                 <div id="autoSellKunststof"> </div>
                 Actief:
                 <input type="checkbox" id="autoKunststofCheck" onchange="objSalesComputer.checkKunststof(this.checked)">
-                <input id="SliderKunststof" type="range" min="0" max="260" step="10" class="slider" onchange="objSalesComputer.showKunststof(this.value)"
+                <input class="slider" id="SliderKunststof" type="text" data-provide="slider" data-slider-min="0" data-slider-max="260" data-slider-step="10" data-slider-value="260" onchange="objSalesComputer.showKunststof(this.value)"
                 />
 
             </div>
@@ -472,7 +473,8 @@
         crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ"
         crossorigin="anonymous"></script>
-        
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/10.0.2/bootstrap-slider.min.js" crossorigin="anonymous"></script>
     <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
 
 </body>

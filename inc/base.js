@@ -1813,10 +1813,10 @@ var objSalesComputer = {
     amount: 0,
     cpu: 0,
     cpuCost: 400000,
-    oilValue: 19,
-    flourValue: 749,
+    oilValue: 20,
+    flourValue: 875,
     pastaValue: 450,
-    kunstsofValue: 246,
+    kunststofValue: 240,
     autoSellOil: false,
     autoSellFlour: false,
     autoSellPasta: false,
@@ -1930,7 +1930,7 @@ var objSalesComputer = {
     },
     showKunststof: function (inputwaarde) {
         localStorage.setItem("autoKunststof", inputwaarde);
-        objSalesComputer.kunstsofValue = inputwaarde;
+        objSalesComputer.kunststofValue = inputwaarde;
         var autoSellKunststofOn = " niet ";
         if (objSalesComputer.autoSellKunststof == true) {
             var autoSellKunststofOn = " ";
@@ -1941,22 +1941,22 @@ var objSalesComputer = {
     checkOil: function (checkState) {
         localStorage.setItem("autoOilCheck", checkState);
         objSalesComputer.autoSellOil = JSON.parse(localStorage.getItem('autoOilCheck'));
-        objSalesComputer.showOil(localStorage.getItem('autoOil'));
+        objSalesComputer.showOil(parseInt(localStorage.getItem('autoOil')));
     },
     checkFlour: function (checkState) {
         localStorage.setItem("autoFlourCheck", checkState);
         objSalesComputer.autoSellFlour = JSON.parse(localStorage.getItem('autoFlourCheck'));
-        objSalesComputer.showFlour(localStorage.getItem('autoFlour'));
+        objSalesComputer.showFlour(parseInt(localStorage.getItem('autoFlour')));
     },
     checkPasta: function (checkState) {
         localStorage.setItem("autoPastaCheck", checkState);
         objSalesComputer.autoSellPasta = JSON.parse(localStorage.getItem('autoPastaCheck'));
-        objSalesComputer.showPasta(localStorage.getItem('autoPasta'));
+        objSalesComputer.showPasta(parseInt(localStorage.getItem('autoPasta')));
     },
     checkKunststof: function (checkState) {
         localStorage.setItem("autoKunststofCheck", checkState);
         objSalesComputer.autoSellKunststof = JSON.parse(localStorage.getItem('autoKunststofCheck'));
-        objSalesComputer.showKunststof(localStorage.getItem('autoKunststof'));
+        objSalesComputer.showKunststof(parseInt(localStorage.getItem('autoKunststof')));
     },
     autoSell: function () {
         if (objSalesComputer.autoSellOil == true && +objSalesComputer.cpu > 0) {
@@ -1990,28 +1990,32 @@ var objSalesComputer = {
         objSalesComputer.cpu = localStorage.getItem("scCPU") || 0;
 
         //olie
-        objSalesComputer.oilValue = localStorage.getItem('autoOil') || 21;
+        objSalesComputer.oilValue = parseInt(localStorage.getItem('autoOil')) || 20;
         objSalesComputer.autoSellOil = JSON.parse(localStorage.getItem('autoOilCheck')) || false;
         document.getElementById("autoOilCheck").checked = objSalesComputer.autoSellOil;
         document.getElementById("SliderOil").value = +objSalesComputer.oilValue;
+        document.getElementById("SliderOil").setAttribute('data-slider-value', objSalesComputer.oilValue);
 
         //bloem
-        objSalesComputer.flourValue = localStorage.getItem('autoFlour') || 876;
+        objSalesComputer.flourValue = parseInt(localStorage.getItem('autoFlour')) || 875;
         objSalesComputer.autoSellFlour = JSON.parse(localStorage.getItem('autoFlourCheck')) || false;
         document.getElementById("autoFlourCheck").checked = objSalesComputer.autoSellFlour;
         document.getElementById("SliderFlour").value = +objSalesComputer.flourValue;
+        document.getElementById("SliderFlour").setAttribute('data-slider-value', objSalesComputer.flourValue);
 
         //Pasta
-        objSalesComputer.pastaValue = localStorage.getItem('autoPasta') || 876;
+        objSalesComputer.pastaValue = parseInt(localStorage.getItem('autoPasta')) || 450;
         objSalesComputer.autoSellPasta = JSON.parse(localStorage.getItem('autoPastaCheck')) || false;
         document.getElementById("autoPastaCheck").checked = objSalesComputer.autoSellPasta;
         document.getElementById("SliderPasta").value = +objSalesComputer.pastaValue;
+        document.getElementById("SliderPasta").setAttribute('data-slider-value', objSalesComputer.pastaValue);
 
         //Kunststof
-        objSalesComputer.kunststofValue = localStorage.getItem('autoKunststof') || 876;
+        objSalesComputer.kunststofValue = parseInt(localStorage.getItem('autoKunststof')) || 240;
         objSalesComputer.autoSellKunststof = JSON.parse(localStorage.getItem('autoKunststofCheck')) || false;
         document.getElementById("autoKunststofCheck").checked = objSalesComputer.autoSellKunststof;
-        document.getElementById("SliderKunststof").value = +objSalesComputer.KunststofValue;
+        document.getElementById("SliderKunststof").value = +objSalesComputer.kunststofValue;
+        document.getElementById("SliderKunststof").setAttribute('data-slider-value', objSalesComputer.kunststofValue);
 
         objSalesComputer.show();
     }
