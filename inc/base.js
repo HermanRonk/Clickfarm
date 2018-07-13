@@ -1604,7 +1604,7 @@ var objPastaHelper = {
             objPastaHelper.show();
             return 0;
         } else {
-            notificationOverlay("Er is iemand om te ontslaan!", "Ontslag pastahelper", "fa-address-card");
+            notificationOverlay("Er is niemand om te ontslaan!", "Ontslag pastahelper", "fa-address-card");
             return 0;
         }
 
