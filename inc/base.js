@@ -317,7 +317,14 @@ var objOil = {
     },
     produceOil: function () {
         if (objOilPump.amount > 0) {
-            objOilTank.fill(+objEnergy.use(+objOilPump.amount, "Oliepomp"));
+            if (+objEnergy.available >= objOilPump.amount) {
+                objEnergy.use(+objOilPump.amount, "Oliepomp");
+                objOilTank.fill((+objOilPump.amount));
+            } else {
+                var activePumps = +objEnergy.available
+                objEnergy.use(+activePumps, "Oliepomp");
+                objOilTank.fill(+activePumps);
+            }
         }
         if (objOilPumpAdv.amount > 0) {
             objOilTank.fill(objOilPumpAdv.produce());
@@ -1092,7 +1099,7 @@ var objOilPump = {
         if (objOilPump.amount > 0) {
             objOilPump.amount = +objOilPump.amount - +amount;
             localStorage.setItem('Factory', objOilPump.amount);
-            objMoney.add((objOilPump.price * 0.75),"Verkoop oliepomp", 99, +amount);
+            objMoney.add((objOilPump.price * 0.75), "Verkoop oliepomp", 99, +amount);
             objOilPump.price = Math.round((+objOilPump.price / 1.1) * 100) / 100;
             localStorage.setItem('FactoryCost', objOilPump.price);
             objOilPump.show();
@@ -1653,7 +1660,7 @@ var objStorehouse = {
             objStorehouse.show();
             localStorage.setItem('Pasta', objStorehouse.pasta)
             return objStorehouse.pasta;
-        } else{
+        } else {
             var tempUsed = +objStorehouse.pasta;
             objStorehouse.pasta = +objStorehouse.pasta - +objStorehouse.pasta;
             return tempUsed;
@@ -3022,7 +3029,7 @@ var objUraniumMine = {
     show: function () {
         document.getElementById("UraniumMine1").innerHTML = "<p>Een uraniummijn produceert: " + FixNumber(+objUraniumMine.production) + " ton uranium per 10 ticks." +
             " Dit kost je " + FixNumber(objUraniumMine.energy) + " energie per 10 ticks</p><p>Je produceert op dit moment " + FixNumber((+objMines.uraniumAmountActive * +objUraniumMine.production)) +
-            " ton uranium per 10 ticks, dit kost " + FixNumber((+objMines.uraniumAmountActive * +objUraniumMine.energy)) + " energie. Daarnaast eet je personeel " + 
+            " ton uranium per 10 ticks, dit kost " + FixNumber((+objMines.uraniumAmountActive * +objUraniumMine.energy)) + " energie. Daarnaast eet je personeel " +
             FixNumber((+objUraniumMine.workerFood * (+objUraniumMine.workers * +objMines.uraniumAmountActive))) + " pasta per 10 ticks</p>" +
             "<p>Je hebt nu: " + FixNumber(objUraniumOre.storage) + " uranium silo's" +
             "<br>Totale opslag capaciteit: " + FixNumber((+objUraniumOre.storage * +objUraniumOre.storageCap)) +
@@ -3300,7 +3307,7 @@ var objFuelRod = {
             objFuelRod.amount = +objFuelRod.storageFactor * +objFuelCellFactory.amount
             localStorage.setItem('frAmount', +objFuelRod.amount)
         };
-        objFuelRod.calculateWastePrice(50000,99999);
+        objFuelRod.calculateWastePrice(50000, 99999);
         objFuelRod.show();
     }
 }
@@ -3490,10 +3497,10 @@ var objOilPumpAdv = {
         localStorage.setItem('oilPumpAmount', objOilPumpAdv.amount);
         objOilPumpAdv.show();
     },
-    sell: function(){
+    sell: function () {
         if (+objOilPumpAdv.amount > 0) {
             objMoney.add(+objOilPumpAdv.price, "Verkoop oliepomp", 19, 1);
-            objOilPumpAdv.amount = +objOilPumpAdv.amount - 1; 
+            objOilPumpAdv.amount = +objOilPumpAdv.amount - 1;
             localStorage.setItem('oilPumpAmount', objOilPumpAdv.amount);
             objOilPumpAdv.show();
         } else {
@@ -3914,7 +3921,7 @@ var loopsProduction = setInterval(
                     objChicken.makeEggs();
                 };
                 if (+objFuelCellFactory.amount > 0) {
-                    objFuelRod.calculateWastePrice(50000,99999);
+                    objFuelRod.calculateWastePrice(50000, 99999);
                 }
             }
             if (+timerCounter % 10 == 0) {
