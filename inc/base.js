@@ -304,7 +304,7 @@ var objOil = {
     tempUsage: 0,
     sellOil: function () {
         var amount = +objOilTank.contents - (+objPowerPlant.amount * 5);
-        var Profit = +objOilTank.use((+objOilTank.contents - (+objPowerPlant.amount * 5))) * +objOil.price;
+        var Profit = +objOilTank.use(parseInt(amount), "Handmatige verkoop Olie") * +objOil.price;
         var text = "Verkoop Olie";
         objMoney.add(Profit, text, 1, amount);
 
@@ -579,7 +579,7 @@ var objOilTank = {
     remove: function () {
         if (+objOilTank.amount > 0) {
             if (+objOilTank.contents > (+objOilTank.contents - +objOilTank.cap)) {
-                objOilTank.use(objOilTank.cap);
+                objOilTank.use(parseInt(objOilTank.cap), "Verkoop olietank");
             };
             objOilTank.amount = +objOilTank.amount - 1;
             objMoney.add((+objOilTank.price * 0.5), "Verkoop olietank", 20, 1)
@@ -632,19 +632,32 @@ var objOilTank = {
         } else {
             objOilTank.contents = +objOilTank.contents + +InputAmount;
         };
+        objOilTank.saveAmount();
         objOilTank.show();
     },
-    use: function (used) {
+    use: function (used, reason) {
+        showMessage("Oiltank.use used", objOilTank.contents);
+        showMessage("Verbruiker", reason)
         if (+objOilTank.contents < +used) {
             var oilAvailabe = +objOilTank.contents;
-            objOilTank.contents = +objOilTank.contents - +oilAvailabe;
+            objOilTank.contents = +objOilTank.contents - +objOilTank.contents;
+            objOilTank.saveAmount();
             objOilTank.show();
-            return oilAvailabe;
+            showMessage("Olieverbruik (alles): ", used);
+            return +oilAvailabe;
         } else {
-            objOilTank.contents = +objOilTank.contents - +used;
+            showMessage("Pre", objOilTank.contents);
+            objOilTank.contents = parseInt(objOilTank.contents) - parseInt(used);
+            showMessage("After", objOilTank.contents);
+            showMessage("Olieverbruik (niet alles): ", used);
+            objOilTank.saveAmount();
             objOilTank.show();
             return +used;
         }
+    },
+    saveAmount: function () {
+        localStorage.setItem('Oil', (Math.round(objOilTank.contents * 100) / 100));
+        showMessage("Oliestand opgeslagen", objOilTank.contents);
     },
     visual: function () {
         var percentageFilled = (+objOilTank.contents / +objOilTank.totalCap) * 100;
@@ -679,10 +692,9 @@ var objOilTank = {
         }
 
 
-        var clicksRound = Math.round(objOilTank.contents * 100) / 100;
-        document.getElementById("clickCount").innerHTML = "<p>Aantal vaten olie op voorraad: " + FixNumber(clicksRound) + "</p>";
+        
+        document.getElementById("clickCount").innerHTML = "<p>Aantal vaten olie op voorraad: " + FixNumber(objOilTank.contents) + "</p>";
 
-        localStorage.setItem('Oil', clicksRound);
         document.getElementById("OilTop").innerHTML = "Olie: <kbd2>" + FixNumber(objOilTank.contents) + "/" + FixNumber(objOilTank.totalCap) + "</kbd2>";
         objOilTank.visual();
     },
@@ -693,8 +705,6 @@ var objOilTank = {
         objOilTank.price = localStorage.getItem('OilTankPrice') || 1000;
         objOilTank.priceBig = localStorage.getItem('OilTankPriceBig') || 1000000;
         objOilTank.amountBig = localStorage.getItem('OilTankAmountBig') || 1;
-        console.log((+objOilTank.amount * +objOilTank.cap));
-        console.log((+objOilTank.amountBig * +objOilTank.capBig));
         objOilTank.totalCap = ((+objOilTank.amount * +objOilTank.cap) + (+objOilTank.amountBig * +objOilTank.capBig));
         objOilTank.show();
     }
@@ -1181,15 +1191,18 @@ var objEnergy = {
         // Olie
         var producedAmount = +objPowerPlant.amount * 10;
         var capLeft = (+objEnergy.storageCap * +objEnergy.capacitors) - +objEnergy.available;
+        var activePlants = +objPowerPlant.amount;
         if (+producedAmount > +capLeft) {
             var activePlants = Math.ceil(+capLeft / 10);
-            objOilTank.use(+activePlants);
-            objEnergy.available = +objEnergy.available + +capLeft;
-            localStorage.setItem('EnergyAvailable', +objEnergy.available);
-            objEnergy.show();
+            if (+activePlants > 0){
+                objOilTank.use(+activePlants, "Energiecentrales - Productie groter dan restcap");
+                objEnergy.available = +objEnergy.available + +capLeft;
+                localStorage.setItem('EnergyAvailable', +objEnergy.available);
+                objEnergy.show();
+            }
         } else {
             objEnergy.available = +objEnergy.available + +producedAmount;
-            objOilTank.use(+objPowerPlant.amount);
+            objOilTank.use(+activePlants, "Energiecentrales - Productie kleiner dan restcap");
             localStorage.setItem('EnergyAvailable', +objEnergy.available);
             objEnergy.show();
         }
@@ -1968,7 +1981,7 @@ var objSalesComputer = {
     autoSell: function () {
         if (objSalesComputer.autoSellOil == true && +objSalesComputer.cpu > 0) {
             if (+objOil.price >= +objSalesComputer.oilValue && +objOilTank.contents > (+objPowerPlant.amount * 10)) {
-                var oilUsed = objOilTank.use((+objOilTank.contents - (+objPowerPlant.amount * 5)));
+                var oilUsed = objOilTank.use((+objOilTank.contents - (+objPowerPlant.amount * 5)), "Autosell olie");
                 objMoney.add((+oilUsed * +objOil.price), "Computerverkoop olie", 1, oilUsed);
             }
         };
@@ -2897,7 +2910,7 @@ var objPlasticFactory = {
                 return 0;
             }
         }
-        objOilTank.use((+factoriesActive * +objPlasticFactory.oilNeededProduction));
+        objOilTank.use((+factoriesActive * +objPlasticFactory.oilNeededProduction), "Plasticfabriek");
         objEnergy.use((+factoriesActive * +objPlasticFactory.energy));
         if (typeProduction == 1) {
             objStorehouse.removePasta((+factoriesActive * +objPlasticFactory.workerFood));
