@@ -1587,7 +1587,7 @@ var objPasta = {
     recipe: 10,
     recipeEggs: 100,
     sell: function (reason) {
-        if(reason == ""){
+        if(reason == null){
             reason = "Handmatige verkoop";
         }
         var amount = +objStorehouse.pasta;
