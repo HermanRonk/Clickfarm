@@ -298,7 +298,7 @@
                 <div id="StorehousePasta"></div>
                 <h2>Verkopen:</h2>
                 <div id="SellPasta"></div>
-                <button type="button" class="btn btn-danger" onClick="objPasta.sell()">Verkoop Pasta!</button>
+                <button type="button" class="btn btn-danger" onClick="objPasta.sell('Reguliere verkoop Pasta')">Verkoop Pasta!</button>
             </div>
         </div>
         <div class="row border border-dark rows" id="onderzoek-row">

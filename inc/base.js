@@ -1586,10 +1586,13 @@ var objPasta = {
     },
     recipe: 10,
     recipeEggs: 100,
-    sell: function () {
+    sell: function (reason) {
+        if(reason == ""){
+            reason = "Handmatige verkoop";
+        }
         var amount = +objStorehouse.pasta;
         var ProfitPasta = +objStorehouse.pasta * +objPasta.price();
-        var text = "Regulier verkoop pasta";
+        var text = reason;
         objMoney.add(ProfitPasta, text, 8, amount);
         objStorehouse.removePasta(+objStorehouse.pasta);
     },
@@ -1995,7 +1998,7 @@ var objSalesComputer = {
         if (objSalesComputer.autoSellPasta == true && +objSalesComputer.cpu > 2) {
             var pp = objPasta.price();
             if (+pp >= +objSalesComputer.pastaValue) {
-                objPasta.sell();
+                objPasta.sell("Computerverkoop Pasta");
             }
         };
         if (objSalesComputer.autoSellKunststof == true && +objSalesComputer.cpu > 3) {
