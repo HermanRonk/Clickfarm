@@ -1,4 +1,3 @@
-//init
 var spend = parseInt(localStorage.getItem('spend')) || 10;
 var made = parseInt(localStorage.getItem('made')) || 0;
 var PriceFactor = 25;
@@ -66,7 +65,6 @@ function guid() {
     return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
-
 // initialisatie
 window.onload = function () {
     // Zetten vars
@@ -114,6 +112,22 @@ window.onload = function () {
     showPrice();
 }
 
+// Functie voor het onzichtbaar maken van DOM elementen
+var Display = {
+    convertStringToArray: function (object) {
+        return (typeof object === 'string') ? Array(object) : object
+    },
+    show: function (Identifier, bHide) {
+        var cDisplay = (bHide === undefined) ? 'block' : 'none';
+
+        aIdentifier = this.convertStringToArray(Identifier);
+        for (i = 0; i < aIdentifier.length; i++) if (el = document.getElementById(aIdentifier[i])) el.style.display=cDisplay; else console.error('Could not find element ' + aIdentifier[i] );
+        },
+    hide: function (cIdentifier) {
+        this.show(cIdentifier, false);
+    }
+};
+
 // Functie voor het goed weergeven van bedragen
 function FixMoney(InputMoney) {
     InputMoney = parseFloat(+InputMoney);
@@ -135,85 +149,57 @@ function AfrondenGewicht(InputGewicht) {
 // Player object
 var objPlayerInfo = {
     level: localStorage.getItem('PlayerLevel') || 1,
-    nextlevel: 3000,
+    level_multiplier: [0, 5, 5, 5, 5, 4, 3, 4, 5, 5, 5, 5],
+    nextlevel: localStorage.getItem('NextLevel') || 3000,
     show: function () {
         document.getElementById('currentlevel').innerHTML = "Huidig level is: " + objPlayerInfo.level;
         document.getElementById('nextlevel').innerHTML = "Drempel voor volgend level: " + FixMoney(objPlayerInfo.nextlevel);
     },
     proceslevel: function (reason) {
-        var c = "none";
-        var d = "";
-        if (+objPlayerInfo.level == 1) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, c, c, c, c, c, c, c, c, c, c);
+
+        // Wanneer level hoger, bereken nieuw gelddoel voor next level
+        if (reason === 'levelup') {
+            objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * this.level_multiplier[Math.min(objPlayerInfo.level, (this.level_multiplier.length-1)) ];
+            localStorage.setItem('NextLevel', objPlayerInfo.nextlevel);
         }
-        if (+objPlayerInfo.level == 2) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, c, c, c, c, c, c, c, c, c);
+
+        // Maak tabs zichtbaar op basis van level (gebruikmakende van Switch' fallthrough)
+        switch(+objPlayerInfo.level) {
+            default: // Hoger dan level 10
+                Display.show('nuclearFuel-row');
+
+            case 10: // Level 10 behaald
+                Display.show('Uranium-col');
+
+            case 9: // Level 10 behaald
+                // Geen nieuwe functionaliteiten?
+
+            case 8: // Level 8 behaald
+                Display.show(['MiningResearch-col', 'mijnbouw-row', 'mijnen-row', 'mijnen-row2']);
+                objResearch.show();
+
+            case 7: // Level 7 behaald
+                Display.show(['pasta-col', 'AutoSell-col']);
+
+            case 6: // Level 6 behaald
+                Display.show(['WindmillController', 'chicken-col', 'plastic-row']);
+
+            case 5: // Level 5 behaald
+                Display.show('farmland-automation');
+
+            case 4: // Level 4 behaald
+                Display.show(['pomp-col', 'energieproductie-col', 'energy-col']);
+                document.getElementById("EnergyStats").style.disabled = false;
+
+            case 3: // Level 3 behaald
+                Display.show(['graanopbrengst-col', 'olie-col', 'Oilstock']);
+
+            case 2: // Level 2 behaald
+                Display.show(['flour-col', 'windmills-col', 'Flourstock']);
+
+            case 1: // Level 1 behaald
+                Display.show(['landbouw-col', 'grain-col']);
         }
-        if (+objPlayerInfo.level == 3) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, d, c, c, c, c, c, c, c, c);
-        }
-        if (+objPlayerInfo.level == 4) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, c, c, c, c, c, c, c);
-        }
-        if (+objPlayerInfo.level == 5) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 4;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, c, c, c, c, c, c);
-        }
-        if (+objPlayerInfo.level == 6) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 3;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, d, d, c, c, c, c);
-        }
-        if (+objPlayerInfo.level == 7) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 4;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, d, d, d, c, c, c);
-        }
-        if (+objPlayerInfo.level == 8) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, d, d, d, d, c, c);
-            objResearch.show();
-        }
-        if (+objPlayerInfo.level == 9) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, d, d, d, d, c, c);
-            objResearch.show();
-        }
-        if (+objPlayerInfo.level == 10) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, d, d, d, d, d, c);
-            objResearch.show();
-        }
-        if (+objPlayerInfo.level > 10) {
-            if (reason == "levelup") {
-                objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * 5;
-            }
-            objPlayerInfo.levelFunction(d, d, d, d, d, d, d, d, d, d, d);
-            objResearch.show();
-        }
-        localStorage.setItem('NextLevel', objPlayerInfo.nextlevel);
     },
     levelup: function () {
         if (+objMoney.amount > +objPlayerInfo.nextlevel) {
@@ -224,40 +210,12 @@ var objPlayerInfo = {
         }
         objPlayerInfo.show();
     },
-    levelFunction: function (a, b, c, d, e, f, g, h, i, j, k) {
-        document.getElementById("landbouw-col").style.display = a;
-        document.getElementById("grain-col").style.display = a;
-        document.getElementById("flour-col").style.display = b;
-        document.getElementById("windmills-col").style.display = b;
-        document.getElementById("Flourstock").style.display = b;
-        document.getElementById("graanopbrengst-col").style.display = c;
-        document.getElementById("olie-col").style.display = c;
-        document.getElementById("Oilstock").style.display = c;
-        // /document.getElementById("research-menu").style.display = d;
-        document.getElementById("pomp-col").style.display = d;
-        document.getElementById("energieproductie-col").style.display = d;
-        document.getElementById("EnergyStats").style.disabled = d;
-        document.getElementById("energy-col").style.display = d;
-        document.getElementById("farmland-automation").style.display = e;
-        document.getElementById("WindmillController").style.display = f;
-        document.getElementById("chicken-col").style.display = g;
-        document.getElementById("pasta-col").style.display = h;
-        document.getElementById("AutoSell-col").style.display = h;
-        document.getElementById("plastic-row").style.display = g
-        document.getElementById("MiningResearch-col").style.display = i;
-        document.getElementById("mijnbouw-row").style.display = i;
-        document.getElementById("mijnen-row").style.display = i;
-        document.getElementById("mijnen-row2").style.display = i;
-        document.getElementById("Uranium-col").style.display = j;
-        document.getElementById("nuclearFuel-row").style.display = k;
-    },
     init: function () {
-        objPlayerInfo.level = localStorage.getItem('PlayerLevel') || 1;
-        objPlayerInfo.nextlevel = localStorage.getItem('NextLevel') || 3000;
         objPlayerInfo.proceslevel("init");
         objPlayerInfo.show();
     }
 };
+
 
 // Money object
 var objMoney = {
@@ -321,7 +279,7 @@ var objOil = {
                 objEnergy.use(+objOilPump.amount, "Oliepomp");
                 objOilTank.fill((+objOilPump.amount));
             } else {
-                var activePumps = +objEnergy.available
+                var activePumps = +objEnergy.available;
                 objEnergy.use(+activePumps, "Oliepomp");
                 objOilTank.fill(+activePumps);
             }

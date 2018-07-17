@@ -124,3 +124,9 @@ kbd2 {
     background-color: #212529;
     border-radius: 0.2rem;
   }
+
+/* verberg tabs initieel */
+#flour-col, #windmills-col, #Flourstock, #graanopbrengst-col, #olie-col, #Oilstock, #pomp-col, #energieproductie-col, #energy-col, #farmland-automation, #WindmillController,
+#chicken-col, #plastic-row, #pasta-col, #AutoSell-col, #MiningResearch-col, #mijnbouw-row, #mijnen-row, #mijnen-row2, #Uranium-col, #nuclearFuel-row {
+    display: none;
+}
