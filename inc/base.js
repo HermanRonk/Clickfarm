@@ -2004,7 +2004,7 @@ var objSalesComputer = {
         if (objSalesComputer.autoSellKunststof == true && +objSalesComputer.cpu > 3) {
             var pp = objPlastic.price;
             if (+pp >= +objSalesComputer.kunststofValue) {
-                objPlastic.sell(0);
+                objPlastic.sell(0, "Computerverkoop Plastic");
             }
         };
 
@@ -2967,11 +2967,12 @@ var objPlastic = {
             objPlastic.show();
         }
     },
-    sell: function (amountSold) {
-        var reason = "Verkoop overschot kunststof";
+    sell: function (amountSold, reason) {
+        if (reason == null) {
+            var reason = "Verkoop overschot kunststof";
+        }
         if (+amountSold == 0) {
             amountSold = +objPlastic.amount;
-            reason = "Handmatige verkoop kunststof";
             objPlastic.use(+amountSold);
             var profit = +amountSold * +objPlastic.price;
             objMoney.add(+profit, reason, 16, amountSold);

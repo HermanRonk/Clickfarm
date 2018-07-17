@@ -362,7 +362,7 @@
                 <div id="plasticStorage"></div>
                 <button type="button" class="btn btn-primary" onClick="objPlastic.addStorage();" id="addPlasticStorage">Bouw kunststofopslag</button>
                 <div id="plasticPrice"></div>
-                <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0);" id="sellPlastic">Verkoop kunststof</button>
+                <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0, 'Handmatige verkoop Plastic);" id="sellPlastic">Verkoop kunststof</button>
                 <div id="plasticAuto"></div>
                 <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(1);" id="hireWorker">Neem aan</button>
                 <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addWorker(0);"
