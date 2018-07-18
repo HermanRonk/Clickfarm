@@ -68,6 +68,7 @@ function guid() {
 // initialisatie
 window.onload = function () {
     // Zetten vars
+    Display.hide(['flour-col', 'windmills-col', 'Flourstock','graanopbrengst-col', 'olie-col', 'Oilstock', 'pomp-col', 'energieproductie-col', 'energy-col', 'farmland-automation', 'WindmillController', 'chicken-col', 'plastic-row', 'pasta-col', 'AutoSell-col', 'MiningResearch-col', 'mijnbouw-row', 'mijnen-row', 'mijnen-row2', 'Uranium-col', 'nuclearFuel-row']);
     identUser();
     document.getElementById("sellMenu").style.display = "none";
     objMoney.init();
@@ -118,7 +119,7 @@ var Display = {
         return (typeof object === 'string') ? Array(object) : object
     },
     show: function (Identifier, bHide) {
-        var cDisplay = (bHide === undefined) ? 'block' : 'none';
+        var cDisplay = (bHide === undefined) ? '' : 'none';
 
         aIdentifier = this.convertStringToArray(Identifier);
         for (i = 0; i < aIdentifier.length; i++) if (el = document.getElementById(aIdentifier[i])) el.style.display=cDisplay; else console.error('Could not find element ' + aIdentifier[i] );
