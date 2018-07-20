@@ -164,7 +164,7 @@
                 <button type="button" class="btn btn-danger" onClick="objFlour.sell()">Verkoop bloem!</button>
                 <h2>Koop extra silo's</h2>
                 <div id="FlourSiloPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();">Koop bloem silo</button>
+                <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();">Koop bloemsilo</button>
 
             </div>
         </div>
