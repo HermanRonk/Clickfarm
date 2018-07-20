@@ -55,8 +55,14 @@ body{
     z-index: 9999;
 }
 
+.notification{
+    overflow: hidden;
+    opacity: 1;
+    -webkit-transition: opacity 2s, height 2s; /* Safari */
+    transition: opacity 2s, height 2s;
+}
 .notification-tooltip{
-   margin-bottom: 20px;
+    margin-bottom: 20px;
     width: 300px;
     padding: 15px 25px;
     background-color: rgba(0,0,0,0.6);

@@ -2,6 +2,7 @@ var spend = parseInt(localStorage.getItem('spend')) || 10;
 var made = parseInt(localStorage.getItem('made')) || 0;
 var PriceFactor = 25;
 var debug = parseInt(localStorage.getItem('debug')) || 0;
+var CSStransitionEnd = whichTransitionEvent();
 
 // voorbereiding voor debug mogelijkheden.
 function turnDebug(inputDB) {
@@ -106,6 +107,7 @@ window.onload = function () {
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
     showQuickSell(0);
+    turnAutoClose(0);
     turnDebug(0);
     // Initialiseren overige gegevens en display
     showPrice();
@@ -830,7 +832,7 @@ var objWindmill = {
             localStorage.setItem('WindmillAmount', objWindmill.amount);
         }
     },
-    grind_buttonstate () {
+    grind_buttonstate: function () {
         let bDisabled = false;
 
         if ( (objWindmill.amountAutomated === objWindmill.amount) && (objWindmill.autoGrindTimer > 0) ) bDisabled = true;
@@ -3481,30 +3483,66 @@ var objOilPumpAdv = {
     init: function () {
         objOilPumpAdv.amount = localStorage.getItem('oilPumpAmount') || 0;
     }
+};
+
+// Detect which transitionEnd is supported by browser
+function whichTransitionEvent(){
+    let t,
+        el = document.createElement("fakeelement");
+
+    let transitions = {
+        "transition"      : "transitionend",
+        "OTransition"     : "oTransitionEnd",
+        "MozTransition"   : "transitionend",
+        "WebkitTransition": "webkitTransitionEnd"
+    };
+
+    for (t in transitions) {
+        if (el.style[t] !== undefined){
+            return transitions[t];
+        }
+    }
 }
 
 // Notificatie functie
 function notificationOverlay(messageText, messageTitle, messageIcon) {
-    var container = document.getElementById("notif");
-    var length = container.children.length;
+    let container = document.getElementById("notif");
+    if (container.children.length >= 3) container.firstChild.remove();
 
-    if (length >= 3) {
-        container.firstChild.remove();
-    }
-
-    container.innerHTML +=
-        '<div class="notification-tooltip" onclick="closeNotification(this)">' +
+    let dNotification = document.createElement("div");
+    dNotification.setAttribute('class', 'notification');
+    dNotification.innerHTML =
+        '<div class="notification-tooltip">' +
         '<div class="icon">' +
         '<i class="fas ' + messageIcon + '"></i>' +
         '</div>' +
         '<div class="text"><h5>' + messageTitle + '</h5><p>' + messageText + '</p></div>' +
         '<div class="close-notification"></div>' +
         '</div>';
+    container.appendChild(dNotification);
+
+    dNotification.style.height = dNotification.offsetHeight + 'px';
+
+    dNotification.addEventListener("click", function() {
+        clearTimeout(notificationTimer);
+        container.removeChild(dNotification);
+    });
+
+    let notificationTimer = setTimeout( function() {
+        if (closeNotifications === 1)
+        {
+            dNotification.style.height = 0;
+            dNotification.style.opacity = 0;
+
+            let notificationClose = function() {
+                if (dNotification.parentNode === container) container.removeChild(dNotification);
+            };
+
+            dNotification.addEventListener(CSStransitionEnd, notificationClose);
+        }
+    }, 10000);
 }
 
-function closeNotification(el) {
-    el.remove();
-}
 
 // History functie voor inkomsten
 var messages = [];
@@ -3676,11 +3714,7 @@ function getSaveGame(uuid) {
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("Cache-Control", "no-cache");
 
-
     xhr.send(data);
-
-    ;
-
 }
 
 // Registreren verkoop
@@ -3730,6 +3764,22 @@ function showQuickSell(inputQS) {
         document.getElementById("sellMenu").style.display = "none";
         elverkooptabBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)';
         localStorage.setItem('QS', quickSell);
+    }
+
+}
+
+// Auto sluit notificaties
+var closeNotifications = parseInt(localStorage.getItem('notifications_autoclose')) || 0;
+
+function turnAutoClose(input) {
+    if (input) closeNotifications = 1 - closeNotifications;
+    localStorage.setItem('notifications_autoclose', closeNotifications);
+
+    elAutoCloseBTN = document.getElementById("autocloseBTN");
+    if (closeNotifications === 1) {
+        elAutoCloseBTN.innerHTML = '<i class="far fa-fw fa-check-square"></i> Zet auto-sluit berichten uit';
+    } else {
+        elAutoCloseBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet auto-sluit berichten aan';
     }
 
 }
