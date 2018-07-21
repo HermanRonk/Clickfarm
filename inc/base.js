@@ -1951,7 +1951,7 @@ var objSalesComputer = {
         };
         if (objSalesComputer.autoSellPasta == true && +objSalesComputer.cpu > 2) {
             var pp = objPasta.price();
-            if (+pp >= +objSalesComputer.pastaValue) {
+            if (+pp >= +objSalesComputer.pastaValue && objStorehouse.pasta > 0) {
                 objPasta.sell("Computerverkoop Pasta");
             }
         };
