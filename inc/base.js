@@ -43,7 +43,7 @@ function identUser() {
             }
         });
 
-        xhr.open("POST", "/inc/connector.php");
+        xhr.open("POST", "/back/connector.php");
         xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         xhr.setRequestHeader("Cache-Control", "no-cache");
 
@@ -3628,7 +3628,7 @@ function pushProgress() {
         }
     });
 
-    xhr.open("POST", "/inc/connector.php");
+    xhr.open("POST", "/back/connector.php");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("Cache-Control", "no-cache");
 
@@ -3671,7 +3671,7 @@ function saveFixed() {
         }
     });
 
-    xhr.open("POST", "/inc/connector.php");
+    xhr.open("POST", "/back/connector.php");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("Cache-Control", "no-cache");
 
@@ -3711,7 +3711,7 @@ function getSaveGame(uuid) {
         }
     });
 
-    xhr.open("POST", "/inc/connector.php");
+    xhr.open("POST", "/back/connector.php");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("Cache-Control", "no-cache");
 
@@ -3724,7 +3724,7 @@ function registerSale(tt, amount, profit) {
     // var data = "id=" + uuid + "&type=" + tt + "&amount=" + amount + "&profit=" + profit;
     // var xhr = new XMLHttpRequest();
 
-    // xhr.open("POST", "/inc/salesconnector.php");
+    // xhr.open("POST", "/back/salesconnector.php");
     // xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     // xhr.setRequestHeader("Cache-Control", "no-cache");
 
