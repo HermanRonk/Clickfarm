@@ -593,20 +593,14 @@ var objOilTank = {
         objOilTank.show();
     },
     use: function (used, reason) {
-        showMessage("Oiltank.use used", objOilTank.contents);
-        showMessage("Verbruiker", reason)
         if (+objOilTank.contents < +used) {
             var oilAvailabe = +objOilTank.contents;
             objOilTank.contents = +objOilTank.contents - +objOilTank.contents;
             objOilTank.saveAmount();
             objOilTank.show();
-            showMessage("Olieverbruik (alles): ", used);
             return +oilAvailabe;
         } else {
-            showMessage("Pre", objOilTank.contents);
             objOilTank.contents = parseInt(objOilTank.contents) - parseInt(used);
-            showMessage("After", objOilTank.contents);
-            showMessage("Olieverbruik (niet alles): ", used);
             objOilTank.saveAmount();
             objOilTank.show();
             return +used;
@@ -614,7 +608,6 @@ var objOilTank = {
     },
     saveAmount: function () {
         localStorage.setItem('Oil', (Math.round(objOilTank.contents * 100) / 100));
-        showMessage("Oliestand opgeslagen", objOilTank.contents);
     },
     visual: function () {
         var percentageFilled = (+objOilTank.contents / +objOilTank.totalCap) * 100;
@@ -1144,6 +1137,7 @@ var objEnergy = {
         }
     },
     use: function (requestedAmount, reason) {
+        showMessage(reason, requestedAmount);
         if (+requestedAmount <= +objEnergy.available) {
             objEnergy.available = +objEnergy.available - +requestedAmount;
             localStorage.setItem('EnergyAvailable', +objEnergy.available);
@@ -1153,7 +1147,7 @@ var objEnergy = {
             objEnergy.available = +objEnergy.available - +objEnergy.available;
             objEnergy.show();
             return +objEnergy.available;
-        }
+        };
         localStorage.setItem('EnergyAvailable', +objEnergy.available);
     },
     produce: function () {
@@ -1581,8 +1575,6 @@ var objPasta = {
         var ProfitPasta = +amount * +objPasta.price();
         objStorehouse.removePasta(+amount);
         objMoney.add(ProfitPasta, reason, 8, amount);
-        showMessage("Test pasta verkoop - objpasta.sell");
-        
     },
     show: function () {
         document.getElementById("SellPasta").innerHTML = "<p>Verkoop de pasta voor " + FixMoney(objPasta.price()) + " per doos";
@@ -2821,7 +2813,7 @@ var objPlasticFactory = {
             }
         }
         objOilTank.use((+factoriesActive * +objPlasticFactory.oilNeededProduction), "Plasticfabriek");
-        objEnergy.use((+factoriesActive * +objPlasticFactory.energy));
+        objEnergy.use((+factoriesActive * +objPlasticFactory.energy), "Factories");
         if (typeProduction == 1) {
             objStorehouse.removePasta((+factoriesActive * +objPlasticFactory.workerFood));
         };
@@ -3102,7 +3094,7 @@ var objFuelCellFactory = {
             var SN = +objFuelCellFactory.steelNeeded * +objFuelCellFactory.activeFactories;
 
             // Werkelijk gebruiken resources
-            objEnergy.use(EN);
+            objEnergy.use(EN, "Fuelcellfactory");
             objUraniumOre.use(UN);
             objSteel.use(SN);
         }
