@@ -1553,8 +1553,8 @@ var objPastaFactory = {
         var eggs = flour * (objPasta.recipeEggs / objPasta.recipe);
         document.getElementById("PastaInstruction").innerHTML = "<p>Op dit moment kunnen we per run " + FixNumber(flour) + "kg bloem en " + FixNumber(eggs) +
             " eieren verwerken tot pasta. Iedere run verbruikt " + FixNumber((objPastaFactory.amount * objPastaFactory.energy)) + " energie. Dit levert " + FixNumber(Math.floor(flour / objPasta.recipe)) + " dozen pasta op.</p>Recept: " +
-            FixNumber(objPasta.recipe) + "kg bloem gemixt met " + FixNumber(objPasta.recipeEggs) + " eieren levert één doos pasta op.</p>"
-
+            FixNumber(objPasta.recipe) + "kg bloem gemixt met " + FixNumber(objPasta.recipeEggs) + " eieren levert één doos pasta op.</p>";
+        objStorehouse.show();
     },
     init: function () {
         objPastaFactory.amount = localStorage.getItem('PastaFactoryAmount') || 0;
