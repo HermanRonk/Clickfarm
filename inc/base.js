@@ -1575,13 +1575,14 @@ var objPasta = {
     recipeEggs: 100,
     sell: function (reason) {
         if(reason == null){
-            reason = "Handmatige verkoop";
+            var reason = "Handmatige verkoop";
         }
         var amount = +objStorehouse.pasta;
         var ProfitPasta = +amount * +objPasta.price();
+        objStorehouse.removePasta(+amount);
         objMoney.add(ProfitPasta, reason, 8, amount);
         showMessage("Test pasta verkoop - objpasta.sell");
-        objStorehouse.removePasta(+amount);
+        
     },
     show: function () {
         document.getElementById("SellPasta").innerHTML = "<p>Verkoop de pasta voor " + FixMoney(objPasta.price()) + " per doos";
