@@ -154,7 +154,7 @@
                 <div id="GrainSilo"></div>
                 <h2>Koop extra silo's:</h2>
                 <div id="GrainSiloPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objGrainSilo.add();">Koop graan silo</button>
+                <button type="button" class="btn btn-primary" onClick="objGrainSilo.add();">Koop graansilo</button>
             </div>
             <div class="container col-sm" id="flour-col">
                 <h2>Bloem:</h2>
