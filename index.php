@@ -54,6 +54,7 @@
                         <hr>
                         <button id="pauseBTN" onclick="changeState()" class="dropdown-item"><i class="fas fa-fw fa-pause"></i> Pauzeer spel</button>
                         <button id="verkooptabBTN" onclick="showQuickSell(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)</button>
+                        <button id="autocloseBTN" onclick="turnAutoClose(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet auto-sluit berichten aan</button>
                         <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet debug aan</button>
                         <hr>
                         <button onclick="saveFixed()" class="dropdown-item"><i class="fas fa-fw fa-upload"></i> Exporteer save ID</button>
@@ -136,7 +137,7 @@
                 <h2>Landbouw:</h2>
                 <div id="Farmland"></div>
                 <div id="FarmManual">
-                    <button type="button" class="btn btn-success" onClick="objFarmland.work(this)">Bewerk landbouwgrond</button>
+                    <button id="farmlandWorkBTN" type="button" class="btn btn-success" onClick="objFarmland.work()">Bewerk landbouwgrond</button>
                     <div id="FarmlandTimer"></div>
                 </div>
                 <div id="FarmHarvestPerField"></div>
@@ -185,7 +186,7 @@
                 <div id="Windmills"></div>
                 <div id="WindmillCap"></div>
                 <h2>Maal graan tot bloem</h2>
-                <button type="button" class="btn btn-success" onClick="objWindmill.grind(this)" id="GrindGrain">Vermaal graan!</button>
+                <button type="button" class="btn btn-success" onClick="objWindmill.grind()" id="GrindGrain">Vermaal graan!</button>
                 <div id="GrindTimer"></div>
             </div>
             <div class="container col-sm" id="WindmillController">
@@ -305,9 +306,7 @@
                 <h2>Onderzoek:</h2>
                 <h3>Veredeling graan:</h3>
                 <div id="GrainResearchCost"></div>
-                <div id="GRButton">
-                    <button type="button" class="btn btn-primary" onClick="objFarmland.research();">Start onderzoek</button>
-                </div>
+                <button type="button" class="btn btn-primary" onClick="objFarmland.research();" id="GRButton">Start onderzoek</button>
                 <div id="GrainResearchTimer"></div>
 
                 <div id="MiningResearch-col">

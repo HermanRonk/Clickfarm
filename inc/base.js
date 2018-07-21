@@ -2,6 +2,7 @@ var spend = parseInt(localStorage.getItem('spend')) || 10;
 var made = parseInt(localStorage.getItem('made')) || 0;
 var PriceFactor = 25;
 var debug = parseInt(localStorage.getItem('debug')) || 0;
+var CSStransitionEnd = whichTransitionEvent();
 
 // voorbereiding voor debug mogelijkheden.
 function turnDebug(inputDB) {
@@ -16,8 +17,6 @@ function turnDebug(inputDB) {
     }
 
 };
-
-
 
 // guid vastleggen
 function identUser() {
@@ -55,7 +54,7 @@ function identUser() {
     }
 }
 
-
+// genereer een uniek GUID
 function guid() {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
@@ -108,6 +107,7 @@ window.onload = function () {
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
     showQuickSell(0);
+    turnAutoClose(0);
     turnDebug(0);
     // Initialiseren overige gegevens en display
     showPrice();
@@ -251,7 +251,7 @@ var objMoney = {
         showHistory(description + " " + FixMoney(profitRound));
     },
     init: function () {
-        objMoney.amount = localStorage.getItem('Money') || 2000;
+        objMoney.amount = parseInt(localStorage.getItem('Money')) || 2000;
         objMoney.show();
     }
 };
@@ -305,23 +305,24 @@ var objFarmRobot = {
     robotCost: 5000,
     robotEnergy: 15,
     robotCap: 10,
-    robotTimer: 10,
+    robotTimer: 0,
     activeRobots: 0,
+    activeFields: 0,
     add: function () {
-        if (+objMoney.amount > +objFarmRobot.robotCost) {
+        if (+objMoney.amount >= +objFarmRobot.robotCost) {
             objMoney.use(objFarmRobot.robotCost);
             objFarmRobot.robots = +objFarmRobot.robots + 1;
             if ((+objFarmRobot.robotCap * +objFarmRobot.robots) >= objFarmland.amount) {
                 objFarmland.automatedAmount = objFarmland.amount;
             } else {
                 objFarmland.automatedAmount = +objFarmRobot.robotCap * +objFarmRobot.robots;
-            };
+            }
             localStorage.setItem('FarmRobots', objFarmRobot.robots);
             localStorage.setItem('AutomatedFarms', objFarmland.automatedAmount);
             objFarmRobot.show();
-            if (+objFarmRobot.robots == 1) {
+            if (objFarmRobot.robots === 1) {
                 objFarmRobot.work();
-            };
+            }
             objEnergy.show();
         } else {
             notificationOverlay("Niet genoeg doekoe!", "Farmrobot", "fa-euro-sign");
@@ -335,7 +336,7 @@ var objFarmRobot = {
                 objFarmland.automatedAmount = objFarmland.amount;
             } else {
                 objFarmland.automatedAmount = +objFarmRobot.robotCap * +objFarmRobot.robots;
-            };
+            }
             localStorage.setItem('FarmRobots', objFarmRobot.robots);
             localStorage.setItem('AutomatedFarms', objFarmland.automatedAmount);
             objFarmRobot.show();
@@ -346,35 +347,33 @@ var objFarmRobot = {
         document.getElementById("RobotTimer").innerHTML = "De oogst is klaar over: " + objFarmRobot.robotTimer + " Seconden";
     },
     work: function () {
-        if (objFarmRobot.amount == 0) {
-            return 0;
-        };
-        var tempEnergy = +objEnergy.available;
-        objFarmRobot.activeRobots = Math.floor(+tempEnergy / +objFarmRobot.robotEnergy);
-        if (+objFarmRobot.activeRobots > +objFarmRobot.robots) {
-            objFarmRobot.activeRobots = +objFarmRobot.robots;
-        };
-        var robotEnergyUsage = +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy;
-        objEnergy.use(+robotEnergyUsage, "Farmrobot");
-        if ((+objFarmRobot.activeRobots * +objFarmRobot.robotCap) > +objFarmland.amount) {
-            var activeFields = +objFarmland.amount;
-        } else {
-            var activeFields = +objFarmRobot.activeRobots * +objFarmRobot.robotCap;
+        if (objFarmRobot.amount === 0) return 0;
+        let tempEnergy = objEnergy.available;
+        objFarmRobot.activeRobots = Math.floor(tempEnergy / objFarmRobot.robotEnergy);
+        if (objFarmRobot.activeRobots > objFarmRobot.robots) {
+            objFarmRobot.activeRobots = objFarmRobot.robots;
         }
-        var robotLoop = setInterval(
-            function () {
-                objFarmRobot.robotTimer--;
-                objFarmRobot.timerCountdown();
-                if (objFarmRobot.robotTimer < 1) {
-                    clearInterval(robotLoop);
-                    //nog rekening houden met max aan de hand van aanwezige velden.
-                    var production = (+activeFields * +objFarmland.harvest);
-                    objGrainSilo.fill(production);
-                    objGrainSilo.show();
-                    objFarmRobot.robotTimer = 10;
-                    objFarmRobot.work();
-                }
-            }, 1000)
+        if (objFarmRobot.activeRobots === 0) return 0;
+        let robotEnergyUsage = objFarmRobot.activeRobots * objFarmRobot.robotEnergy;
+        objEnergy.use(robotEnergyUsage, "Farmrobot");
+        if ((objFarmRobot.activeRobots * objFarmRobot.robotCap) > objFarmland.amount) {
+            objFarmRobot.activeFields = objFarmland.amount;
+        } else {
+            objFarmRobot.activeFields = objFarmRobot.activeRobots * objFarmRobot.robotCap;
+        }
+
+        objFarmRobot.robotTimer = 10;
+    },
+    work_loop: function () {
+        objFarmRobot.robotTimer--;
+        objFarmRobot.timerCountdown();
+        if (objFarmRobot.robotTimer < 1) {
+            //nog rekening houden met max aan de hand van aanwezige velden.
+            var production = (objFarmRobot.activeFields * +objFarmland.harvest);
+            objGrainSilo.fill(production);
+            objGrainSilo.show();
+            objFarmRobot.work();
+        }
     },
     show: function () {
         document.getElementById("ShowFarmRobot").innerHTML = "<p>Op dit moment zijn er: " + objFarmRobot.robots + " Robots die " +
@@ -384,17 +383,15 @@ var objFarmRobot = {
         objFarmland.manualFarm();
     },
     init: function () {
-        objFarmRobot.robots = localStorage.getItem('FarmRobots') || 0;
+        objFarmRobot.robots = parseInt(localStorage.getItem('FarmRobots')) || 0;
         objFarmRobot.show();
         if ((+objFarmRobot.robotCap * +objFarmRobot.robots) >= objFarmland.amount) {
             objFarmland.automatedAmount = objFarmland.amount;
         } else {
             objFarmland.automatedAmount = +objFarmRobot.robotCap * +objFarmRobot.robots;
-        };
+        }
         objFarmland.manualFarm();
-        if (+objFarmRobot.robots >= 1) {
-            objFarmRobot.work();
-        };
+        if (+objFarmRobot.robots >= 1) objFarmRobot.work();
     }
 };
 
@@ -678,7 +675,10 @@ var objFarmland = {
     cost: 10,
     harvest: 100,
     timer: 10,
+    FarmTimer: 0,
+    FarmAmount: 0,
     GrainResearchCostVar: 5000,
+    GrainResearchTimer: 0,
     GrainResearchDuration: 60,
     GrainResearchProfit: 10,
     GrainResearchLevel: 1,
@@ -690,7 +690,7 @@ var objFarmland = {
                 objFarmland.automatedAmount = objFarmland.amount;
             } else {
                 objFarmland.automatedAmount = +objFarmRobot.robotCap * +objFarmRobot.robots;
-            };
+            }
             objFarmland.manualFarm();
             objFarmland.calcPrice();
             objFarmland.showPrice();
@@ -702,10 +702,15 @@ var objFarmland = {
             document.getElementById("FarmManual").style.display = "none";
         } else {
             document.getElementById("FarmManual").style.display = "block";
-        };
+        }
     },
     timerCountdown: function () {
-        document.getElementById("FarmlandTimer").innerHTML = "De oogst is klaar over: " + FarmTimer + " Seconden";
+        if (this.FarmTimer > 0) {
+            document.getElementById("FarmlandTimer").innerHTML = "De oogst is klaar over: " + this.FarmTimer + " Seconden";
+        } else {
+            document.getElementById("FarmlandTimer").innerHTML = '';
+        }
+
     },
     showPrice: function () {
         document.getElementById("FarmlandPrice").innerHTML = "<p>Kosten landbouwgrond: " + FixMoney(objFarmland.cost) + "</p>";
@@ -722,55 +727,74 @@ var objFarmland = {
         localStorage.setItem('Farmland', objFarmland.amount);
         objFarmland.manualFarm();
     },
-    work: function (Button) {
-        FarmTimer = objFarmland.timer;
-        var WorkingAmount = +objFarmland.amount - +objFarmland.automatedAmount;
-        objFarmland.working(WorkingAmount, Button);
+    work: function () {
+        this.FarmTimer = this.timer;
+        objFarmland.timerCountdown();
+        this.FarmAmount = +objFarmland.amount - +objFarmland.automatedAmount;
+        document.getElementById('farmlandWorkBTN').disabled = true;
     },
-    working: function (FarmAmount, button) {
-        //button disable
-        button.disabled = true;
-        var farmLoop = setInterval(
-            function () {
-                FarmTimer--;
-                objFarmland.timerCountdown();
-                if (FarmTimer < 1) {
-                    clearInterval(farmLoop);
-                    var filling = +FarmAmount * +objFarmland.harvest;
-                    objGrainSilo.fill(filling);
-                    //button enable
-                    button.disabled = false;
-                }
-            }, 1000)
+    working_loop: function() {
+        this.FarmTimer--;
+        objFarmland.timerCountdown();
+        if (this.FarmTimer < 1) {
+            var filling = +this.FarmAmount * +objFarmland.harvest;
+            objGrainSilo.fill(filling);
+
+            //button enable
+            document.getElementById('farmlandWorkBTN').disabled = false;
+        }
     },
     research: function () {
-        if (+objMoney.amount >= +objFarmland.GrainResearchCostVar) {
-            StartGrainResearch(objFarmland.GrainResearchDuration, objFarmland.GrainResearchCostVar, objFarmland.GrainResearchProfit);
-
+        if (+objMoney.amount >= objFarmland.GrainResearchCostVar) {
+            document.getElementById("GRButton").disabled = true;
+            objMoney.use(objFarmland.GrainResearchCostVar);
+            objFarmland.GrainResearchTimer = objFarmland.GrainResearchDuration;
+            localStorage.setItem('GrainResearchTimerCount', objFarmland.GrainResearchTimer);
         } else {
             notificationOverlay("Niet genoeg doekoe!", "Graanveredeling", "fa-euro-sign");
         }
     },
-    showResearch: function () {
-        if (localStorage.getItem("GrainResearchTimerCount") > 0) {
-            var timerStand = localStorage.getItem("GrainResearchTimerCount");
-            document.getElementById("GRButton").style.display = "none";
-            StartGrainResearch(+timerStand, 0, objFarmland.GrainResearchProfit);
+    research_loop: function () {
+        objFarmland.GrainResearchTimer--;
+        localStorage.setItem('GrainResearchTimerCount', objFarmland.GrainResearchTimer);
+        document.getElementById("GrainResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objFarmland.GrainResearchTimer) + " Seconden</p>";
+        if (objFarmland.GrainResearchTimer < 1) {
+            objFarmland.harvest = Math.round((objFarmland.harvest * (1 + (objFarmland.GrainResearchProfit / 100))) * 100) / 100;
+            objFarmland.GrainResearchDuration = Math.round(objFarmland.GrainResearchDuration * 1.1);
+            objFarmland.GrainResearchCostVar = Math.round(objFarmland.GrainResearchCostVar * 1.1);
+            objFarmland.GrainResearchProfit = Math.round((objFarmland.GrainResearchProfit * 0.99) * 100) / 100;
+            objFarmland.GrainResearchLevel++;
+            localStorage.setItem('GrainResearchLevel', objFarmland.GrainResearchLevel);
+            localStorage.setItem('GrainResearchProfit', objFarmland.GrainResearchProfit);
+            localStorage.setItem('GrainResearchCostVar', objFarmland.GrainResearchCostVar);
+            localStorage.setItem('GrainResearchDuration', objFarmland.GrainResearchDuration);
+            objFarmland.showResearch();
+            objFarmRobot.show();
+            objFarmland.showPrice();
+            document.getElementById("GrainResearchTimer").innerHTML = "";
+            //button enable
+            document.getElementById("GRButton").disabled = false;
         }
-
+    },
+    showResearch: function () {
         document.getElementById("GrainResearchCost").innerHTML = "<p>Het onderzoek zal: " + objFarmland.GrainResearchDuration + " seconden duren en kost: " +
             FixMoney(objFarmland.GrainResearchCostVar) + "</p><p>Opbrengstverbetering: " + objFarmland.GrainResearchProfit + "% (voor deze upgrade)</p><p>Je bent nu op research level: " +
             objFarmland.GrainResearchLevel + "</p>";
     },
     init: function () {
-        objFarmland.amount = localStorage.getItem('Farmland') || 1;
-        objFarmland.cost = localStorage.getItem('FarmlandCost') || 10;
-        objFarmland.harvest = localStorage.getItem('Harvest') || 100;
-        objFarmland.GrainResearchCostVar = localStorage.getItem("GrainResearchCostVar") || 5000;
-        objFarmland.GrainResearchDuration = localStorage.getItem("GrainResearchDuration") || 60;
-        objFarmland.GrainResearchProfit = localStorage.getItem('GrainResearchProfit') || 10;
-        objFarmland.automatedAmount = localStorage.getItem("AutomatedFarms") || 0;
-        objFarmland.GrainResearchLevel = localStorage.getItem("GrainResearchLevel") || 1;
+        objFarmland.amount = parseInt(localStorage.getItem('Farmland')) || 1;
+        objFarmland.cost = parseInt(localStorage.getItem('FarmlandCost')) || 10;
+        objFarmland.harvest = parseInt(localStorage.getItem('Harvest')) || 100;
+        objFarmland.GrainResearchCostVar = parseInt(localStorage.getItem("GrainResearchCostVar")) || 5000;
+        objFarmland.GrainResearchDuration = parseInt(localStorage.getItem("GrainResearchDuration")) || 60;
+        objFarmland.GrainResearchProfit = parseInt(localStorage.getItem('GrainResearchProfit')) || 10;
+        objFarmland.automatedAmount = parseInt(localStorage.getItem("AutomatedFarms")) || 0;
+        objFarmland.GrainResearchLevel = parseInt(localStorage.getItem("GrainResearchLevel")) || 1;
+        objFarmland.GrainResearchTimer = parseInt(localStorage.getItem("GrainResearchTimerCount"));
+        if (objFarmland.GrainResearchTimer > 0) {
+            document.getElementById("GRButton").disabled = true;
+            document.getElementById("GrainResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objFarmland.GrainResearchTimer) + " Seconden</p>";
+        }
         objFarmland.showFarms();
         objFarmland.showPrice();
         objFarmland.showResearch();
@@ -796,10 +820,11 @@ var objWindmill = {
     speed: 1,
     cap: 1000,
     running: 0,
-    grindTimer: 10,
-    autoGrindTimer: 9,
+    GrindTimer: 0,
+    GrindAmount: 0,
+    autoGrindTimer: 0,
     add: function () {
-        if (+objMoney.amount > +objWindmill.cost) {
+        if (+objMoney.amount > objWindmill.cost) {
             objMoney.use(objWindmill.cost);
             objWindmill.amount++;
             objFarmland.showPrice();
@@ -807,171 +832,173 @@ var objWindmill = {
             localStorage.setItem('WindmillAmount', objWindmill.amount);
         }
     },
-    grind: function (button) {
-        button.disabled = true;
-        objWindmill.nonAutomatedWindmills = +objWindmill.amount - +objWindmill.amountAutomated;
-        if (objWindmill.nonAutomatedWindmills == 0) {
-            button.disabled = false;
+    grind_buttonstate: function () {
+        let bDisabled = false;
+
+        if ( (objWindmill.amountAutomated === objWindmill.amount) && (objWindmill.autoGrindTimer > 0) ) bDisabled = true;
+        if (objWindmill.GrindTimer > 0) bDisabled = true;
+
+        document.getElementById('GrindGrain').disabled = bDisabled;
+    },
+    grind: function () {
+        objWindmill.nonAutomatedWindmills = objWindmill.amount - objWindmill.amountAutomated;
+        if (objWindmill.nonAutomatedWindmills === 0) {
+            notificationOverlay("Geen windmolens beschikbaar", "Windmolens", "fa-tree");
             return 0;
         }
-        if (+objGrainSilo.contents == 0) {
-            button.disabled = false;
+        if (+objGrainSilo.contents === 0) {
             notificationOverlay("Geen graan beschikbaar", "Windmolens", "fa-tree");
             return 0;
         }
-        if (+objGrainSilo.contents <= (+objWindmill.cap * +objWindmill.nonAutomatedWindmills)) {
-            var tempAmount = +objGrainSilo.contents;
-        } else {
-            var tempAmount = (+objWindmill.cap * +objWindmill.nonAutomatedWindmills);
-        }
-        objGrainSilo.use(+tempAmount);
-        objGrainSilo.show();
-        var grindLoop = setInterval(
-            function () {
-                +objWindmill.grindTimer--;
-                objWindmill.grindTimerCountdown();
-                objFlourSilo.fill((+tempAmount / 10));
-                if (objWindmill.grindTimer < 1) {
-                    clearInterval(grindLoop);
 
-                    button.disabled = false;
-                    objWindmill.grindTimer = 10;
-                }
-            }, 1000)
+        // Start grinding
+        if (+objGrainSilo.contents <= (objWindmill.cap * objWindmill.nonAutomatedWindmills)) {
+            this.GrindAmount = objGrainSilo.contents;
+        } else {
+            this.GrindAmount = (objWindmill.cap * objWindmill.nonAutomatedWindmills);
+        }
+        objGrainSilo.use(this.GrindAmount);
+        objGrainSilo.show();
+
+        objWindmill.GrindTimer = 10;
+        objWindmill.grind_buttonstate();
+        objWindmill.grindTimerCountdown();
+    },
+    grind_loop: function ()
+    {
+        objWindmill.GrindTimer--;
+        objWindmill.grindTimerCountdown();
+        objFlourSilo.fill((this.GrindAmount / 10));
+        if (objWindmill.GrindTimer < 1) objWindmill.grind_buttonstate();
     },
     tempAmountAuto: 0,
     autogrind: function () {
         objWindmill.running = 1;
         objWindmill.tempAmountAuto = 0;
-        var buttonState = document.getElementById("GrindGrain");
 
         // controleren of er graan is
-        if (objGrainSilo.contents == 0) {
+        if (objGrainSilo.contents === 0) {
             objWindmill.running = 0;
             return 0;
         }
 
         // Bepalen hoeveel geautomatiseerde molens we kunnen draaien
-        if (+objEnergy.available < ((+objWindmillController.amount * +objWindmillController.energy) / 10)) {
-            objWindmill.amountAutomated = Math.floor(+objEnergy.available / ((+objWindmillController.amount * +objWindmillController.energy) / 10));
-            if (objWindmill.amountAutomated == 0) {
+        if (+objEnergy.available < ((objWindmillController.amount * objWindmillController.energy) / 10)) {
+            objWindmill.amountAutomated = Math.floor(objEnergy.available / ((objWindmillController.amount * objWindmillController.energy) / 10));
+            if (objWindmill.amountAutomated === 0) {
                 objWindmill.running = 0;
                 return 0;
             }
         } else {
-            if (+objWindmill.amount > +objWindmillController.amount) {
-                objWindmill.amountAutomated = +objWindmillController.amount;
-                if (buttonState.classList.contains("disabled")) {
-                    buttonState.classList.remove("disabled");
-                }
-
+            if (objWindmill.amount > objWindmillController.amount) {
+                objWindmill.amountAutomated = objWindmillController.amount;
             } else {
-                objWindmill.amountAutomated = +objWindmill.amount;
-                buttonState.classList.add("disabled");
+                objWindmill.amountAutomated = objWindmill.amount;
             }
-            if (objWindmill.amountAutomated == 0) {
-                objWindmill.running = 0;
-                return 0;
-            }
-        };
-
-        // bepalen hoeveel graan we gaan gebruiken
-        if (+objGrainSilo.contents <= (+objWindmill.cap * +objWindmill.amountAutomated)) {
-            objWindmill.tempAmountAuto = +objGrainSilo.contents;
-        } else {
-            objWindmill.tempAmountAuto = (+objWindmill.cap * +objWindmill.amountAutomated);
-            if (objWindmill.tempAmountAuto == 0) {
+            if (objWindmill.amountAutomated === 0) {
                 objWindmill.running = 0;
                 return 0;
             }
         }
 
-        // Bepalen definitieve energiebehoefte
+        // bepalen hoeveel graan we gaan gebruiken
+        if (objGrainSilo.contents <= (objWindmill.cap * objWindmill.amountAutomated)) {
+            objWindmill.tempAmountAuto = objGrainSilo.contents;
+        } else {
+            objWindmill.tempAmountAuto = (objWindmill.cap * objWindmill.amountAutomated);
+            if (objWindmill.tempAmountAuto === 0) {
+                objWindmill.running = 0;
+                return 0;
+            }
+        }
 
-        var energyNeeded = +objWindmill.amountAutomated * +objWindmillController.energy;
+        // Start grinding
+        objWindmill.autoGrindTimer = 10;
+        objWindmill.grind_buttonstate();
+    },
+    autogrind_loop: function () {
+        let energyNeeded = objWindmill.amountAutomated * objWindmillController.energy;
+        if (objGrainSilo.use((objWindmill.tempAmountAuto / 10)) !== (objWindmill.tempAmountAuto / 10)) {
+            objWindmill.running = 0;
+            objWindmill.tempAmountAuto = 0;
+            objWindmill.autoGrindTimer = 0;
+            objWindmill.grind_buttonstate();
+            objWindmill.autoGrindTimerCountdown();
+            return 0;
+        }
 
-        //start loop
-        var grindLoop = setInterval(
-            function () {
-                var energyNeeded = +objWindmill.amountAutomated * +objWindmillController.energy;
-                if (objGrainSilo.use((+objWindmill.tempAmountAuto / 10)) != (+objWindmill.tempAmountAuto / 10)) {
-                    objWindmill.autoGrindTimer = 10;
-                    objWindmill.running = 0;
-                    objWindmill.tempAmountAuto = 0;
-                    objWindmill.autoGrindTimerCountdown();
-                    clearInterval(grindLoop);
-                    return 0;
-                };
-
-                if (objEnergy.use((energyNeeded / 10), "Windmolencontrollers") != (energyNeeded / 10)) {
-                    objWindmill.autoGrindTimer = 10;
-                    objWindmill.running = 0;
-                    objWindmill.tempAmountAuto = 0;
-                    objWindmill.autoGrindTimerCountdown();
-                    clearInterval(grindLoop);
-                    return 0;
-                }
-                objGrainSilo.show();
-                +objWindmill.autoGrindTimer--;
-                objFlourSilo.fill((+objWindmill.tempAmountAuto / 10));
-                objWindmill.autoGrindTimerCountdown();
-                if (objWindmill.autoGrindTimer < 1) {
-                    objWindmill.autoGrindTimer = 10;
-                    objWindmill.running = 0;
-                    objWindmill.tempAmountAuto = 0;
-                    clearInterval(grindLoop);
-                }
-            }, 1000)
+        if (objEnergy.use((energyNeeded / 10), "Windmolencontrollers") !== (energyNeeded / 10)) {
+            objWindmill.running = 0;
+            objWindmill.tempAmountAuto = 0;
+            objWindmill.autoGrindTimer = 0;
+            objWindmill.grind_buttonstate();
+            objWindmill.autoGrindTimerCountdown();
+            return 0;
+        }
+        objGrainSilo.show();
+        objWindmill.autoGrindTimer--;
+        objWindmill.autoGrindTimerCountdown();
+        objFlourSilo.fill((objWindmill.tempAmountAuto / 10));
+        if (objWindmill.autoGrindTimer < 1) {
+            objWindmill.autoGrindTimer = 0;
+            objWindmill.running = 0;
+            objWindmill.tempAmountAuto = 0;
+            objWindmill.grind_buttonstate();
+        }
     },
     grindTimerCountdown: function () {
-        document.getElementById("GrindTimer").innerHTML = "De molen is klaar over: " + objWindmill.grindTimer + " Seconden";
+        if (objWindmill.GrindTimer > 0) {
+            document.getElementById("GrindTimer").innerHTML = "De molen is klaar over: " + objWindmill.GrindTimer + " Seconden";
+        } else
+        {
+            document.getElementById("GrindTimer").innerHTML = '';
+        }
     },
     autoGrindTimerCountdown: function () {
-        document.getElementById("AutoGrindTimer").innerHTML = "De geautomatiseerde molens zijn klaar over: " + objWindmill.autoGrindTimer + " Seconden";
+        if (objWindmill.autoGrindTimer > 0) {
+            document.getElementById("AutoGrindTimer").innerHTML = "De geautomatiseerde molens zijn klaar over: " + objWindmill.autoGrindTimer + " Seconden";
+        } else
+        {
+            document.getElementById("AutoGrindTimer").innerHTML = '';
+        }
     },
     show: function () {
         document.getElementById("WindmillCost").innerHTML = "<p>Een windmolen kost: " + FixMoney(objWindmill.cost) + "  en kan " + FixNumber(objWindmill.cap) + "kg per run vermalen</p>";
         document.getElementById("Windmills").innerHTML = "<p>Hoeveelheid windmolens: " + FixNumber(objWindmill.amount) + "</p>";
-        document.getElementById("WindmillCap").innerHTML = "<p>Maalcapaciteit per run: " + FixNumber((+objWindmill.amount * +objWindmill.cap)) + "kg</p>";
+        document.getElementById("WindmillCap").innerHTML = "<p>Maalcapaciteit per run: " + FixNumber((objWindmill.amount * objWindmill.cap)) + "kg</p>";
 
     },
     init: function () {
-        objWindmill.amount = localStorage.getItem('WindmillAmount') || 1;
-        objWindmill.amountAutomated = localStorage.getItem('WindmillAutomated') || 0;
-        if (objWindmillController.amount >= 1) {
-            objWindmill.autogrind();
-        }
+        objWindmill.amount = parseInt(localStorage.getItem('WindmillAmount')) || 1;
+        objWindmill.amountAutomated = parseInt(localStorage.getItem('WindmillAutomated')) || 0;
+        if (objWindmillController.amount >= 1) objWindmill.autogrind();
         objWindmill.show();
     }
-}
+};
 
 // Windmill controller object
-
 var objWindmillController = {
     amount: 0,
     price: 10000,
     energy: 80,
     cap: 1,
     add: function () {
-        if (+objMoney.amount > +objWindmillController.price) {
+        if (+objMoney.amount > objWindmillController.price) {
             objMoney.use(objWindmillController.price);
             objWindmillController.amount++;
-            objWindmill.amountAutomated = +objWindmillController.amount * +objWindmillController.cap;
+            objWindmill.amountAutomated = objWindmillController.amount * objWindmillController.cap;
             localStorage.setItem('WindmillAutomated', objWindmill.amountAutomated);
             localStorage.setItem('WindmillControllerAmount', objWindmillController.amount);
             objWindmillController.show();
-            if (objWindmillController.amount == 1 && objWindmill.running == 0) {
-                objWindmill.autoGrindTimer = 10;
-                objWindmill.autogrind();
-            }
+            if (objWindmillController.amount === 1 && objWindmill.running === 0) objWindmill.autogrind();
         }
     },
     sell: function () {
-        if (+objWindmillController.amount > 0) {
+        if (objWindmillController.amount > 0) {
             objWindmillController.amount--;
-            var SellWMCProfit = +objWindmillController.price * 0.75;
+            var SellWMCProfit = objWindmillController.price * 0.75;
             objMoney.add(SellWMCProfit, "Verkoop windmolencontroller", 3, 1);
-            objWindmill.amountAutomated = +objWindmillController.amount * +objWindmillController.cap;
+            objWindmill.amountAutomated = objWindmillController.amount * objWindmillController.cap;
             localStorage.setItem('WindmillAutomated', objWindmill.amountAutomated);
             localStorage.setItem('WindmillControllerAmount', objWindmillController.amount);
             objWindmillController.show()
@@ -981,9 +1008,9 @@ var objWindmillController = {
     },
     show: function () {
         document.getElementById("WindmillControllerInfo").innerHTML = "<p>Een windmolencontroller kan " + FixNumber(objWindmillController.cap) + " windmolen(s) aansturen. </p><p>Er zijn op dit moment " +
-            FixNumber(objWindmillController.amount) + " controllers actief die samen een energieverbruik hebben van: " + FixNumber((+objWindmillController.amount * +objWindmillController.energy) / 10) + " units per tick";
+            FixNumber(objWindmillController.amount) + " controllers actief die samen een energieverbruik hebben van: " + FixNumber((objWindmillController.amount * objWindmillController.energy) / 10) + " units per tick";
         document.getElementById("WindmillControllerCost").innerHTML = "Een windmolencontroller kost: " + FixMoney(objWindmillController.price);
-        document.getElementById("SellWindmillController").innerHTML = "<p>Verkoop een controller voor: " + FixMoney((+objWindmillController.price * 0.75)) + "</p>";
+        document.getElementById("SellWindmillController").innerHTML = "<p>Verkoop een controller voor: " + FixMoney((objWindmillController.price * 0.75)) + "</p>";
     },
     init: function () {
         objWindmillController.amount = localStorage.getItem('WindmillControllerAmount') || 0;
@@ -1212,7 +1239,7 @@ var objEnergy = {
             (+objPlasticFactory.activeFactories * +objPlasticFactory.oilNeededProduction)) + "</p>";
         document.getElementById("CurrentEnergyUsage").innerHTML = "<p>De huidige piekenergievraag: " +
             FixNumber((+objOilPump.amount + (+objFarmRobot.activeRobots * +objFarmRobot.robotEnergy) +
-                ((+objWindmillController.amount * +objWindmillController.energy) / 10) +
+                ((objWindmillController.amount * objWindmillController.energy) / 10) +
                 ((+objMines.coalAmountActive * +objCoalMine.energy)) +
                 ((+objMines.uraniumAmountActive * +objUraniumMine.energy)) +
                 ((+objOilPumpAdv.amount * +objOilPumpAdv.energy)) +
@@ -1652,38 +1679,6 @@ var objStorehouse = {
     }
 }
 
-
-// Functies ten behoeve van Productie knoppen
-function StartGrainResearch(Researchtimer, ResearchCost, ResearchProfit) {
-    document.getElementById("GRButton").style.display = "none";
-    objMoney.use(ResearchCost);
-    var ResearchLoop = setInterval(
-        function () {
-
-            Researchtimer--;
-            localStorage.setItem('GrainResearchTimerCount', +Researchtimer);
-            document.getElementById("GrainResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (Researchtimer) + " Seconden</p>";
-            if (Researchtimer < 1) {
-                clearInterval(ResearchLoop);
-                objFarmland.harvest = Math.round((+objFarmland.harvest * (1 + (+ResearchProfit / 100))) * 100) / 100;
-                objFarmland.GrainResearchDuration = Math.round(+objFarmland.GrainResearchDuration * 1.1);
-                objFarmland.GrainResearchCostVar = Math.round(+objFarmland.GrainResearchCostVar * 1.1);
-                objFarmland.GrainResearchProfit = Math.round((+objFarmland.GrainResearchProfit * 0.99) * 100) / 100;
-                objFarmland.GrainResearchLevel++;
-                localStorage.setItem('GrainResearchLevel', +objFarmland.GrainResearchLevel);
-                localStorage.setItem('GrainResearchProfit', +objFarmland.GrainResearchProfit);
-                localStorage.setItem('GrainResearchCostVar', +objFarmland.GrainResearchCostVar);
-                localStorage.setItem('GrainResearchDuration', +objFarmland.GrainResearchDuration);
-                objFarmland.showResearch();
-                objFarmRobot.show();
-                objFarmland.showPrice();
-                document.getElementById("GrainResearchTimer").innerHTML = "";
-                //button enable
-                document.getElementById("GRButton").style.display = "";
-            }
-        }, 1000)
-}
-
 // Objecten voor energiecentrales
 var objPowerPlant = {
     amount: 0,
@@ -2009,120 +2004,85 @@ function showPrice() {
 // research voor mijnbouw
 var objResearch = {
     level: 1,
-    cost: 5000000,
-    t1: 180,
-    t2: 360,
-    t3: 720,
+    research_tree: [
+        { time: 180, cost: 5000000, phase : 'eerste', description : 'Je leert de basiskennis over mijnbouw!'},
+        { time: 360, cost: 5000000, phase : 'tweede', description : 'Je leert alles over prospecting!'},
+        { time: 720, cost: 5000000, phase : 'derde', description : 'Je leert alles over het werkelijk openen van een mijn!'}, ],
     running: 0,
     timer: 0,
-    description: function () {
-        switch (+objResearch.level) {
-            case 1:
-                return "Je leert de basiskennis over mijnbouw!";
-                break;
-            case 2:
-                return "Je leert alles over prospecting!";
-                break;
-            case 3:
-                return "Je leert alles over het werkelijk openen van een mijn!";
-                break;
-        }
-    },
     doResearch: function (button) {
-        if (objResearch.running != 1) {
-            switch (+objResearch.level) {
-                case 1:
-                    objResearch.timer = +objResearch.t1;
-                    break;
-                case 2:
-                    objResearch.timer = +objResearch.t2;
-                    break;
-                case 3:
-                    objResearch.timer = +objResearch.t3;
-                    break;
-                case 4:
-                    document.getElementById("MiningResearch").disabled = true;
-                    return 0;
-                    break;
-            };
+        if (objResearch.running !== 1) {
+            if (objResearch.level <= objResearch.research_tree.length ) {
+                objResearch.timer = objResearch.research_tree[objResearch.level-1].time;
+            } else {
+                document.getElementById("MiningResearch").disabled = true;
+                return 0;
+            }
 
-            if (+objMoney.amount < +objResearch.cost) {
+            if (objMoney.amount < objResearch.research_tree[objResearch.level-1].cost) {
                 notificationOverlay("Niet genoeg doekoe!", "Mijnbouw onderzoek", "fa-euro-sign");
                 return 0;
-            };
-            objMoney.use(+objResearch.cost);
+            }
+
+            objMoney.use(objResearch.research_tree[objResearch.level-1].cost);
 
         }
         document.getElementById("MiningResearch").disabled = true;
         objResearch.running = 1;
-        localStorage.setItem('Rrunning', +objResearch.running)
+        localStorage.setItem('Rrunning', objResearch.running);
         document.getElementById("ResearchTimer").style.display = "";
-        var ResearchLoop = setInterval(
-            function () {
-                +objResearch.timer--;
-                localStorage.setItem("rTimer", +objResearch.timer)
-                document.getElementById("ResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objResearch.timer) + " Seconden</p>";
-                if (objResearch.timer < 1 && objResearch.running == 1) {
-                    objResearch.level++;
-                    localStorage.setItem('Rlevel', objResearch.level)
-                    document.getElementById("MiningResearch").disabled = false;
-                    objResearch.show();
-                    objResearch.running = 0;
-                    localStorage.setItem("rTimer", objResearch.timer)
-                    localStorage.setItem('Rrunning', objResearch.running)
-                    document.getElementById("ResearchTimer").style.display = "none";
-                    clearInterval(ResearchLoop);
-                }
-            }, 1000)
+    },
+    Research_loop: function () {
+        objResearch.timer--;
+        localStorage.setItem("rTimer", objResearch.timer);
+        document.getElementById("ResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objResearch.timer) + " Seconden</p>";
+        if (objResearch.timer < 1 && objResearch.running === 1) {
+            objResearch.level++;
+            localStorage.setItem('Rlevel', objResearch.level);
+            document.getElementById("MiningResearch").disabled = false;
+            objResearch.show();
+            objResearch.running = 0;
+            localStorage.setItem("rTimer", objResearch.timer);
+            localStorage.setItem('Rrunning', objResearch.running);
+            document.getElementById("ResearchTimer").style.display = "none";
+        }
     },
     show: function () {
-        switch (+objResearch.level) {
-            case 1:
-                document.getElementById("ResDesc").innerHTML = "<p>De eerste fase in het onderzoek naar mijnbouw kost: " + FixMoney(objResearch.cost) +
-                    " en zal " + FixNumber(objResearch.t1) + " seconden duren. " + objResearch.description() + "</p>";
-                break;
-            case 2:
-                document.getElementById("ResDesc").innerHTML = "<p>De tweede fase in het onderzoek naar mijnbouw kost: " + FixMoney(objResearch.cost) +
-                    " en zal " + FixNumber(objResearch.t2) + " seconden duren. " + objResearch.description() + "</p>";
-                break;
-            case 3:
-                document.getElementById("ResDesc").innerHTML = "<p>De derde fase in het onderzoek naar mijnbouw kost: " + FixMoney(objResearch.cost) +
-                    " en zal " + FixNumber(objResearch.t3) + " seconden duren. " + objResearch.description() + "</p>";
-                break;
-            case 4:
-                document.getElementById("ResDesc").innerHTML = "<p>Je bent helemaal klaar voor het volgende level, succes met het vinden van een goed mijngebied! " +
-                    "Je hebt al onderzocht: Mijnbouw algemeen, prospecting en het daadwerkelijk openen van een mijn.</p>";
-                document.getElementById("MiningResearch").disabled = true;
-                document.getElementById("ResearchTimer").style.display = "none";
-                break;
-            default:
-                break;
+        if (objResearch.level <= objResearch.research_tree.length ) {
+            document.getElementById("ResDesc").innerHTML = '<p>De ' + objResearch.research_tree[objResearch.level-1].phase + ' fase in het onderzoek naar mijnbouw kost: ' + FixMoney(objResearch.research_tree[objResearch.level-1].cost) +
+                ' en zal ' + FixNumber(objResearch.research_tree[objResearch.level-1].time) + ' seconden duren. ' + objResearch.research_tree[objResearch.level-1].description + '</p>';
+        } else {
+            document.getElementById("ResDesc").innerHTML = "<p>Je bent helemaal klaar met de research; succes met het vinden van een goed mijngebied! " +
+                "Je hebt al onderzocht: Mijnbouw algemeen, prospecting en het daadwerkelijk openen van een mijn.</p>";
+            document.getElementById("MiningResearch").disabled = true;
+            document.getElementById("ResearchTimer").style.display = "none";
         }
+
         if (+objPlayerInfo.level < 8) {
             document.getElementById("MiningLevel").innerHTML = "<p> Vanaf level 8 mag je dit onderzoek starten!</p>";
 
             document.getElementById("MiningResearch").disabled = true;
         } else {
             // document.getElementById("MiningLevel").style.display = "none";
-            if (objResearch.running == 0) {
+            if (objResearch.running === 0) {
                 document.getElementById("MiningResearch").disabled = false;
             }
 
-        };
-        // weergeven beschikbare opties in de minging row
+        }
+        // weergeven beschikbare opties in de mining row
         objMines.showProspecting();
         objMines.showMining();
     },
     init: function () {
-        objResearch.timer = localStorage.getItem('rTimer') || 100;
-        objResearch.level = localStorage.getItem('Rlevel') || 1;
-        objResearch.running = localStorage.getItem('Rrunning') || 0;
+        objResearch.level = parseInt(localStorage.getItem('Rlevel')) || 1;
+        objResearch.running = parseInt(localStorage.getItem('Rrunning')) || 0;
         objResearch.show();
         if (+objPlayerInfo.level > 7) {
-            if (+objResearch.running == 1) {
-                objResearch.timer = localStorage.getItem('rTimer');
+            if (+objResearch.running === 1) {
+                objResearch.timer = parseInt(localStorage.getItem('rTimer'));
+                console.log(objResearch.timer);
+                document.getElementById("ResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objResearch.timer) + " Seconden</p>";
                 document.getElementById("MiningResearch").disabled = true;
-                objResearch.doResearch();
             }
             if (objResearch.level > 3) {
                 document.getElementById("MiningResearch").disabled = true;
@@ -2155,21 +2115,21 @@ var objMines = {
     diamondMineCost: 600000000,
     prospectCost: 50000000,
     prospectTimer: 15,
-    prospectTimerActive: 15,
+    prospectTimerActive: 0,
     prospecting: 0,
     priceFactor: 1.01,
     items: [1, 2, 3, 4, 5, 6],
     weight: ['20', '35', '15', '20', '5', '5'],
     prospect: function () {
         // Eerst bepalen of er al een prospecting actie liep
-        if (+objMines.prospecting != 1) {
+        if (+objMines.prospecting !== 1) {
             if (+objMoney.amount < +objMines.prospectCost) {
                 notificationOverlay("Niet genoeg doekoe!", "Prospecting", "fa-euro-sign");
                 return 0;
             } else {
                 objMoney.use(+objMines.prospectCost);
-            };
-            objMines.prospectTimerActive = parseInt(+objMines.prospectTimer);
+            }
+            objMines.prospectTimerActive = parseInt(objMines.prospectTimer);
             objMines.prospecting = 1;
         }
         document.getElementById("ProspectingButton").disabled = true;
@@ -2177,64 +2137,60 @@ var objMines = {
 
         localStorage.setItem('prospecting', objMines.prospecting);
         document.getElementById("ProspectingProgress").style.display = "";
-        var ProspectLoop = setInterval(
-            function () {
-                objMines.prospectTimerActive--;
-                localStorage.setItem("pTimer", +objMines.prospectTimerActive);
-                document.getElementById("ProspectingProgress").innerHTML = "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
-                    objMines.prospectTimerActive + " Seconden</p>";
-                if (objMines.prospectTimerActive < 1) {
-                    //bepalen welke resource er gevonden wordt: (geinspireerd door: http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
+    },
+    prospect_loop: function() {
+        objMines.prospectTimerActive--;
+        localStorage.setItem("pTimer", objMines.prospectTimerActive);
+        document.getElementById("ProspectingProgress").innerHTML = "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
+            objMines.prospectTimerActive + " Seconden</p>";
+        if (objMines.prospectTimerActive < 1) {
+            //bepalen welke resource er gevonden wordt: (geinspireerd door: http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
 
-                    var weighed_list = generateWeighedList(objMines.items, objMines.weight);
-                    var random_num = randomSelect(0, weighed_list.length - 1);
-                    var selectedItem = parseInt(weighed_list[random_num]);
+            let weighed_list = generateWeighedList(objMines.items, objMines.weight);
+            let random_num = randomSelect(0, weighed_list.length - 1);
+            let selectedItem = parseInt(weighed_list[random_num]);
 
-                    //verwerken resultaat
-                    switch (selectedItem) {
-                        case 1:
-                            objMines.ironAmountProspected++;
-                            localStorage.setItem('ironAmountProspected', objMines.ironAmountProspected);
-                            selectedItem = "Ijzer";
-                            break;
-                        case 2:
-                            objMines.coalAmountProspected++;
-                            localStorage.setItem('coalAmountProspected', objMines.coalAmountProspected);
-                            selectedItem = "Steenkool";
-                            break;
-                        case 3:
-                            objMines.uraniumAmountProspected++;
-                            localStorage.setItem('uraniumAmountProspected', objMines.uraniumAmountProspected);
-                            selectedItem = "Uranium";
-                            break;
-                        case 4:
-                            objMines.copperAmountProspected++;
-                            localStorage.setItem('copperAmountProspected', objMines.copperAmountProspected);
-                            selectedItem = "Koper";
-                            break;
-                        case 5:
-                            objMines.goldAmountProspected++;
-                            localStorage.setItem('goldAmountProspected', objMines.goldAmountProspected);
-                            selectedItem = "Goud";
-                            break;
-                        case 6:
-                            objMines.diamondAmountProspected++;
-                            localStorage.setItem('diamondAmountProspected', objMines.diamondAmountProspected);
-                            selectedItem = "Diamant";
-                            break;
-                    };
-                    objMines.prospecting = 0;
-                    localStorage.setItem('prospecting', objMines.prospecting);
-                    document.getElementById("ProspectingProgress").style.display = "none";
-                    document.getElementById("ProspectingButton").disabled = false;
-                    document.getElementById("ProspectingResult").innerHTML = "<p>Laatst gevonden resource: " + selectedItem + "</p>";
-                    objMines.showProspecting();
-                    objMines.showMining();
-                    clearInterval(ProspectLoop);
-                }
-            }, 1000)
-
-
+            //verwerken resultaat
+            switch (selectedItem) {
+                case 1:
+                    objMines.ironAmountProspected++;
+                    localStorage.setItem('ironAmountProspected', objMines.ironAmountProspected);
+                    selectedItem = "Ijzer";
+                    break;
+                case 2:
+                    objMines.coalAmountProspected++;
+                    localStorage.setItem('coalAmountProspected', objMines.coalAmountProspected);
+                    selectedItem = "Steenkool";
+                    break;
+                case 3:
+                    objMines.uraniumAmountProspected++;
+                    localStorage.setItem('uraniumAmountProspected', objMines.uraniumAmountProspected);
+                    selectedItem = "Uranium";
+                    break;
+                case 4:
+                    objMines.copperAmountProspected++;
+                    localStorage.setItem('copperAmountProspected', objMines.copperAmountProspected);
+                    selectedItem = "Koper";
+                    break;
+                case 5:
+                    objMines.goldAmountProspected++;
+                    localStorage.setItem('goldAmountProspected', objMines.goldAmountProspected);
+                    selectedItem = "Goud";
+                    break;
+                case 6:
+                    objMines.diamondAmountProspected++;
+                    localStorage.setItem('diamondAmountProspected', objMines.diamondAmountProspected);
+                    selectedItem = "Diamant";
+                    break;
+            }
+            objMines.prospecting = 0;
+            localStorage.setItem('prospecting', objMines.prospecting);
+            document.getElementById("ProspectingProgress").style.display = "none";
+            document.getElementById("ProspectingButton").disabled = false;
+            document.getElementById("ProspectingResult").innerHTML = "<p>Laatst gevonden resource: " + selectedItem + "</p>";
+            objMines.showProspecting();
+            objMines.showMining();
+        }
     },
     showProspecting: function () {
         if (+objResearch.level > 2) {
@@ -2244,7 +2200,7 @@ var objMines = {
         } else {
             document.getElementById("Prospecting").style.display = "none";
             document.getElementById("minesites").style.display = "none";
-        };
+        }
         document.getElementById("Prospecting").innerHTML = "<p>Zoek hier naar nieuwe gebieden om je mijnen te kunnen openen. De zoektocht duurt: " +
             objMines.prospectTimer + " seconden en hiervoor betaal je: " + FixMoney(+objMines.prospectCost) + "</p>";
         document.getElementById("minesites").innerHTML =
@@ -2273,7 +2229,7 @@ var objMines = {
             if (moneyCheck(objMines[mCost]) == 0 && +amountAdded == 1) {
                 notificationOverlay("Niet genoeg doekoe!", "Mijnbouw", "fa-euro-sign");
                 return 0;
-            };
+            }
 
             if (+amountAdded == 1) {
                 objMines[mActive]++;
@@ -2290,7 +2246,7 @@ var objMines = {
             //Aantal actieve mijnen opslaan in LS en weergeven
             localStorage.setItem(mActive, objMines[mActive]);
             objMines.showAll();
-        };
+        }
         // switch voor bepalen welke mijn er toegevoegd wordt.
         switch (typeMine) {
             case 1:
@@ -2334,7 +2290,7 @@ var objMines = {
             document.getElementById("mijnen-row").style.display = "none";
             document.getElementById("mijnen-row2").style.display = "none";
             document.getElementById("MiningResearch-col").style.display = "";
-        };
+        }
 
         function generateText(htmlfield, typeMine, mineCost, active, mineName, mineCode, mineButton) {
             document.getElementById(htmlfield).innerHTML = "<h2>" + mineName + "en</h2><p>Je hebt in totaal " + FixNumber(objMines[typeMine]) + " " + mineName +
@@ -2344,7 +2300,7 @@ var objMines = {
                 "<button type='button' class='btn btn-primary' onClick='objMines.addMine(" + mineCode + ", 1);' id='" + mineButton + "'>Bouw " + mineName + "</button>" +
                 " <button type='button' class='btn btn-danger' onClick='objMines.addMine(" + mineCode + ", 0);' id='" + mineButton + "'>Verkoop " + mineName + "</button>";
             return 0;
-        };
+        }
 
         generateText("iron-mines", "ironAmountProspected", "ironMineCost", "ironAmountActive", "ijzerertsmijn", 1, "ironMineButton");
         generateText("coal-mines", "coalAmountProspected", "coalMineCost", "coalAmountActive", "steenkoolmijn", 2, "coalMineButton");
@@ -2354,7 +2310,7 @@ var objMines = {
         //generateText("diamond-mines", "diamondAmountProspected", "diamondMineCost","diamondAmountActive", "diamantmijn", 6, "diamondMineButton");
 
         var updateMineButtons = function (mineTypes) {
-            for (var i = 0; i < mineTypes.length; i++) {
+            for (let i = 0; i < mineTypes.length; i++) {
                 var activeMines = mineTypes[i] + "AmountActive";
                 var prospectedMines = mineTypes[i] + "AmountProspected";
                 var buttonMine = mineTypes[i] + "MineButton";
@@ -2364,7 +2320,7 @@ var objMines = {
                     document.getElementById(buttonMine).disabled = false;
                 }
             }
-        }
+        };
 
         //var mineTypes = ["iron","coal","uranium","copper","gold","diamond"];
         var mineTypes = ["iron", "coal", "uranium"];
@@ -2372,29 +2328,31 @@ var objMines = {
 
     },
     init: function () {
-        objMines.ironAmountProspected = localStorage.getItem('ironAmountProspected') || 0;
-        objMines.coalAmountProspected = localStorage.getItem('coalAmountProspected') || 0;
-        objMines.uraniumAmountProspected = localStorage.getItem('uraniumAmountProspected') || 0;
-        objMines.copperAmountProspected = localStorage.getItem('copperAmountProspected') || 0;
-        objMines.goldAmountProspected = localStorage.getItem('goldAmountProspected') || 0;
-        objMines.diamondAmountProspected = localStorage.getItem('diamondAmountProspected') || 0;
-        objMines.ironAmountActive = localStorage.getItem('ironAmountActive') || 0;
-        objMines.coalAmountActive = localStorage.getItem('coalAmountActive') || 0;
-        objMines.uraniumAmountActive = localStorage.getItem('uraniumAmountActive') || 0;
-        objMines.copperAmountActive = localStorage.getItem('copperAmountActive') || 0;
-        objMines.goldAmountActive = localStorage.getItem('goldAmountActive') || 0;
-        objMines.diamondAmountActive = localStorage.getItem('diamondAmountActive') || 0;
-        objMines.ironMineCost = localStorage.getItem('ironMineCost') || 100000000;
-        objMines.coalMineCost = localStorage.getItem('coalMineCost') || 125000000;
-        objMines.uraniumMineCost = localStorage.getItem('uraniumMineCost') || 200000000;
-        objMines.copperMineCost = localStorage.getItem('copperMineCost') || 150000000;
-        objMines.goldMineCost = localStorage.getItem('goldMineCost') || 600000000;
-        objMines.diamondMineCost = localStorage.getItem('diamondMineCost') || 600000000;
-        objMines.prospectTimerActive = localStorage.getItem('pTimer') || 15;
-        objMines.prospecting = localStorage.getItem('prospecting') || 0;
+        objMines.ironAmountProspected = parseInt(localStorage.getItem('ironAmountProspected')) || 0;
+        objMines.coalAmountProspected = parseInt(localStorage.getItem('coalAmountProspected')) || 0;
+        objMines.uraniumAmountProspected = parseInt(localStorage.getItem('uraniumAmountProspected')) || 0;
+        objMines.copperAmountProspected = parseInt(localStorage.getItem('copperAmountProspected')) || 0;
+        objMines.goldAmountProspected = parseInt(localStorage.getItem('goldAmountProspected')) || 0;
+        objMines.diamondAmountProspected = parseInt(localStorage.getItem('diamondAmountProspected')) || 0;
+        objMines.ironAmountActive = parseInt(localStorage.getItem('ironAmountActive')) || 0;
+        objMines.coalAmountActive = parseInt(localStorage.getItem('coalAmountActive')) || 0;
+        objMines.uraniumAmountActive = parseInt(localStorage.getItem('uraniumAmountActive')) || 0;
+        objMines.copperAmountActive = parseInt(localStorage.getItem('copperAmountActive')) || 0;
+        objMines.goldAmountActive = parseInt(localStorage.getItem('goldAmountActive')) || 0;
+        objMines.diamondAmountActive = parseInt(localStorage.getItem('diamondAmountActive')) || 0;
+        objMines.ironMineCost = parseInt(localStorage.getItem('ironMineCost')) || 100000000;
+        objMines.coalMineCost = parseInt(localStorage.getItem('coalMineCost')) || 125000000;
+        objMines.uraniumMineCost = parseInt(localStorage.getItem('uraniumMineCost')) || 200000000;
+        objMines.copperMineCost = parseInt(localStorage.getItem('copperMineCost')) || 150000000;
+        objMines.goldMineCost = parseInt(localStorage.getItem('goldMineCost')) || 600000000;
+        objMines.diamondMineCost = parseInt(localStorage.getItem('diamondMineCost')) || 600000000;
+        objMines.prospectTimerActive = parseInt(localStorage.getItem('pTimer')) || 0;
+        objMines.prospecting = parseInt(localStorage.getItem('prospecting')) || 0;
         document.getElementById("Prospecting-col").style.display = "none";
-        if (+objMines.prospecting == 1) {
-            objMines.prospect();
+        if (+objMines.prospecting === 1) {
+            document.getElementById("ProspectingButton").disabled = true;
+            document.getElementById("ProspectingProgress").innerHTML = "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
+                objMines.prospectTimerActive + " Seconden</p>";
         } else {
             document.getElementById("ProspectingButton").disabled = false;
         }
@@ -3526,30 +3484,66 @@ var objOilPumpAdv = {
     init: function () {
         objOilPumpAdv.amount = localStorage.getItem('oilPumpAmount') || 0;
     }
+};
+
+// Detect which transitionEnd is supported by browser
+function whichTransitionEvent(){
+    let t,
+        el = document.createElement("fakeelement");
+
+    let transitions = {
+        "transition"      : "transitionend",
+        "OTransition"     : "oTransitionEnd",
+        "MozTransition"   : "transitionend",
+        "WebkitTransition": "webkitTransitionEnd"
+    };
+
+    for (t in transitions) {
+        if (el.style[t] !== undefined){
+            return transitions[t];
+        }
+    }
 }
 
 // Notificatie functie
 function notificationOverlay(messageText, messageTitle, messageIcon) {
-    var container = document.getElementById("notif");
-    var length = container.children.length;
+    let container = document.getElementById("notif");
+    if (container.children.length >= 3) container.firstChild.remove();
 
-    if (length >= 3) {
-        container.firstChild.remove();
-    }
-
-    container.innerHTML +=
-        '<div class="notification-tooltip" onclick="closeNotification(this)">' +
+    let dNotification = document.createElement("div");
+    dNotification.setAttribute('class', 'notification');
+    dNotification.innerHTML =
+        '<div class="notification-tooltip">' +
         '<div class="icon">' +
         '<i class="fas ' + messageIcon + '"></i>' +
         '</div>' +
         '<div class="text"><h5>' + messageTitle + '</h5><p>' + messageText + '</p></div>' +
         '<div class="close-notification"></div>' +
         '</div>';
+    container.appendChild(dNotification);
+
+    dNotification.style.height = dNotification.offsetHeight + 'px';
+
+    dNotification.addEventListener("click", function() {
+        clearTimeout(notificationTimer);
+        container.removeChild(dNotification);
+    });
+
+    let notificationTimer = setTimeout( function() {
+        if (closeNotifications === 1)
+        {
+            dNotification.style.height = 0;
+            dNotification.style.opacity = 0;
+
+            let notificationClose = function() {
+                if (dNotification.parentNode === container) container.removeChild(dNotification);
+            };
+
+            dNotification.addEventListener(CSStransitionEnd, notificationClose);
+        }
+    }, 10000);
 }
 
-function closeNotification(el) {
-    el.remove();
-}
 
 // History functie voor inkomsten
 var messages = [];
@@ -3721,11 +3715,7 @@ function getSaveGame(uuid) {
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("Cache-Control", "no-cache");
 
-
     xhr.send(data);
-
-    ;
-
 }
 
 // Registreren verkoop
@@ -3775,6 +3765,22 @@ function showQuickSell(inputQS) {
         document.getElementById("sellMenu").style.display = "none";
         elverkooptabBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)';
         localStorage.setItem('QS', quickSell);
+    }
+
+}
+
+// Auto sluit notificaties
+var closeNotifications = parseInt(localStorage.getItem('notifications_autoclose')) || 0;
+
+function turnAutoClose(input) {
+    if (input) closeNotifications = 1 - closeNotifications;
+    localStorage.setItem('notifications_autoclose', closeNotifications);
+
+    elAutoCloseBTN = document.getElementById("autocloseBTN");
+    if (closeNotifications === 1) {
+        elAutoCloseBTN.innerHTML = '<i class="far fa-fw fa-check-square"></i> Zet auto-sluit berichten uit';
+    } else {
+        elAutoCloseBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet auto-sluit berichten aan';
     }
 
 }
@@ -3850,32 +3856,31 @@ var timerCounter = 0;
 var paused = 0;
 var loopsProduction = setInterval(
     function () {
-        if (paused == 0) {
-            if (+objOilPump.amount > 0 || +objOilPumpAdv.amount > 0) {
-                objOil.produceOil();
-            }
-            if (+objMines.coalAmountActive >= 1) {
-                objCoalMine.produce();
-            }
-            if (+objMines.ironAmountActive >= 1) {
-                objIronMine.produce();
+        if (paused === 0) {
+            if (objFarmland.FarmTimer > 0) objFarmland.working_loop();
+            if (objFarmland.GrainResearchTimer > 0) objFarmland.research_loop();
+            if (objWindmill.GrindTimer > 0) objWindmill.grind_loop();
+            if (objWindmill.autoGrindTimer > 0) objWindmill.autogrind_loop();
+            if (objResearch.running === 1) objResearch.Research_loop();
+            if (objMines.prospectTimerActive > 0) objMines.prospect_loop();
 
-            }
+            if (+objOilPump.amount > 0 || +objOilPumpAdv.amount > 0) objOil.produceOil();
+            if (+objMines.coalAmountActive >= 1) objCoalMine.produce();
+            if (+objMines.ironAmountActive >= 1) objIronMine.produce();
+
             objEnergy.produce();
+            if (objFarmRobot.robotTimer > 0) objFarmRobot.work_loop();
+            if ( (objFarmRobot.robots > 0) && (objFarmRobot.robotTimer === 0) ) objFarmRobot.work();
+
             objPlayerInfo.levelup();
-            if (objWindmill.running == 0 && objWindmillController.amount >= 1) {
-                objWindmill.autogrind();
-            }
+
+            if ( (objWindmill.running === 0) && (objWindmillController.amount >= 1) ) objWindmill.autogrind();
 
             timerCounter++;
-            if (+timerCounter % 5 == 0) {
-                if (+objSalesComputer.cpu > 0) {
-                    objSalesComputer.autoSell();
-                }
+            if (+timerCounter % 5 === 0) {
+                if (+objSalesComputer.cpu > 0) objSalesComputer.autoSell();
                 objOil.priceCalc();
-                if (+objPlasticFactory.amount > 0 || +objPlastic.amount > 0) {
-                    objPlastic.showPrice();
-                }
+                if (+objPlasticFactory.amount > 0 || +objPlastic.amount > 0) objPlastic.showPrice();
                 objGrain.priceCalc();
                 if (+objIronMelter.amount > 0) {
                     objSteel.price = ((objIronOre.price * 10) + (+ objCoal.price)) * 1.25;
@@ -3889,34 +3894,16 @@ var loopsProduction = setInterval(
                     objSalesComputer.showPasta(localStorage.getItem('autoPasta'));
                     objSalesComputer.showKunststof(localStorage.getItem('autoKunststof'));
                 }
-                if (objChicken.amount >= 1) {
-                    objChicken.makeEggs();
-                };
-                if (+objFuelCellFactory.amount > 0) {
-                    objFuelRod.calculateWastePrice(50000, 99999);
-                }
+                if (objChicken.amount >= 1) objChicken.makeEggs();
+                if (+objFuelCellFactory.amount > 0) objFuelRod.calculateWastePrice(50000, 99999);
             }
-            if (+timerCounter % 10 == 0) {
-                if (+objMines.uraniumAmountActive >= 1) {
-                    objUraniumMine.produce();
-                }
-            }
-            if (+timerCounter % 15 == 0) {
+            if ( (+timerCounter % 10 === 0) && (+objMines.uraniumAmountActive >= 1) ) objUraniumMine.produce();
+            if (+timerCounter % 15 === 0) {
                 objPastaHelper.action();
-                if (objPlasticFactory.workers > 0) {
-                    objPlasticFactory.produce(1);
-                }
+                if (objPlasticFactory.workers > 0) objPlasticFactory.produce(1);
             }
-            if (+timerCounter % 60 == 0) {
-                if (+objFuelRod.waste > 0) {
-                    objFuelRod.wastePayment();
-                }
-            }
-            if (quickSell == 1) {
-                quickSellMenu();
-            }
-            if (objFuelCellFactory.amount > 0) {
-                objFuelCellFactory.produce();
-            }
+            if ( (+timerCounter % 60 === 0) && (+objFuelRod.waste > 0) ) objFuelRod.wastePayment();
+            if (quickSell === 1) quickSellMenu();
+            if (objFuelCellFactory.amount > 0) objFuelCellFactory.produce();
         }
     }, 1000);
