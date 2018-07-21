@@ -106,6 +106,7 @@ window.onload = function () {
     objResearch.init();
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
+    objGrain.priceCalc();
     showQuickSell(0);
     turnAutoClose(0);
     turnDebug(0);
@@ -1577,9 +1578,8 @@ var objPasta = {
             reason = "Handmatige verkoop";
         }
         var amount = +objStorehouse.pasta;
-        var ProfitPasta = +objStorehouse.pasta * +objPasta.price();
-        var text = reason;
-        objMoney.add(ProfitPasta, text, 8, amount);
+        var ProfitPasta = +amount * +objPasta.price();
+        objMoney.add(ProfitPasta, reason, 8, amount);
         objStorehouse.removePasta(+objStorehouse.pasta);
     },
     show: function () {
