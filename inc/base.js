@@ -3161,9 +3161,11 @@ var objFuelRod = {
         var totalcost = +objFuelRod.waste * +objFuelRod.wastePrice;
         if (+totalcost < +objMoney.amount) {
             objMoney.use(+totalcost);
+            var wasted = parseInt(objFuelRod.waste);
             objFuelRod.waste = 0;
             localStorage.setItem('frWaste', objFuelRod.waste);
             objFuelRod.show();
+            registerUsage('used_fuelrod',wasted);
         } else {
             notificationOverlay("Niet genoeg doekoe!", "Verkoop radioactief afval", "fa-euro-sign");
         }
@@ -3723,6 +3725,24 @@ function registerSale(tt, amount, profit) {
     // xhr.send(data);
 
 
+}
+
+function registerUsage(typeUsage, amount) {
+    var amount = parseInt(amount);
+    var data = "res=" + typeUsage + "&amount=" + amount;
+    var xhr = new XMLHttpRequest();
+
+    xhr.open("POST", "/back/resources.php");
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("Cache-Control", "no-cache");
+
+    xhr.addEventListener("readystatechange", function () {
+        if (this.readyState === 4) {
+            // Melding eventueel
+        }
+    });
+
+    xhr.send(data); 
 }
 
 // Genoeg geld functie
