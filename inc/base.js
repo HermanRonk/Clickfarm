@@ -1580,7 +1580,8 @@ var objPasta = {
         var amount = +objStorehouse.pasta;
         var ProfitPasta = +amount * +objPasta.price();
         objMoney.add(ProfitPasta, reason, 8, amount);
-        objStorehouse.removePasta(+objStorehouse.pasta);
+        showMessage("Test pasta verkoop - objpasta.sell");
+        objStorehouse.removePasta(+amount);
     },
     show: function () {
         document.getElementById("SellPasta").innerHTML = "<p>Verkoop de pasta voor " + FixMoney(objPasta.price()) + " per doos";
@@ -1657,17 +1658,9 @@ var objStorehouse = {
         localStorage.setItem('Pasta', objStorehouse.pasta)
     },
     removePasta: function (pasta) {
-        if ((+objStorehouse.pasta - +pasta) > 0) {
             objStorehouse.pasta = +objStorehouse.pasta - +pasta;
             objStorehouse.show();
             localStorage.setItem('Pasta', objStorehouse.pasta)
-            return objStorehouse.pasta;
-        } else {
-            var tempUsed = +objStorehouse.pasta;
-            objStorehouse.pasta = +objStorehouse.pasta - +objStorehouse.pasta;
-            return tempUsed;
-        }
-
     },
     show: function () {
         document.getElementById("StorehousePasta").innerHTML = "<p>Aantal dozen pasta op voorraad: " + FixNumber(objStorehouse.pasta) + "</p>";
