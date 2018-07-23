@@ -3159,7 +3159,7 @@ var objFuelRod = {
     },
     sellWaste: function () {
         var totalcost = +objFuelRod.waste * +objFuelRod.wastePrice;
-        if (+totalcost < +objMoney.amount) {
+        if (+totalcost <= +objMoney.amount) {
             objMoney.use(+totalcost);
             var wasted = parseInt(objFuelRod.waste);
             objFuelRod.waste = 0;
@@ -3727,6 +3727,7 @@ function registerSale(tt, amount, profit) {
 
 }
 
+// Functie voor het registreren van verkoop van resources 
 function registerUsage(typeUsage, amount) {
     var amount = parseInt(amount);
     var data = "res=" + typeUsage + "&amount=" + amount;

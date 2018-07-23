@@ -26,7 +26,7 @@ function sqlSave($resource, $amount) {
     
     $stmt = $conn->prepare("UPDATE resources SET Amount = amount + ? WHERE ResType = ?");
 
-    $stmt->bind_param("ss", $amount, $resource);
+    $stmt->bind_param("is", $amount, $resource);
     $stmt->execute();
     $stmt->close();
     
