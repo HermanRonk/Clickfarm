@@ -1392,6 +1392,7 @@ var objEgg = {
         };
         var Profit = +aantal * +objEgg.price;
         objMoney.add(+Profit, reden, 6, aantal);
+        registerUsage("eggs", parseInt(aantal));
     },
     addStorageUnit: function () {
         if (+objMoney.amount >= +objEgg.storageUnitCost) {
@@ -2676,7 +2677,7 @@ var objSteel = {
             var profit = +amountSold * (+objSteel.price * 0.2);
             objMoney.add(+profit, reason, 15, amountSold);
         }
-
+        registerUsage("steel", parseInt(amountSold));
         return 0;
     },
     add: function (amountAdded) {
@@ -3706,6 +3707,8 @@ function getSaveGame(uuid) {
     xhr.send(data);
 }
 
+
+
 // Registreren verkoop
 function registerSale(tt, amount, profit) {
     // var uuid = localStorage.getItem('guid');
@@ -3727,10 +3730,10 @@ function registerSale(tt, amount, profit) {
 
 }
 
-// Functie voor het registreren van verkoop van resources 
+// Centraal vastleggen verkoop
 function registerUsage(typeUsage, amount) {
     var amount = parseInt(amount);
-    var data = "res=" + typeUsage + "&amount=" + amount;
+    var data = "res=" + typeUsage + "&amount=" + amount + "&req=update";
     var xhr = new XMLHttpRequest();
 
     xhr.open("POST", "/back/resources.php");
@@ -3744,6 +3747,31 @@ function registerUsage(typeUsage, amount) {
     });
 
     xhr.send(data); 
+}
+
+// Ophalen verkoopstats
+var objSalesInfo = {
+
+}
+
+function getSaleInfo() {
+
+    var data = "";
+    var xhr = new XMLHttpRequest();
+
+    xhr.addEventListener("readystatechange", function () {
+        if (this.readyState === 4) {
+            objSalesInfo = JSON.parse(this.responseText);
+            
+        }
+    });
+
+    xhr.open("POST", "/back/resources.php");
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.setRequestHeader("Cache-Control", "no-cache");
+
+    xhr.send(data);
+    
 }
 
 // Genoeg geld functie
@@ -3909,6 +3937,7 @@ var loopsProduction = setInterval(
                 objPastaHelper.action();
                 if (objPlasticFactory.workers > 0) objPlasticFactory.produce(1);
             }
+            if (+timerCounter % 30 === 0) getSaleInfo();
             if ( (+timerCounter % 60 === 0) && (+objFuelRod.waste > 0) ) objFuelRod.wastePayment();
             if (quickSell === 1) quickSellMenu();
             if (objFuelCellFactory.amount > 0) objFuelCellFactory.produce();
