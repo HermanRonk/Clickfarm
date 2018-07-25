@@ -3,6 +3,7 @@
 
 <head>
 <!-- Matomo -->
+  
 
 <!-- End Matomo Code -->
     <title>Clickfarm.nl</title>
@@ -463,6 +464,24 @@
 
             </div>
         </div>
+        <div class="row border border-dark rows" id="market-row">
+            <div class="container col-sm" id="marketEggs">
+                <h2>Eieren</h2>
+                <div id="buyEggs"></div>
+                <div id="buyEggsBTN"></div>
+            </div>
+            <div class="container col-sm" id="marketSteel">
+                <h2>Staal</h2>
+                <div id="buySteel"></div>
+                <div id="buySteelBTN"></div>
+            </div>
+            <div class="container col-sm" id="marketWasteFuel">
+                <h2>Afval splijtstofstaven</h2>
+                <div id="buyWasteFuell"></div>
+                <div id="buyWasteFuellBTN"></div>
+            </div>
+        </div>
+
     </div>
     <div class="notification-container" id="notif">
     </div>

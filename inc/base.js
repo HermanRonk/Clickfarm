@@ -67,7 +67,7 @@ function guid() {
 // initialisatie
 window.onload = function () {
     // Zetten vars
-    Display.hide(['flour-col', 'windmills-col', 'Flourstock','graanopbrengst-col', 'olie-col', 'Oilstock', 'pomp-col', 'energieproductie-col', 'energy-col', 'farmland-automation', 'WindmillController', 'chicken-col', 'plastic-row', 'pasta-col', 'AutoSell-col', 'MiningResearch-col', 'mijnbouw-row', 'mijnen-row', 'mijnen-row2', 'Uranium-col', 'nuclearFuel-row']);
+    Display.hide(['flour-col', 'windmills-col', 'Flourstock', 'graanopbrengst-col', 'olie-col', 'Oilstock', 'pomp-col', 'energieproductie-col', 'energy-col', 'farmland-automation', 'WindmillController', 'chicken-col', 'plastic-row', 'pasta-col', 'AutoSell-col', 'MiningResearch-col', 'mijnbouw-row', 'mijnen-row', 'mijnen-row2', 'Uranium-col', 'nuclearFuel-row', 'market-row']);
     identUser();
     document.getElementById("sellMenu").style.display = "none";
     objMoney.init();
@@ -107,6 +107,7 @@ window.onload = function () {
     objFuelCellFactory.init();
     objNuclearPowerPlant.init();
     objGrain.priceCalc();
+    objMarket.init();
     showQuickSell(0);
     turnAutoClose(0);
     turnDebug(0);
@@ -123,8 +124,8 @@ var Display = {
         var cDisplay = (bHide === undefined) ? '' : 'none';
 
         aIdentifier = this.convertStringToArray(Identifier);
-        for (i = 0; i < aIdentifier.length; i++) if (el = document.getElementById(aIdentifier[i])) el.style.display=cDisplay; else console.error('Could not find element ' + aIdentifier[i] );
-        },
+        for (i = 0; i < aIdentifier.length; i++) if (el = document.getElementById(aIdentifier[i])) el.style.display = cDisplay; else console.error('Could not find element ' + aIdentifier[i]);
+    },
     hide: function (cIdentifier) {
         this.show(cIdentifier, false);
     }
@@ -151,7 +152,7 @@ function AfrondenGewicht(InputGewicht) {
 // Player object
 var objPlayerInfo = {
     level: localStorage.getItem('PlayerLevel') || 1,
-    level_multiplier: [0, 5, 5, 5, 5, 4, 3, 4, 5, 5, 5, 5],
+    level_multiplier: [0, 5, 5, 5, 5, 4, 3, 4, 5, 5, 5, 5, 5, 5],
     nextlevel: localStorage.getItem('NextLevel') || 3000,
     show: function () {
         document.getElementById('currentlevel').innerHTML = "Huidig level is: " + objPlayerInfo.level;
@@ -161,20 +162,25 @@ var objPlayerInfo = {
 
         // Wanneer level hoger, bereken nieuw gelddoel voor next level
         if (reason === 'levelup') {
-            objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * this.level_multiplier[Math.min(objPlayerInfo.level, (this.level_multiplier.length-1)) ];
+            objPlayerInfo.nextlevel = +objPlayerInfo.nextlevel * this.level_multiplier[Math.min(objPlayerInfo.level, (this.level_multiplier.length - 1))];
             localStorage.setItem('NextLevel', objPlayerInfo.nextlevel);
         }
 
         // Maak tabs zichtbaar op basis van level (gebruikmakende van Switch' fallthrough)
-        switch(+objPlayerInfo.level) {
-            default: // Hoger dan level 10
+        switch (+objPlayerInfo.level) {
+            default: // Hoger dan level 12
+            
+            case 12: // Level 12 behaald
+                Display.show('market-row');
+            
+            case 11: // Level 11 behaald
                 Display.show('nuclearFuel-row');
 
             case 10: // Level 10 behaald
                 Display.show('Uranium-col');
 
             case 9: // Level 10 behaald
-                // Geen nieuwe functionaliteiten?
+            // Geen nieuwe functionaliteiten?
 
             case 8: // Level 8 behaald
                 Display.show(['MiningResearch-col', 'mijnbouw-row', 'mijnen-row', 'mijnen-row2']);
@@ -642,7 +648,7 @@ var objOilTank = {
         }
 
 
-        
+
         document.getElementById("clickCount").innerHTML = "<p>Aantal vaten olie op voorraad: " + FixNumber(objOilTank.contents) + "</p>";
 
         document.getElementById("OilTop").innerHTML = "Olie: <kbd2>" + FixNumber(objOilTank.contents) + "/" + FixNumber(objOilTank.totalCap) + "</kbd2>";
@@ -727,7 +733,7 @@ var objFarmland = {
         this.FarmAmount = +objFarmland.amount - +objFarmland.automatedAmount;
         document.getElementById('farmlandWorkBTN').disabled = true;
     },
-    working_loop: function() {
+    working_loop: function () {
         this.FarmTimer--;
         objFarmland.timerCountdown();
         if (this.FarmTimer < 1) {
@@ -829,7 +835,7 @@ var objWindmill = {
     grind_buttonstate: function () {
         let bDisabled = false;
 
-        if ( (objWindmill.amountAutomated === objWindmill.amount) && (objWindmill.autoGrindTimer > 0) ) bDisabled = true;
+        if ((objWindmill.amountAutomated === objWindmill.amount) && (objWindmill.autoGrindTimer > 0)) bDisabled = true;
         if (objWindmill.GrindTimer > 0) bDisabled = true;
 
         document.getElementById('GrindGrain').disabled = bDisabled;
@@ -858,8 +864,7 @@ var objWindmill = {
         objWindmill.grind_buttonstate();
         objWindmill.grindTimerCountdown();
     },
-    grind_loop: function ()
-    {
+    grind_loop: function () {
         objWindmill.GrindTimer--;
         objWindmill.grindTimerCountdown();
         objFlourSilo.fill((this.GrindAmount / 10));
@@ -943,16 +948,14 @@ var objWindmill = {
     grindTimerCountdown: function () {
         if (objWindmill.GrindTimer > 0) {
             document.getElementById("GrindTimer").innerHTML = "De molen is klaar over: " + objWindmill.GrindTimer + " Seconden";
-        } else
-        {
+        } else {
             document.getElementById("GrindTimer").innerHTML = '';
         }
     },
     autoGrindTimerCountdown: function () {
         if (objWindmill.autoGrindTimer > 0) {
             document.getElementById("AutoGrindTimer").innerHTML = "De geautomatiseerde molens zijn klaar over: " + objWindmill.autoGrindTimer + " Seconden";
-        } else
-        {
+        } else {
             document.getElementById("AutoGrindTimer").innerHTML = '';
         }
     },
@@ -1175,7 +1178,7 @@ var objEnergy = {
         var activePlants = +objPowerPlant.amount;
         if (+producedAmount > +capLeft) {
             var activePlants = Math.ceil(+capLeft / 10);
-            if (+activePlants > 0){
+            if (+activePlants > 0) {
                 objOilTank.use(+activePlants, "Energiecentrales - Productie groter dan restcap");
                 objEnergy.available = +objEnergy.available + +capLeft;
                 localStorage.setItem('EnergyAvailable', +objEnergy.available);
@@ -1350,6 +1353,105 @@ var objChickenFarm = {
         objChickenFarm.show();
     }
 }
+
+// Inkopen resources
+var objMarket = {
+    marketState: 0,
+    buy: function (resType, amount) {
+        amount = parseInt(amount);
+        var cost = 0;
+
+        if (resType == "eggs"){
+            cost = +objEgg.price * 1.5;
+            if (moneyCheck(+cost * +amount) == 0) {
+                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+                return 0;
+            } else {
+                objMoney.use((+cost * amount));
+                objEgg.add(+amount);
+                registerUsage("eggs",(-Math.abs(amount)));
+            }
+        };
+        if (resType == "steel") {
+            cost = +objSteel.price * 1.25;
+            if (moneyCheck(+cost * +amount) == 0) {
+                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+                return 0;
+            } else {
+                objMoney.use((+cost * amount));
+                objSteel.add(+amount);
+                registerUsage("steel",(-Math.abs(amount)));
+            }
+        };
+        if (resType == "used_fuelrod") {
+            cost = +objFuelRod.wastePrice * 0.5;
+            if (moneyCheck(+cost * +amount) == 0) {
+                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+                return 0;
+            } else {
+                objMoney.use((+cost * amount));
+                objFuelRod.wasteFunction(+amount);
+                registerUsage("used_fuelrod",(-Math.abs(amount)));
+            }
+        };
+        objMarket.show();
+    },
+    show: function () {
+        getSaleInfo();
+        document.getElementById("buyEggs").innerHTML = "<p>Koop nu eieren voor " + FixMoney((+objEgg.price * 1.5)) + " per stuk</p>" +
+        "<p>Er zijn momenteel " + FixNumber(objSalesInfo.eggs) + " eieren te koop op de markt. Je hebt nog ruimte voor: " + 
+        FixNumber(((+objEgg.storageUnits * +objEgg.storageCap) - +objEgg.amount)) + " eieren. Eventueel overschot wordt direct weer verkocht</p>";
+        document.getElementById("buySteel").innerHTML = "<p>Koop nu staal voor " + FixMoney((+objSteel.price * 1.25)) + " per ton</p>"+
+        "<p>Er is momenteel " + FixNumber(objSalesInfo.steel) + " ton staal te koop op de mark. Je hebt nog ruimte voor: " + 
+        FixNumber(((+objSteel.storage * +objSteel.storageCap) - +objSteel.amount)) + " ton staal. Eventueel overschot wordt direct weer verkocht</p>";
+        document.getElementById("buyWasteFuell").innerHTML = "<p>Koop nu afval splijtstofstaven voor " + FixMoney((+objFuelRod.wastePrice * 0.5)) + " per staaf</p>"+
+        "<p>Er zijn momenteel " + FixNumber(objSalesInfo.used_fuelrod) + " afval splijtstofstaven te koop op de markt. Je hebt onbeperkt ruimte voor afval.</p>";
+        objMarket.showButtonState();
+    },
+    showButtons: function () {
+        objMarket.generateBuyButtons("eggs","buyEggsBTN");
+        objMarket.generateBuyButtons("steel","buySteelBTN");
+        objMarket.generateBuyButtons("used_fuelrod","buyWasteFuellBTN");
+    },
+    showButtonState: function () {
+        if (parseInt(objSalesInfo.steel) > 0) {
+            objMarket.buttonState("steel", parseInt(objSalesInfo.steel));
+        };
+        if (parseInt(objSalesInfo.eggs) > 0) {
+            objMarket.buttonState("eggs", parseInt(objSalesInfo.eggs));
+        };
+        if (parseInt(objSalesInfo.used_fuelrod) > 0) {
+            objMarket.buttonState("used_fuelrod", parseInt(objSalesInfo.used_fuelrod));
+        };
+    },
+    generateBuyButtons: function(resType, buttonName){
+        var i = 1;
+        document.getElementById(buttonName).innerHTML = "<p>";
+        do {
+            var scale = i;
+            i = i * 10;
+            var buttonAction = '"' + resType + '"' + ", " + parseInt(scale);
+            document.getElementById(buttonName).innerHTML += "<button type='button' class='btn btn-danger' onClick='objMarket.buy(" + buttonAction + ")' id='BB" + resType + scale + "'>" + scale + "x</button> ";
+        }
+        while (i < 10001);
+        document.getElementById(buttonName).innerHTML += "</p>";
+    },
+    buttonState: function (resType, amountMarket) {
+        var i = 1;
+        do {
+            if (amountMarket < i) { document.getElementById("BB" + resType + i).disabled = true; } else{
+                document.getElementById("BB" + resType + i).disabled = false;
+            }
+            i = i * 10;
+        }
+        while (i < 10001);
+    },
+    init: function (){
+        objMarket.showButtons();
+        objMarket.show();
+    }
+}
+
 
 // Eieren
 var objEgg = {
@@ -1569,7 +1671,7 @@ var objPasta = {
     recipe: 10,
     recipeEggs: 100,
     sell: function (reason) {
-        if(reason == null){
+        if (reason == null) {
             var reason = "Handmatige verkoop";
         }
         var amount = +objStorehouse.pasta;
@@ -1652,9 +1754,9 @@ var objStorehouse = {
         localStorage.setItem('Pasta', objStorehouse.pasta)
     },
     removePasta: function (pasta) {
-            objStorehouse.pasta = +objStorehouse.pasta - +pasta;
-            objStorehouse.show();
-            localStorage.setItem('Pasta', objStorehouse.pasta)
+        objStorehouse.pasta = +objStorehouse.pasta - +pasta;
+        objStorehouse.show();
+        localStorage.setItem('Pasta', objStorehouse.pasta)
     },
     show: function () {
         document.getElementById("StorehousePasta").innerHTML = "<p>Aantal dozen pasta op voorraad: " + FixNumber(objStorehouse.pasta) + "</p>";
@@ -1992,26 +2094,26 @@ function showPrice() {
 var objResearch = {
     level: 1,
     research_tree: [
-        { time: 180, cost: 5000000, phase : 'eerste', description : 'Je leert de basiskennis over mijnbouw!'},
-        { time: 360, cost: 5000000, phase : 'tweede', description : 'Je leert alles over prospecting!'},
-        { time: 720, cost: 5000000, phase : 'derde', description : 'Je leert alles over het werkelijk openen van een mijn!'}, ],
+        { time: 180, cost: 5000000, phase: 'eerste', description: 'Je leert de basiskennis over mijnbouw!' },
+        { time: 360, cost: 5000000, phase: 'tweede', description: 'Je leert alles over prospecting!' },
+        { time: 720, cost: 5000000, phase: 'derde', description: 'Je leert alles over het werkelijk openen van een mijn!' },],
     running: 0,
     timer: 0,
     doResearch: function (button) {
         if (objResearch.running !== 1) {
-            if (objResearch.level <= objResearch.research_tree.length ) {
-                objResearch.timer = objResearch.research_tree[objResearch.level-1].time;
+            if (objResearch.level <= objResearch.research_tree.length) {
+                objResearch.timer = objResearch.research_tree[objResearch.level - 1].time;
             } else {
                 document.getElementById("MiningResearch").disabled = true;
                 return 0;
             }
 
-            if (objMoney.amount < objResearch.research_tree[objResearch.level-1].cost) {
+            if (objMoney.amount < objResearch.research_tree[objResearch.level - 1].cost) {
                 notificationOverlay("Niet genoeg doekoe!", "Mijnbouw onderzoek", "fa-euro-sign");
                 return 0;
             }
 
-            objMoney.use(objResearch.research_tree[objResearch.level-1].cost);
+            objMoney.use(objResearch.research_tree[objResearch.level - 1].cost);
 
         }
         document.getElementById("MiningResearch").disabled = true;
@@ -2035,9 +2137,9 @@ var objResearch = {
         }
     },
     show: function () {
-        if (objResearch.level <= objResearch.research_tree.length ) {
-            document.getElementById("ResDesc").innerHTML = '<p>De ' + objResearch.research_tree[objResearch.level-1].phase + ' fase in het onderzoek naar mijnbouw kost: ' + FixMoney(objResearch.research_tree[objResearch.level-1].cost) +
-                ' en zal ' + FixNumber(objResearch.research_tree[objResearch.level-1].time) + ' seconden duren. ' + objResearch.research_tree[objResearch.level-1].description + '</p>';
+        if (objResearch.level <= objResearch.research_tree.length) {
+            document.getElementById("ResDesc").innerHTML = '<p>De ' + objResearch.research_tree[objResearch.level - 1].phase + ' fase in het onderzoek naar mijnbouw kost: ' + FixMoney(objResearch.research_tree[objResearch.level - 1].cost) +
+                ' en zal ' + FixNumber(objResearch.research_tree[objResearch.level - 1].time) + ' seconden duren. ' + objResearch.research_tree[objResearch.level - 1].description + '</p>';
         } else {
             document.getElementById("ResDesc").innerHTML = "<p>Je bent helemaal klaar met de research; succes met het vinden van een goed mijngebied! " +
                 "Je hebt al onderzocht: Mijnbouw algemeen, prospecting en het daadwerkelijk openen van een mijn.</p>";
@@ -2125,7 +2227,7 @@ var objMines = {
         localStorage.setItem('prospecting', objMines.prospecting);
         document.getElementById("ProspectingProgress").style.display = "";
     },
-    prospect_loop: function() {
+    prospect_loop: function () {
         objMines.prospectTimerActive--;
         localStorage.setItem("pTimer", objMines.prospectTimerActive);
         document.getElementById("ProspectingProgress").innerHTML = "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
@@ -3166,7 +3268,7 @@ var objFuelRod = {
             objFuelRod.waste = 0;
             localStorage.setItem('frWaste', objFuelRod.waste);
             objFuelRod.show();
-            registerUsage('used_fuelrod',wasted);
+            registerUsage('used_fuelrod', wasted);
         } else {
             notificationOverlay("Niet genoeg doekoe!", "Verkoop radioactief afval", "fa-euro-sign");
         }
@@ -3476,19 +3578,19 @@ var objOilPumpAdv = {
 };
 
 // Detect which transitionEnd is supported by browser
-function whichTransitionEvent(){
+function whichTransitionEvent() {
     let t,
         el = document.createElement("fakeelement");
 
     let transitions = {
-        "transition"      : "transitionend",
-        "OTransition"     : "oTransitionEnd",
-        "MozTransition"   : "transitionend",
+        "transition": "transitionend",
+        "OTransition": "oTransitionEnd",
+        "MozTransition": "transitionend",
         "WebkitTransition": "webkitTransitionEnd"
     };
 
     for (t in transitions) {
-        if (el.style[t] !== undefined){
+        if (el.style[t] !== undefined) {
             return transitions[t];
         }
     }
@@ -3513,18 +3615,17 @@ function notificationOverlay(messageText, messageTitle, messageIcon) {
 
     dNotification.style.height = dNotification.offsetHeight + 'px';
 
-    dNotification.addEventListener("click", function() {
+    dNotification.addEventListener("click", function () {
         clearTimeout(notificationTimer);
         container.removeChild(dNotification);
     });
 
-    let notificationTimer = setTimeout( function() {
-        if (closeNotifications === 1)
-        {
+    let notificationTimer = setTimeout(function () {
+        if (closeNotifications === 1) {
             dNotification.style.height = 0;
             dNotification.style.opacity = 0;
 
-            let notificationClose = function() {
+            let notificationClose = function () {
                 if (dNotification.parentNode === container) container.removeChild(dNotification);
             };
 
@@ -3746,7 +3847,7 @@ function registerUsage(typeUsage, amount) {
         }
     });
 
-    xhr.send(data); 
+    xhr.send(data);
 }
 
 // Ophalen verkoopstats
@@ -3762,7 +3863,7 @@ function getSaleInfo() {
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
             objSalesInfo = JSON.parse(this.responseText);
-            
+
         }
     });
 
@@ -3771,7 +3872,7 @@ function getSaleInfo() {
     xhr.setRequestHeader("Cache-Control", "no-cache");
 
     xhr.send(data);
-    
+
 }
 
 // Genoeg geld functie
@@ -3905,11 +4006,11 @@ var loopsProduction = setInterval(
 
             objEnergy.produce();
             if (objFarmRobot.robotTimer > 0) objFarmRobot.work_loop();
-            if ( (objFarmRobot.robots > 0) && (objFarmRobot.robotTimer === 0) ) objFarmRobot.work();
+            if ((objFarmRobot.robots > 0) && (objFarmRobot.robotTimer === 0)) objFarmRobot.work();
 
             objPlayerInfo.levelup();
 
-            if ( (objWindmill.running === 0) && (objWindmillController.amount >= 1) ) objWindmill.autogrind();
+            if ((objWindmill.running === 0) && (objWindmillController.amount >= 1)) objWindmill.autogrind();
 
             timerCounter++;
             if (+timerCounter % 5 === 0) {
@@ -3932,13 +4033,13 @@ var loopsProduction = setInterval(
                 if (objChicken.amount >= 1) objChicken.makeEggs();
                 if (+objFuelCellFactory.amount > 0) objFuelRod.calculateWastePrice(50000, 99999);
             }
-            if ( (+timerCounter % 10 === 0) && (+objMines.uraniumAmountActive >= 1) ) objUraniumMine.produce();
+            if ((+timerCounter % 10 === 0) && (+objMines.uraniumAmountActive >= 1)) objUraniumMine.produce();
             if (+timerCounter % 15 === 0) {
                 objPastaHelper.action();
                 if (objPlasticFactory.workers > 0) objPlasticFactory.produce(1);
             }
-            if (+timerCounter % 30 === 0) getSaleInfo();
-            if ( (+timerCounter % 60 === 0) && (+objFuelRod.waste > 0) ) objFuelRod.wastePayment();
+            if (+timerCounter % 30 === 0) objMarket.show();
+            if ((+timerCounter % 60 === 0) && (+objFuelRod.waste > 0)) objFuelRod.wastePayment();
             if (quickSell === 1) quickSellMenu();
             if (objFuelCellFactory.amount > 0) objFuelCellFactory.produce();
         }
