@@ -1,5 +1,5 @@
 # Clickfarm
-Clickfarm is een "simpel" webspelletje dat ik in mijn vrije tijd geschreven heb. Omdat ik het niet de aandacht kan geven die het wel verdeind wil ik het nu open stellen voor bijdragen vanuit de community. Dus vandaar deze repository :).
+Clickfarm is een "simpel" webspelletje dat ik in mijn vrije tijd geschreven heb. Omdat ik het niet de aandacht kan geven die het wel verdient wil ik het nu open stellen voor bijdragen vanuit de community. Dus vandaar deze repository :).
 
 # Hoe is het begonnen
 Ik wilde graag weten hoe ver ik zou komen als ik zelf iets in HTML/CSS/Javascript zou schrijven, en dat pakte uiteindelijk iets uitgebreider uit dan ik verwacht had moet ik zeggen.
