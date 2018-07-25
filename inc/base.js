@@ -71,6 +71,7 @@ window.onload = function () {
     identUser();
     document.getElementById("sellMenu").style.display = "none";
     objMoney.init();
+    getSaleInfo();
     objEnergy.init();
     objGrainSilo.init();
     objFarmland.init();
