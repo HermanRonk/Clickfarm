@@ -71,8 +71,8 @@ window.onload = function () {
     identUser();
     document.getElementById("sellMenu").style.display = "none";
     objMoney.init();
-    getSaleInfo();
     objEnergy.init();
+    getSaleInfo();
     objGrainSilo.init();
     objFarmland.init();
     objOil.init();
@@ -1352,104 +1352,6 @@ var objChickenFarm = {
         objChickenFarm.grainReserve = localStorage.getItem('GrainReserve') || 0;
         objChickenFarm.amount = localStorage.getItem('ChickenFarms') || 0;
         objChickenFarm.show();
-    }
-}
-
-// Inkopen resources
-var objMarket = {
-    marketState: 0,
-    buy: function (resType, amount) {
-        amount = parseInt(amount);
-        var cost = 0;
-
-        if (resType == "eggs"){
-            cost = +objEgg.price * 1.5;
-            if (moneyCheck(+cost * +amount) == 0) {
-                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
-                return 0;
-            } else {
-                objMoney.use((+cost * amount));
-                objEgg.add(+amount);
-                registerUsage("eggs",(-Math.abs(amount)));
-            }
-        };
-        if (resType == "steel") {
-            cost = +objSteel.price * 1.25;
-            if (moneyCheck(+cost * +amount) == 0) {
-                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
-                return 0;
-            } else {
-                objMoney.use((+cost * amount));
-                objSteel.add(+amount);
-                registerUsage("steel",(-Math.abs(amount)));
-            }
-        };
-        if (resType == "used_fuelrod") {
-            cost = +objFuelRod.wastePrice * 0.5;
-            if (moneyCheck(+cost * +amount) == 0) {
-                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
-                return 0;
-            } else {
-                objMoney.use((+cost * amount));
-                objFuelRod.wasteFunction(+amount);
-                registerUsage("used_fuelrod",(-Math.abs(amount)));
-            }
-        };
-        objMarket.show();
-    },
-    show: function () {
-        getSaleInfo();
-        document.getElementById("buyEggs").innerHTML = "<p>Koop nu eieren voor " + FixMoney((+objEgg.price * 1.5)) + " per stuk</p>" +
-        "<p>Er zijn momenteel " + FixNumber(objSalesInfo.eggs) + " eieren te koop op de markt. Je hebt nog ruimte voor: " + 
-        FixNumber(((+objEgg.storageUnits * +objEgg.storageCap) - +objEgg.amount)) + " eieren. Eventueel overschot wordt direct weer verkocht</p>";
-        document.getElementById("buySteel").innerHTML = "<p>Koop nu staal voor " + FixMoney((+objSteel.price * 1.25)) + " per ton</p>"+
-        "<p>Er is momenteel " + FixNumber(objSalesInfo.steel) + " ton staal te koop op de mark. Je hebt nog ruimte voor: " + 
-        FixNumber(((+objSteel.storage * +objSteel.storageCap) - +objSteel.amount)) + " ton staal. Eventueel overschot wordt direct weer verkocht</p>";
-        document.getElementById("buyWasteFuell").innerHTML = "<p>Koop nu afval splijtstofstaven voor " + FixMoney((+objFuelRod.wastePrice * 0.5)) + " per staaf</p>"+
-        "<p>Er zijn momenteel " + FixNumber(objSalesInfo.used_fuelrod) + " afval splijtstofstaven te koop op de markt. Je hebt onbeperkt ruimte voor afval.</p>";
-        objMarket.showButtonState();
-    },
-    showButtons: function () {
-        objMarket.generateBuyButtons("eggs","buyEggsBTN");
-        objMarket.generateBuyButtons("steel","buySteelBTN");
-        objMarket.generateBuyButtons("used_fuelrod","buyWasteFuellBTN");
-    },
-    showButtonState: function () {
-        if (parseInt(objSalesInfo.steel) > 0) {
-            objMarket.buttonState("steel", parseInt(objSalesInfo.steel));
-        };
-        if (parseInt(objSalesInfo.eggs) > 0) {
-            objMarket.buttonState("eggs", parseInt(objSalesInfo.eggs));
-        };
-        if (parseInt(objSalesInfo.used_fuelrod) > 0) {
-            objMarket.buttonState("used_fuelrod", parseInt(objSalesInfo.used_fuelrod));
-        };
-    },
-    generateBuyButtons: function(resType, buttonName){
-        var i = 1;
-        document.getElementById(buttonName).innerHTML = "<p>";
-        do {
-            var scale = i;
-            i = i * 10;
-            var buttonAction = '"' + resType + '"' + ", " + parseInt(scale);
-            document.getElementById(buttonName).innerHTML += "<button type='button' class='btn btn-danger' onClick='objMarket.buy(" + buttonAction + ")' id='BB" + resType + scale + "'>" + scale + "x</button> ";
-        }
-        while (i < 10001);
-        document.getElementById(buttonName).innerHTML += "</p>";
-    },
-    buttonState: function (resType, amountMarket) {
-        var i = 1;
-        do {
-            if (amountMarket < i) { document.getElementById("BB" + resType + i).disabled = true; } else{
-                document.getElementById("BB" + resType + i).disabled = false;
-            }
-            i = i * 10;
-        }
-        while (i < 10001);
-    },
-    init: function (){
-        objMarket.showButtons();
-        objMarket.show();
     }
 }
 
@@ -3857,7 +3759,6 @@ var objSalesInfo = {
 }
 
 function getSaleInfo() {
-
     var data = "";
     var xhr = new XMLHttpRequest();
 
@@ -3871,9 +3772,7 @@ function getSaleInfo() {
     xhr.open("POST", "/back/resources.php");
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     xhr.setRequestHeader("Cache-Control", "no-cache");
-
     xhr.send(data);
-
 }
 
 // Genoeg geld functie
@@ -3884,6 +3783,107 @@ function moneyCheck(amountNeeded) {
         return 0;
     }
 }
+
+// Inkopen resources
+var objMarket = {
+    marketState: 0,
+    buy: function (resType, amount) {
+        amount = parseInt(amount);
+        var cost = 0;
+
+        if (resType == "eggs"){
+            cost = +objEgg.price * 1.5;
+            if (moneyCheck(+cost * +amount) == 0) {
+                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+                return 0;
+            } else {
+                objMoney.use((+cost * amount));
+                objEgg.add(+amount);
+                registerUsage("eggs",(-Math.abs(amount)));
+            }
+        };
+        if (resType == "steel") {
+            cost = +objSteel.price * 1.25;
+            if (moneyCheck(+cost * +amount) == 0) {
+                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+                return 0;
+            } else {
+                objMoney.use((+cost * amount));
+                objSteel.add(+amount);
+                registerUsage("steel",(-Math.abs(amount)));
+            }
+        };
+        if (resType == "used_fuelrod") {
+            cost = +objFuelRod.wastePrice * 0.5;
+            if (moneyCheck(+cost * +amount) == 0) {
+                notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+                return 0;
+            } else {
+                objMoney.use((+cost * amount));
+                objFuelRod.wasteFunction(+amount);
+                registerUsage("used_fuelrod",(-Math.abs(amount)));
+            }
+        };
+        objMarket.show();
+    },
+    show: function () {
+        getSaleInfo();
+        document.getElementById("buyEggs").innerHTML = "<p>Koop nu eieren voor " + FixMoney((+objEgg.price * 1.5)) + " per stuk</p>" +
+        "<p>Er zijn momenteel " + FixNumber(objSalesInfo.eggs) + " eieren te koop op de markt. Je hebt nog ruimte voor: " + 
+        FixNumber(((+objEgg.storageUnits * +objEgg.storageCap) - +objEgg.amount)) + " eieren. Eventueel overschot wordt direct weer verkocht</p>";
+        document.getElementById("buySteel").innerHTML = "<p>Koop nu staal voor " + FixMoney((+objSteel.price * 1.25)) + " per ton</p>"+
+        "<p>Er is momenteel " + FixNumber(objSalesInfo.steel) + " ton staal te koop op de mark. Je hebt nog ruimte voor: " + 
+        FixNumber(((+objSteel.storage * +objSteel.storageCap) - +objSteel.amount)) + " ton staal. Eventueel overschot wordt direct weer verkocht</p>";
+        document.getElementById("buyWasteFuell").innerHTML = "<p>Koop nu afval splijtstofstaven voor " + FixMoney((+objFuelRod.wastePrice * 0.5)) + " per staaf</p>"+
+        "<p>Er zijn momenteel " + FixNumber(objSalesInfo.used_fuelrod) + " afval splijtstofstaven te koop op de markt. Je hebt onbeperkt ruimte voor afval.</p>";
+        objMarket.showButtonState();
+
+    },
+    showButtons: function () {
+        objMarket.generateBuyButtons("eggs","buyEggsBTN");
+        objMarket.generateBuyButtons("steel","buySteelBTN");
+        objMarket.generateBuyButtons("used_fuelrod","buyWasteFuellBTN");
+    },
+    showButtonState: function () {
+        if (parseInt(objSalesInfo.steel) > 0) {
+            objMarket.buttonState("steel", parseInt(objSalesInfo.steel));
+        };
+        if (parseInt(objSalesInfo.eggs) > 0) {
+            objMarket.buttonState("eggs", parseInt(objSalesInfo.eggs));
+        };
+        if (parseInt(objSalesInfo.used_fuelrod) > 0) {
+            objMarket.buttonState("used_fuelrod", parseInt(objSalesInfo.used_fuelrod));
+        };
+    },
+    generateBuyButtons: function(resType, buttonName){
+        var i = 1;
+        document.getElementById(buttonName).innerHTML = "<p>";
+        do {
+            var scale = i;
+            i = i * 10;
+            var buttonAction = '"' + resType + '"' + ", " + parseInt(scale);
+            document.getElementById(buttonName).innerHTML += "<button type='button' class='btn btn-danger' onClick='objMarket.buy(" + buttonAction + ")' id='BB" + resType + scale + "'>" + scale + "x</button> ";
+        }
+        while (i < 10001);
+        document.getElementById(buttonName).innerHTML += "</p>";
+    },
+    buttonState: function (resType, amountMarket) {
+        var i = 1;
+        do {
+            if (amountMarket < i) { document.getElementById("BB" + resType + i).disabled = true; } else{
+                document.getElementById("BB" + resType + i).disabled = false;
+            }
+            i = i * 10;
+        }
+        while (i < 10001);
+    },
+    init: function (){
+        getSaleInfo();
+        objMarket.showButtons();
+        objMarket.show();
+    }
+}
+
 
 // Verkoopmenu
 var quickSell = parseInt(localStorage.getItem('QS')) || 0;
@@ -3991,6 +3991,7 @@ function changeState() {
 // Loops voor counters
 var timerCounter = 0;
 var paused = 0;
+var NaNMarket = 0;
 var loopsProduction = setInterval(
     function () {
         if (paused === 0) {
@@ -4012,9 +4013,13 @@ var loopsProduction = setInterval(
             objPlayerInfo.levelup();
 
             if ((objWindmill.running === 0) && (objWindmillController.amount >= 1)) objWindmill.autogrind();
+            
+            if (isNaN(objSalesInfo.eggs)) {NaNMarket = 0;} else {NaNMarket = 1;};
+            if (NaNMarket = 1) {objMarket.show(); NaNMarket = 0;};
 
             timerCounter++;
             if (+timerCounter % 5 === 0) {
+                
                 if (+objSalesComputer.cpu > 0) objSalesComputer.autoSell();
                 objOil.priceCalc();
                 if (+objPlasticFactory.amount > 0 || +objPlastic.amount > 0) objPlastic.showPrice();
