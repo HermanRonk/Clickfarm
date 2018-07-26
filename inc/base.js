@@ -72,7 +72,6 @@ window.onload = function () {
     document.getElementById("sellMenu").style.display = "none";
     objMoney.init();
     objEnergy.init();
-    getSaleInfo();
     objGrainSilo.init();
     objFarmland.init();
     objOil.init();
@@ -3746,7 +3745,9 @@ function registerUsage(typeUsage, amount) {
 
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
-            // Melding eventueel
+            console.log(this.responseText);
+            objSalesInfo = JSON.parse(this.responseText);
+            objMarket.show();
         }
     });
 
@@ -3754,9 +3755,7 @@ function registerUsage(typeUsage, amount) {
 }
 
 // Ophalen verkoopstats
-var objSalesInfo = {
-
-}
+var objSalesInfo = {};
 
 function getSaleInfo() {
     var data = "";
@@ -3764,8 +3763,9 @@ function getSaleInfo() {
 
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
+            console.log(this.responseText);
             objSalesInfo = JSON.parse(this.responseText);
-
+            objMarket.show();
         }
     });
 
@@ -3791,9 +3791,9 @@ var objMarket = {
         amount = parseInt(amount);
         var cost = 0;
 
-        if (resType == "eggs"){
+        if (resType === "eggs"){
             cost = +objEgg.price * 1.5;
-            if (moneyCheck(+cost * +amount) == 0) {
+            if (moneyCheck(+cost * +amount) === 0) {
                 notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
                 return 0;
             } else {
@@ -3801,10 +3801,10 @@ var objMarket = {
                 objEgg.add(+amount);
                 registerUsage("eggs",(-Math.abs(amount)));
             }
-        };
-        if (resType == "steel") {
+        }
+        if (resType === "steel") {
             cost = +objSteel.price * 1.25;
-            if (moneyCheck(+cost * +amount) == 0) {
+            if (moneyCheck(+cost * +amount) === 0) {
                 notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
                 return 0;
             } else {
@@ -3812,10 +3812,10 @@ var objMarket = {
                 objSteel.add(+amount);
                 registerUsage("steel",(-Math.abs(amount)));
             }
-        };
-        if (resType == "used_fuelrod") {
+        }
+        if (resType === "used_fuelrod") {
             cost = +objFuelRod.wastePrice * 0.5;
-            if (moneyCheck(+cost * +amount) == 0) {
+            if (moneyCheck(+cost * +amount) === 0) {
                 notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
                 return 0;
             } else {
@@ -3823,11 +3823,9 @@ var objMarket = {
                 objFuelRod.wasteFunction(+amount);
                 registerUsage("used_fuelrod",(-Math.abs(amount)));
             }
-        };
-        objMarket.show();
+        }
     },
     show: function () {
-        getSaleInfo();
         document.getElementById("buyEggs").innerHTML = "<p>Koop nu eieren voor " + FixMoney((+objEgg.price * 1.5)) + " per stuk</p>" +
         "<p>Er zijn momenteel " + FixNumber(objSalesInfo.eggs) + " eieren te koop op de markt. Je hebt nog ruimte voor: " + 
         FixNumber(((+objEgg.storageUnits * +objEgg.storageCap) - +objEgg.amount)) + " eieren. Eventueel overschot wordt direct weer verkocht</p>";
@@ -3837,7 +3835,6 @@ var objMarket = {
         document.getElementById("buyWasteFuell").innerHTML = "<p>Koop nu afval splijtstofstaven voor " + FixMoney((+objFuelRod.wastePrice * 0.5)) + " per staaf</p>"+
         "<p>Er zijn momenteel " + FixNumber(objSalesInfo.used_fuelrod) + " afval splijtstofstaven te koop op de markt. Je hebt onbeperkt ruimte voor afval.</p>";
         objMarket.showButtonState();
-
     },
     showButtons: function () {
         objMarket.generateBuyButtons("eggs","buyEggsBTN");
@@ -3880,7 +3877,6 @@ var objMarket = {
     init: function (){
         getSaleInfo();
         objMarket.showButtons();
-        objMarket.show();
     }
 }
 
@@ -4013,9 +4009,6 @@ var loopsProduction = setInterval(
             objPlayerInfo.levelup();
 
             if ((objWindmill.running === 0) && (objWindmillController.amount >= 1)) objWindmill.autogrind();
-            
-            if (isNaN(objSalesInfo.eggs)) {NaNMarket = 0;} else {NaNMarket = 1;};
-            if (NaNMarket = 1) {objMarket.show(); NaNMarket = 0;};
 
             timerCounter++;
             if (+timerCounter % 5 === 0) {
@@ -4044,7 +4037,7 @@ var loopsProduction = setInterval(
                 objPastaHelper.action();
                 if (objPlasticFactory.workers > 0) objPlasticFactory.produce(1);
             }
-            if (+timerCounter % 30 === 0) objMarket.show();
+            if  ((!isNaN(objSalesInfo.eggs)) && (+timerCounter % 30 === 0)) getSaleInfo();
             if ((+timerCounter % 60 === 0) && (+objFuelRod.waste > 0)) objFuelRod.wastePayment();
             if (quickSell === 1) quickSellMenu();
             if (objFuelCellFactory.amount > 0) objFuelCellFactory.produce();
