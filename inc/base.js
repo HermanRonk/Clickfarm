@@ -210,7 +210,7 @@ var objPlayerInfo = {
         }
     },
     levelup: function () {
-        if (+objMoney.amount > +objPlayerInfo.nextlevel) {
+        if (+objMoney.amount >= +objPlayerInfo.nextlevel) {
             +objPlayerInfo.level++;
             localStorage.setItem('PlayerLevel', objPlayerInfo.level);
             objPlayerInfo.proceslevel("levelup");
