@@ -3853,7 +3853,7 @@ var objMarket = {
         };
     },
     generateBuyButtons: function(resType, buttonName){
-        var i = 1;
+        var i = 100;
         document.getElementById(buttonName).innerHTML = "<p>";
         do {
             var scale = i;
@@ -3861,18 +3861,18 @@ var objMarket = {
             var buttonAction = '"' + resType + '"' + ", " + parseInt(scale);
             document.getElementById(buttonName).innerHTML += "<button type='button' class='btn btn-danger' onClick='objMarket.buy(" + buttonAction + ")' id='BB" + resType + scale + "'>" + scale + "x</button> ";
         }
-        while (i < 10001);
+        while (i < 1000001);
         document.getElementById(buttonName).innerHTML += "</p>";
     },
     buttonState: function (resType, amountMarket) {
-        var i = 1;
+        var i = 100;
         do {
             if (amountMarket < i) { document.getElementById("BB" + resType + i).disabled = true; } else{
                 document.getElementById("BB" + resType + i).disabled = false;
             }
             i = i * 10;
         }
-        while (i < 10001);
+        while (i < 1000001);
     },
     init: function (){
         getSaleInfo();
