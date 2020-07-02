@@ -2281,6 +2281,10 @@ var objMines = {
             document.getElementById("MiningResearch-col").style.display = "";
         }
 
+        if (+objPlayerInfo.level < 8) {
+            Display.hide('MiningResearch-col')
+        }
+
         function generateText(htmlfield, typeMine, mineCost, active, mineName, mineCode, mineButton) {
             document.getElementById(htmlfield).innerHTML = "<h2>" + mineName + "en</h2><p>Je hebt in totaal " + FixNumber(objMines[typeMine]) + " " + mineName +
                 " locaties gevonden. Hiervan zijn er " + FixNumber(objMines[active]) + " actief in gebruik.</p>" +
