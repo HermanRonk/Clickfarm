@@ -660,13 +660,11 @@ var objOilTank = {
         objOilTank.cap = localStorage.getItem('OilTankCap') || 1000;
         objOilTank.price = localStorage.getItem('OilTankPrice') || 1000;
         objOilTank.priceBig = localStorage.getItem('OilTankPriceBig') || 1000000;
-        objOilTank.amountBig = localStorage.getItem('OilTankAmountBig') || 1;
+        objOilTank.amountBig = localStorage.getItem('OilTankAmountBig') || 0;
         objOilTank.totalCap = ((+objOilTank.amount * +objOilTank.cap) + (+objOilTank.amountBig * +objOilTank.capBig));
         objOilTank.show();
     }
 };
-
-
 
 // Farms object
 var objFarmland = {
