@@ -3743,7 +3743,7 @@ function registerUsage(typeUsage, amount) {
 
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
-            console.log(this.responseText);
+            showMessage("Backend verkoopresponse:", this.responseText)
             objSalesInfo = JSON.parse(this.responseText);
             objMarket.show();
         }
@@ -3761,7 +3761,7 @@ function getSaleInfo() {
 
     xhr.addEventListener("readystatechange", function () {
         if (this.readyState === 4) {
-            console.log(this.responseText);
+            showMessage("Backend verkoopstats:", this.responseText)
             objSalesInfo = JSON.parse(this.responseText);
             objMarket.show();
         }
