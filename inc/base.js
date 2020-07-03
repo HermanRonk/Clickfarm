@@ -187,10 +187,10 @@ var objPlayerInfo = {
                 objResearch.show();
 
             case 7: // Level 7 behaald
-                Display.show(['pasta-col', 'AutoSell-col']);
+                Display.show(['AutoSell-col', 'plastic-row']);
 
             case 6: // Level 6 behaald
-                Display.show(['WindmillController', 'chicken-col', 'plastic-row']);
+                Display.show(['WindmillController', 'chicken-col', 'pasta-col']);
 
             case 5: // Level 5 behaald
                 Display.show('farmland-automation');
