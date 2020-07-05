@@ -458,7 +458,7 @@ var objGrainSilo = {
         document.getElementById("GrainAmount").innerHTML = "<p>Hoeveelheid graan op voorraad: " + FixNumber(objGrainSilo.contents) + "kg</p>";
         localStorage.setItem('GrainSiloContents', objGrainSilo.contents);
         document.getElementById("GrainSiloPrice").innerHTML = "<p>Een silo kost " + FixMoney(objGrainSilo.price) + " en kan " + FixNumber(objGrainSilo.cap) + "KG graan bevatten</p>";
-        document.getElementById("GrainTop").innerHTML = "Graan: <kbd2>" + FixNumber(objGrainSilo.contents) + "/" + FixNumber((objGrainSilo.amount * objGrainSilo.cap)) + "</kbd2>";
+        document.getElementById("GrainTop").innerHTML = "Graan: <kbd2>" + FixNumber(objGrainSilo.contents) + "/" + FixNumber((objGrainSilo.amount * objGrainSilo.cap)) + "</kbd2>";    
         objGrainSilo.visual();
     },
     init: function () {
@@ -1338,12 +1338,56 @@ var objChickenFarm = {
             notificationOverlay("Niet genoeg doekoe!", "Kippenboerderij", "fa-euro-sign");
         }
     },
+    showButtons: function (a,b,c,d,e,f) {
+        // functie voor het aan/uit zetten van de koop kippen knoppen
+        document.getElementById("CickenAnd1").disabled = a;
+        document.getElementById("CickenAnd10").disabled = b;
+        document.getElementById("CickenAnd100").disabled = c;
+        document.getElementById("CickenAnd1000").disabled = d;
+        document.getElementById("CickenAnd10000").disabled = e;
+        document.getElementById("CickenAnd100000").disabled = f;
+    },
     show: function () {
         document.getElementById("ChickenFarm").innerHTML = "<p>Je hebt op dit moment " + objChickenFarm.amount + " kippenboerderijen met nog plek voor " +
             ((+objChickenFarm.amount * +objChickenFarm.cap) - +objChicken.amount) + " kippen. Een extra kippenboerderij kost: " + FixMoney(objChickenFarm.cost) + "</p><p>" +
             "Er is opslag voor " + FixNumber((+objEgg.storageCap * +objEgg.storageUnits)) + " eieren. Extra opslag bied plaats voor " + FixNumber(objEgg.storageCap) +
             " eieren en kost: " + FixMoney(objEgg.storageUnitCost) + "</p><p>Iedere farm heeft opslag voor " + FixNumber(objChickenFarm.grainSiloCap) + "kg voer. Er is nog " +
             FixNumber(objChickenFarm.grainReserve) + "kg voer voor de kippen beschikbaar";
+        // Eventueel de knoppen voor het kopen van kippen uitschakelen als er geen plek meer is.
+        ChickenSpace = ((+objChickenFarm.amount * +objChickenFarm.cap) - +objChicken.amount);
+        showMessage("cp", ChickenSpace);
+        switch (true) {
+            case (ChickenSpace == 0):
+                showMessage("cp", "CP-1");
+                objChickenFarm.showButtons(1,1,1,1,1,1);
+                break;    
+            case (ChickenSpace < 10):
+                showMessage("cp", "CP-2");
+                objChickenFarm.showButtons(0,1,1,1,1,1);
+                break;  
+            case (ChickenSpace < 100):
+                showMessage("cp", "CP-3");
+                objChickenFarm.showButtons(0,0,1,1,1,1);
+                break;   
+            case (ChickenSpace < 1000):
+                showMessage("cp", "CP-4");
+                objChickenFarm.showButtons(0,0,0,1,1,1);
+                break;  
+            case (ChickenSpace < 10000):
+                showMessage("cp", "CP-5");
+                objChickenFarm.showButtons(0,0,0,0,1,1);
+                break;  
+            case (ChickenSpace < 100000):
+                showMessage("cp", "CP-6");
+                objChickenFarm.showButtons(0,0,0,0,0,1); 
+                break;  
+            case (ChickenSpace < 1000000):
+                showMessage("cp", "CP-7");
+                objChickenFarm.showButtons(0,0,0,0,0,0);
+                break;
+            default:
+                break;
+        }
     },
     init: function () {
         objChickenFarm.grainReserve = localStorage.getItem('GrainReserve') || 0;
@@ -1351,7 +1395,6 @@ var objChickenFarm = {
         objChickenFarm.show();
     }
 }
-
 
 // Eieren
 var objEgg = {
@@ -1628,7 +1671,7 @@ var objPastaHelper = {
         }
     },
     show: function () {
-        if (objPlayerInfo.level > 8) {
+        if (objPlayerInfo.level > 6) {
             document.getElementById('pastaHelperDiv').innerHTML = "<p>Je kan iemand in dienst nemen om een pastafabriek voor je te bedienen. Hij/Zij drukt iedere 15 seconden op de knop om pasta voor je te maken.</p>" +
                 "<p>Iedere pastahelper pakt 5% van de pasta mee naar huis om zijn familie te laten eten. Het aannemen van een pastahelper kost je: " + FixMoney(objPastaHelper.cost) + ", " +
                 "je kan hem ook weer ontslaan, je krijgt hier geen geld voor terug! Iedere pastahelper kan 1 fabriek aansturen</p>" +
@@ -2069,7 +2112,7 @@ var objResearch = {
         if (+objPlayerInfo.level > 7) {
             if (+objResearch.running === 1) {
                 objResearch.timer = parseInt(localStorage.getItem('rTimer'));
-                console.log(objResearch.timer);
+                showMessage("Research timer",objResearch.timer)
                 document.getElementById("ResearchTimer").innerHTML = "<p>Het onderzoek is klaar over: " + (objResearch.timer) + " Seconden</p>";
                 document.getElementById("MiningResearch").disabled = true;
             }
