@@ -2,16 +2,12 @@
 <html lang="en">
 
 <head>
-<!-- Matomo -->
-  
-
-<!-- End Matomo Code -->
     <title>Clickfarm.nl</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <script src="./inc/base.js?<?= filemtime('./inc/base.js')?>"></script>
+    <script src="./inc/base.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
-    <link rel="stylesheet" href="./css/style.css?<?= filemtime('./css/style.css')?>">
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 
 <body>
@@ -40,7 +36,6 @@
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDonateDropdown">
                         <a class="dropdown-item" target="_blank" href="https://paypal.me/clickfarmgame"><i class="fab fa-fw fa-paypal"></i> Donatie PayPal</a>
-                        <a class="dropdown-item" target="_blank" href="https://bunq.me/game"><i class="far fa-fw fa-credit-card"></i> Donatie Overig</a>
                     </div>
 
                 </li>
@@ -276,11 +271,12 @@
                 <button type="button" class="btn btn-primary" onclick="objEgg.addStorageUnit();" id="purchaseEggStorage">Bouw een eieropslag</button>
                 <h3>Kippen:</h3>
                 <div id="Chickens"></div>
-                <button type="button" class="btn btn-outline-success" onclick="objChicken.add(1);">+1</button>
-                <button type="button" class="btn btn-outline-success" onclick="objChicken.add(100);">+100</button>
-                <button type="button" class="btn btn-outline-success" onclick="objChicken.add(1000);">+1.000</button>
-                <button type="button" class="btn btn-outline-success" onclick="objChicken.add(10000);">+10.000</button>
-                <button type="button" class="btn btn-outline-success" onclick="objChicken.add(100000);">+100.000</button>
+                <button type="button" class="btn btn-primary" id="CickenAnd1" onclick="objChicken.add(1);">+1</button>
+                <button type="button" class="btn btn-primary" id="CickenAnd10" onclick="objChicken.add(10);">+10</button>
+                <button type="button" class="btn btn-primary" id="CickenAnd100" onclick="objChicken.add(100);">+100</button>
+                <button type="button" class="btn btn-primary" id="CickenAnd1000" onclick="objChicken.add(1000);">+1.000</button>
+                <button type="button" class="btn btn-primary" id="CickenAnd10000" onclick="objChicken.add(10000);">+10.000</button>
+                <button type="button" class="btn btn-primary" id="CickenAnd100000" onclick="objChicken.add(100000);">+100.000</button>
                 <h3>Verkopen:</h3>
                 <div id="eggs"></div>
                 <div id="eggStock"></div>
