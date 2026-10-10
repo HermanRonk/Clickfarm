@@ -303,6 +303,9 @@ var objOil = {
   tempUsage: 0,
   sellOil: function () {
     var amount = +objOilTank.contents - +objPowerPlant.amount * 5;
+    if (+amount <= 0) {
+      return 0;
+    }
     var Profit =
       +objOilTank.use(parseInt(amount), "Handmatige verkoop Olie") *
       +objOil.price;
@@ -3257,8 +3260,11 @@ var objCoal = {
     var reason = "Verkoop overschot steenkool";
     if (+amountSold == 0) {
       amountSold = objCoal.amount;
-      objCoal.use(+amountSold - +coalNeeded);
       reason = "Handmatige verkoop steenkool";
+      if (+amountSold <= +coalNeeded) {
+        return 0;
+      }
+      objCoal.use(+amountSold - +coalNeeded);
     }
     if (+amountSold <= +coalNeeded) {
       return 0;
@@ -3271,7 +3277,7 @@ var objCoal = {
   },
   buy: function (amountBought) {
     if (objCoal.amount < +objCoal.storage * +objCoal.storageCap * 0.05) {
-      var cost = (+amountBought / 1000) * (+objCoal.price * 1.5);
+      var cost = +amountBought * (+objCoal.price * 1.5);
       if (+cost > +objMoney.amount) {
         notificationOverlay("Niet genoeg doekoe!", "Steenkool", "fa-euro-sign");
         return 0;
