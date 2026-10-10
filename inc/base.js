@@ -1374,6 +1374,13 @@ var objFlour = {
 
 // Game settings knoppen
 function resetGame() {
+  if (
+    !confirm(
+      "Weet je zeker dat je het spel wilt resetten? Je voortgang gaat verloren!"
+    )
+  ) {
+    return;
+  }
   localStorage.clear();
   location.reload();
 }
@@ -1589,7 +1596,7 @@ var objEnergy = {
     document.getElementById("OilUsage").innerHTML =
       "<p>Olieverbruik: " +
       FixNumber(
-        objPowerPlant.amount +
+        +objPowerPlant.amount +
           +objPlasticFactory.activeFactories *
             +objPlasticFactory.oilNeededProduction
       ) +
@@ -2948,7 +2955,10 @@ var objMines = {
       var mCost = mineType + "MineCost";
       var mActive = mineType + "AmountActive";
       var mProspected = mineType + "AmountProspected";
-      if (+mProspected - +mActive < 1) {
+      if (
+        +amountAdded == 1 &&
+        +objMines[mProspected] - +objMines[mActive] < 1
+      ) {
         notificationOverlay(
           "Geen locaties meer beschikbaar",
           "Mijnbouw",
@@ -3069,7 +3079,7 @@ var objMines = {
         mineCode +
         ", 0);' id='" +
         mineButton +
-        "'>Verkoop " +
+        "Sell'>Verkoop " +
         mineName +
         "</button>";
       return 0;
@@ -3866,7 +3876,7 @@ var objPlastic = {
   storageCap: 100000,
   storagePrice: 1500000,
   addStorage: function () {
-    if (moneyCheck(+objSteel.storagePrice) == 0) {
+    if (moneyCheck(+objPlastic.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
         "Kunststof opslag",
@@ -5192,7 +5202,7 @@ function quickSellButtons() {
     let paragraph = document.createElement("p");
     paragraph.appendChild(button);
 
-    document.getElementById(elementId).innerHTML = paragraph.outerHTML;
+    document.getElementById(elementId).replaceChildren(paragraph);
   });
 }
 
