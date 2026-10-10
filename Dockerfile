@@ -1,29 +1,12 @@
-
-FROM node
+FROM nginxinc/nginx-unprivileged:1.30.5-alpine
 LABEL authors="Herman Ronk"
-# update dependencies and install curl
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-# Create app directory
-WORKDIR /app
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-# COPY package*.json ./ \
-#     ./source ./
 
-# This will copy everything from the source path 
-# --more of a convenience when testing locally.
-COPY . .
-# update each dependency in package.json to the latest version
-RUN npm install -g npm-check-updates \
-    ncu -u \
-    npm install \
-    npm install express 
-# If you are building your code for production
-RUN npm ci --only=production
-# Bundle app source
-COPY . /app
-EXPOSE 13900
-CMD [ "index.js" ]
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY index.html favicon.ico /usr/share/nginx/html/
+COPY css /usr/share/nginx/html/css
+COPY inc /usr/share/nginx/html/inc
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget -q -O /dev/null http://127.0.0.1:8080/healthz || exit 1
