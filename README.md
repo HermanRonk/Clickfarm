@@ -12,24 +12,37 @@ Een aantal zaken zoals bepaalde vormen van research hebben nu nog een eigen loop
 - bugfixing
 - documentatie
 - resterende mijnen implementeren
-
-# Opmerkingen
-De code die hier staat is als je een MySQL database beschikbaar hebt zelf te draaien (Docker, houd er rekening mee dat je de port in de dockerfile goed moet zetten (handmatig)). de database structuur is te vinden in de `database.sql` file. Verder is het een kwestie van de code clonen en de environment variablen mee sturen aanpassen met de juiste database gegevens.
-
-# NodeJS version
-Transitie naar NodeJS voor de backend afgerond. 
-
-# Todo
 - Olie start voorraad capaciteit is te groot
 - Pasta fabriek komt niet beschikbaar
 
+# Hoe werkt het
+Clickfarm draait volledig in de browser, er is geen backend of database (meer) nodig:
 
-# Environment
+- De voortgang wordt opgeslagen in de `localStorage` van de browser.
+- Marktprijzen (olie, graan, meel) en de voorraad op de markt (eieren, staal, splijtstofstaven) worden in de browser bepaald.
+- Via *Game opties → Exporteer save-code* kopieer je je savegame naar het klembord. Met *Importeer save-code* zet je hem weer terug, ook in een andere browser.
+
+De bestanden:
+
+| Pad | Inhoud |
+| --- | --- |
+| `index.html` | De pagina (Bootstrap 5 en Font Awesome via jsDelivr) |
+| `inc/base.js` | Alle spellogica |
+| `css/style.css` | Eigen opmaak |
+| `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |
+
+# Zelf draaien
+Zonder installatie: open `index.html` in je browser, of start een simpele webserver in de map, bijvoorbeeld:
+
 ```
-DB_HOST=
-DB_USER=
-DB_PASS=
-DB_NAME=
-ALLOWED_ORIGINS=
-PORT=
+python3 -m http.server 8080
 ```
+
+Met Docker:
+
+```
+docker build -t clickfarm .
+docker run --rm -p 8080:8080 clickfarm
+```
+
+Ga daarna naar http://localhost:8080. De container luistert op poort `8080`, draait niet als root en heeft een health check op `/healthz`.
