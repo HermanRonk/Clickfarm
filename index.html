@@ -6,23 +6,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <script src="./inc/base.js"></script>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="./css/style.css">
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top px-3">
         <a class="navbar-brand" href="#">Clickfarm.nl</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
             aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
+            <ul class="navbar-nav me-auto">
                 <li class="nav-item active">
                     <a class="nav-link" href="#">Home
-                        <span class="sr-only">(current)</span>
+                        <span class="visually-hidden">(current)</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -30,20 +30,18 @@
                 </li>
 
                 <li class="nav-item dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarDonateDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
+                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarDonateDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="false">
                         Donatie
                     </button>
                     <div class="dropdown-menu" aria-labelledby="navbarDonateDropdown">
                         <a class="dropdown-item" target="_blank" href="https://paypal.me/clickfarmgame"><i class="fab fa-fw fa-paypal"></i> Donatie PayPal</a>
                     </div>
-                    <div class="dropdown-menu" aria-labelledby="navbarDonateDropdown">
-                        <a class="dropdown-item" target="_blank" href="https://www.buymeacoffee.com/bonusbrief"><i class="fab fa-fw fa-paypal"></i> Buy me a coffee</a>
-                    </div>
+
                 </li>
 
                 <li class="nav-item dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarOptionDropdown" data-toggle="dropdown" aria-haspopup="true"
+                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarOptionDropdown" data-bs-toggle="dropdown" aria-haspopup="true"
                         aria-expanded="false">
                         Game opties
                     </button>
@@ -55,8 +53,8 @@
                         <button id="autocloseBTN" onclick="turnAutoClose(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet auto-sluit berichten aan</button>
                         <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet debug aan</button>
                         <hr>
-                        <button onclick="saveFixed()" class="dropdown-item"><i class="fas fa-fw fa-upload"></i> Exporteer save ID</button>
-                        <button onclick="importFile()" class="dropdown-item"><i class="fas fa-fw fa-download"></i> Importeer game/save ID</button>
+                        <button onclick="saveFixed()" class="dropdown-item"><i class="fas fa-fw fa-upload"></i> Exporteer save-code</button>
+                        <button onclick="importFile()" class="dropdown-item"><i class="fas fa-fw fa-download"></i> Importeer save-code</button>
                     </div>
 
                 </li>
@@ -324,22 +322,22 @@
                 <div id="autoSellOil"></div>
                 Actief:
                 <input type="checkbox" id="autoOilCheck" onchange="objSalesComputer.checkOil(this.checked)">
-                <input class="custom-range " id="SliderOil" type="range" min="0" max="20" step="1" value="20" onchange="objSalesComputer.showOil(this.value)" oninput="objSalesComputer.showOil(this.value)"
+                <input class="form-range" id="SliderOil" type="range" min="0" max="20" step="1" value="20" onchange="objSalesComputer.showOil(this.value)" oninput="objSalesComputer.showOil(this.value)"
                 />
                 <div id="autoSellFlour"> </div>
                 Actief:
                 <input type="checkbox" id="autoFlourCheck" onchange="objSalesComputer.checkFlour(this.checked)">
-                <input class="custom-range " id="SliderFlour" type="range" min="0" max="875" step="25" value="875" onchange="objSalesComputer.showFlour(this.value)" oninput="objSalesComputer.showFlour(this.value)"
+                <input class="form-range" id="SliderFlour" type="range" min="0" max="875" step="25" value="875" onchange="objSalesComputer.showFlour(this.value)" oninput="objSalesComputer.showFlour(this.value)"
                 />
                 <div id="autoSellPasta"> </div>
                 Actief:
                 <input type="checkbox" id="autoPastaCheck" onchange="objSalesComputer.checkPasta(this.checked)">
-                <input class="custom-range " id="SliderPasta" type="range" min="0" max="450" step="25" value="450" onchange="objSalesComputer.showPasta(this.value)" oninput="objSalesComputer.showPasta(this.value)"
+                <input class="form-range" id="SliderPasta" type="range" min="0" max="450" step="25" value="450" onchange="objSalesComputer.showPasta(this.value)" oninput="objSalesComputer.showPasta(this.value)"
                 />
                 <div id="autoSellKunststof"> </div>
                 Actief:
                 <input type="checkbox" id="autoKunststofCheck" onchange="objSalesComputer.checkKunststof(this.checked)">
-                <input class="custom-range " id="SliderKunststof" type="range" min="0" max="260" step="10" value="260" onchange="objSalesComputer.showKunststof(this.value)" oninput="objSalesComputer.showKunststof(this.value)"
+                <input class="form-range" id="SliderKunststof" type="range" min="0" max="260" step="10" value="260" onchange="objSalesComputer.showKunststof(this.value)" oninput="objSalesComputer.showKunststof(this.value)"
                 />
 
             </div>
@@ -483,11 +481,9 @@
     </div>
     <div class="notification-container" id="notif">
     </div>
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 
-    <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/js/all.min.js" integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc" crossorigin="anonymous"></script>
 
 </body>
 

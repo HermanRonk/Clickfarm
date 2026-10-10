@@ -18,62 +18,10 @@ function turnDebug(inputDB) {
   }
 }
 
-// guid vastleggen
-function identUser() {
-  let newUser = localStorage.getItem("onlineUserID") || 0;
-
-  // In the case of a not yet online registered user:
-  if (newUser == 0) {
-    let uuid = localStorage.getItem("guid") || guid();
-    localStorage.setItem("guid", uuid);
-
-    let progress = saveProgress();
-
-    let data = {
-      id: uuid,
-      savegame: progress,
-      type: "save_initial",
-    };
-
-    fetch("/saveinit", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-      },
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((objSaveGame) => {
-        localStorage.setItem("onlineUserID", objSaveGame._id);
-      });
-
-    newUser = 1;
-    localStorage.setItem("newUser", newUser);
-  }
-}
-
-// genereer een uniek GUID
-function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return (
-    s4() +
-    s4() +
-    "-" +
-    s4() +
-    "-" +
-    s4() +
-    "-" +
-    s4() +
-    "-" +
-    s4() +
-    s4() +
-    s4()
+// Opruimen sleutels van de oude online koppeling (er is geen backend meer)
+function cleanupLegacyKeys() {
+  ["onlineUserID", "newUser", "guid"].forEach((storageKey) =>
+    localStorage.removeItem(storageKey)
   );
 }
 
@@ -104,7 +52,7 @@ window.onload = function () {
     "nuclearFuel-row",
     "market-row",
   ]);
-  identUser();
+  cleanupLegacyKeys();
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
   objMoney.init();
@@ -291,7 +239,6 @@ var objMoney = {
     objMoney.showUpdate(description, moneyProfit);
     made = +made + +moneyProfit;
     localStorage.setItem("made", made);
-    registerSale(tt, amount, moneyProfit);
     if (quickSell === 1) {
       quickSellMenu();
     }
@@ -335,29 +282,19 @@ var objPrijslijst = {
   Oil: 0,
 };
 
-// Itemprijs ophalen uit Database
+// Willekeurig geheel getal tussen min en max (inclusief)
+function randomBetween(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Itemprijzen bepalen (voorheen centraal in de database)
 function getPrice() {
-  fetch("/resources/getprice", {
-    method: "GET",
-    headers: {
-      "Cache-Control": "no-cache",
-    },
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((objPl) => {
-      objPrijslijst = objPl;
-      showMessage("Backend ophalen prijs:", objPrijslijst);
-    })
-    .catch((e) => {
-      console.error(
-        "There was a problem with your fetch operation: " + e.message
-      );
-    });
+  objPrijslijst.Oil = randomBetween(0, 20);
+  objPrijslijst.GrainLow = randomBetween(1, 500);
+  objPrijslijst.GrainHigh = randomBetween(1, 250);
+  objPrijslijst.FlourLow = randomBetween(100, 900);
+  objPrijslijst.FlourHigh = randomBetween(100, 450);
+  showMessage("Prijzen bepaald", JSON.stringify(objPrijslijst));
 }
 
 //Oil object
@@ -371,13 +308,11 @@ var objOil = {
       +objOil.price;
     var text = "Verkoop Olie";
     objMoney.add(Profit, text, 1, amount);
-    registerUsage("Oil", parseInt(amount));
   },
   sellRest: function (Rest) {
     var Profit = +Rest * (+objOil.price * 0.8);
     var text = "Verkoop Olie Restant";
     objMoney.add(Profit, text, 1, Rest);
-    registerUsage("Oil", parseInt(Rest));
     objOilTank.show();
   },
   produceOil: function () {
@@ -1894,7 +1829,6 @@ var objEgg = {
     }
     var Profit = +aantal * +objEgg.price;
     objMoney.add(+Profit, reden, 6, aantal);
-    registerUsage("eggs", parseInt(aantal));
   },
   addStorageUnit: function () {
     if (+objMoney.amount >= +objEgg.storageUnitCost) {
@@ -2614,7 +2548,6 @@ var objSalesComputer = {
           1,
           oilUsed
         );
-        registerUsage("Oil", parseInt(oilUsed));
       }
     }
     if (objSalesComputer.autoSellFlour == true && +objSalesComputer.cpu > 1) {
@@ -3658,7 +3591,6 @@ var objSteel = {
       var profit = +amountSold * (+objSteel.price * 0.2);
       objMoney.add(+profit, reason, 15, amountSold);
     }
-    registerUsage("steel", parseInt(amountSold));
     return 0;
   },
   add: function (amountAdded) {
@@ -4371,7 +4303,6 @@ var objFuelRod = {
       objFuelRod.waste = 0;
       localStorage.setItem("frWaste", objFuelRod.waste);
       objFuelRod.show();
-      registerUsage("used_fuelrod", wasted);
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
@@ -4929,208 +4860,58 @@ function saveProgress() {
   return btoa(JSON.stringify(lsExport));
 }
 
-// Savegame uploaden naar backend
-async function pushProgress() {
-  const progressString = saveProgress();
-  const uuid = localStorage.getItem("onlineUserID");
-  const data = {
-    id: uuid,
-    savegame: progressString,
-    type: "save",
-  };
+// Savegame-code exporteren naar het klembord
+async function saveFixed() {
+  const code = saveProgress();
+  try {
+    await navigator.clipboard.writeText(code);
+    notificationOverlay(
+      "De save-code staat op je klembord!",
+      "Savegame",
+      "fa-upload"
+    );
+  } catch (error) {
+    prompt("Kopieer de save-code hieronder:", code);
+  }
+}
 
-  const response = await fetch("/connector", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
-    },
-    body: JSON.stringify(data),
-  });
+// Savegame-code importeren
+function importFile() {
+  const code = prompt("Voer de geëxporteerde save-code in:");
+  if (code) getSaveGame(code.trim());
+}
 
-  if (!response.ok) {
-    console.error("Error:", response.status, response.statusText);
+// Savegame-code terugzetten in localStorage
+function getSaveGame(code) {
+  let decodedFile;
+  try {
+    decodedFile = JSON.parse(atob(code));
+    if (!Array.isArray(decodedFile)) throw new Error("Geen lijst");
+  } catch (error) {
+    alert("Ongeldige save-code!");
     return;
   }
-}
-
-var objSaveGame = {
-  Created_date: 0,
-  _id: 0,
-  saveGame: 0,
-  userId: 0,
-  typeSave: 0,
-  __v: 0,
-};
-
-// Savegame maken-
-
-async function saveFixed() {
-  var progress = saveProgress();
-  var uuid = localStorage.getItem("guid");
-
-  var data = {
-    id: uuid,
-    savegame: progress,
-    type: "save_pers",
-  };
-
-  try {
-    let response = await fetch("/savepers", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-      },
-    });
-
-    if (response.ok) {
-      let objSaveGame = await response.json();
-      var uuid = objSaveGame._saveid;
-      var dummy = document.createElement("input");
-      document.body.appendChild(dummy);
-      dummy.setAttribute("id", "dummy_id");
-      dummy.setAttribute("value", uuid);
-      dummy.select();
-      document.execCommand("copy");
-      document.body.removeChild(dummy);
-      var onzin = prompt(
-        "De savegamecode is naar je clipboard geschreven! Je kan de code hier onder ook handmatig kopieren",
-        uuid
-      );
-    } else {
-      console.error(`Error: ${response.status} ${response.statusText}`);
+  localStorage.clear();
+  decodedFile.forEach((item) => {
+    const split = item.indexOf(":");
+    if (split > 0) {
+      localStorage.setItem(item.slice(0, split), item.slice(split + 1));
     }
-  } catch (error) {
-    console.error("Fetch Error:", error);
-  }
-}
-
-// Importeren LS waardes
-function importFile() {
-  var gamerCode = prompt("Voor de gexporteerde code in:");
-  // ophalen waardes via API
-  getSaveGame(gamerCode);
-}
-
-// Ophalen savegame via API
-async function getSaveGame(uuid) {
-  const data = {
-    id: uuid,
-  };
-
-  try {
-    const response = await fetch("/restore", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
-      },
-    });
-
-    if (response.ok) {
-      const objSaveGame = await response.json();
-      // If no savegame found, alert the user and return
-      if (objSaveGame.sg === "none") {
-        alert("No savegame found!");
-        return;
-      }
-      localStorage.setItem("onlineUserID", objSaveGame._id);
-      console.log(objSaveGame);
-      const decodedFile = JSON.parse(atob(objSaveGame.savegame));
-      localStorage.clear();
-      decodedFile.forEach((item) => {
-        const lsFields = item.split(":");
-        localStorage.setItem(lsFields[0], lsFields[1]);
-      });
-      localStorage.setItem("onlineUserID", 0);
-      identUser();
-      location.reload();
-    } else {
-      console.error(`Error: ${response.status} ${response.statusText}`);
-    }
-  } catch (error) {
-    console.error("Fetch Error:", error);
-  }
-}
-
-// Registreren verkoop
-function registerSale(tt, amount, profit) {
-  var uuid = localStorage.getItem("guid");
-  var url = "/sales";
-
-  var data = {
-    id: uuid,
-    type: tt,
-    amount: amount,
-    profit: profit,
-  };
-
-  fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
-    },
-    body: JSON.stringify(data),
-  }).catch((error) => {
-    console.error("Error:", error);
   });
+  location.reload();
 }
 
-// Centraal vastleggen verkoop
-function registerUsage(typeUsage, amount) {
-  const data = {
-    reso: typeUsage,
-    amount: parseInt(amount),
-    req: "update",
-  };
-
-  fetch("/resources/update", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
-    },
-    body: JSON.stringify(data),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      showMessage("Backend verkoopresponse:", data);
-      objSalesInfo = data;
-      objMarket.show();
-    })
-    .catch((e) => {
-      console.error("Error:", e.message);
-    });
-}
-
-// Ophalen verkoopstats
+// Marktvoorraad (voorheen centraal in de database, nu gesimuleerd)
 var objSalesInfo = {};
 
 function getSaleInfo() {
-  fetch("/resources/saleinfo", {
-    method: "GET",
-    headers: {
-      "Cache-Control": "no-cache",
-    },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      showMessage("Backend verkoopstats:", data);
-      objSalesInfo = data;
-      objMarket.show();
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-    });
+  objSalesInfo = {
+    eggs: randomBetween(0, 500000),
+    steel: randomBetween(0, 250000),
+    used_fuelrod: randomBetween(0, 100000),
+  };
+  showMessage("Marktvoorraad", JSON.stringify(objSalesInfo));
+  objMarket.show();
 }
 
 // Genoeg geld functie
@@ -5145,6 +4926,10 @@ function moneyCheck(amountNeeded) {
 // Inkopen resources
 var objMarket = {
   marketState: 0,
+  take: function (resType, amount) {
+    objSalesInfo[resType] = Math.max(0, +objSalesInfo[resType] - +amount);
+    objMarket.show();
+  },
   buy: function (resType, amount) {
     amount = parseInt(amount);
     var cost = 0;
@@ -5157,7 +4942,7 @@ var objMarket = {
       } else {
         objMoney.use(+cost * amount);
         objEgg.add(+amount);
-        registerUsage("eggs", -Math.abs(amount));
+        objMarket.take("eggs", amount);
       }
     }
     if (resType === "steel") {
@@ -5168,7 +4953,7 @@ var objMarket = {
       } else {
         objMoney.use(+cost * amount);
         objSteel.add(+amount);
-        registerUsage("steel", -Math.abs(amount));
+        objMarket.take("steel", amount);
       }
     }
     if (resType === "used_fuelrod") {
@@ -5179,7 +4964,7 @@ var objMarket = {
       } else {
         objMoney.use(+cost * amount);
         objFuelRod.wasteFunction(+amount);
-        registerUsage("used_fuelrod", -Math.abs(amount));
+        objMarket.take("used_fuelrod", amount);
       }
     }
   },
@@ -5261,8 +5046,8 @@ var objMarket = {
     } while (i < 1000001);
   },
   init: function () {
-    getSaleInfo();
     objMarket.showButtons();
+    getSaleInfo();
   },
 };
 
