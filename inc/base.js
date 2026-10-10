@@ -263,7 +263,7 @@ var objMoney = {
     showHistory(description + " " + FixMoney(profitRound));
   },
   init: function () {
-    objMoney.amount = parseInt(localStorage.getItem("Money")) || 2000;
+    objMoney.amount = parseFloat(localStorage.getItem("Money")) || 2000;
     objMoney.show();
   },
 };
@@ -303,6 +303,9 @@ var objOil = {
   tempUsage: 0,
   sellOil: function () {
     var amount = +objOilTank.contents - +objPowerPlant.amount * 5;
+    if (+amount <= 0) {
+      return 0;
+    }
     var Profit =
       +objOilTank.use(parseInt(amount), "Handmatige verkoop Olie") *
       +objOil.price;
@@ -336,7 +339,7 @@ var objOil = {
     localStorage.setItem("OilPrice", objOil.price);
   },
   init: function () {
-    objOil.price = localStorage.getItem("Oilprice") || 10;
+    objOil.price = localStorage.getItem("OilPrice") || 10;
   },
 };
 
@@ -391,7 +394,7 @@ var objFarmRobot = {
       "De oogst is klaar over: " + objFarmRobot.robotTimer + " Seconden";
   },
   work: function () {
-    if (objFarmRobot.amount === 0) return 0;
+    if (+objFarmRobot.robots === 0) return 0;
     let tempEnergy = objEnergy.available;
     objFarmRobot.activeRobots = Math.floor(
       tempEnergy / objFarmRobot.robotEnergy
@@ -660,9 +663,22 @@ var objOilTank = {
   priceBig: 1000000,
   capBig: 1000000,
   remove: function () {
+    if (+objOilTank.amount == 1 && +objOilTank.amountBig == 0) {
+      notificationOverlay(
+        "Je hebt minimaal één olietank nodig!",
+        "Olietanks",
+        "fa-industry"
+      );
+      return 0;
+    }
     if (+objOilTank.amount > 0) {
-      if (+objOilTank.contents > +objOilTank.contents - +objOilTank.cap) {
-        objOilTank.use(parseInt(objOilTank.cap), "Verkoop olietank");
+      // Alleen de olie die niet meer in de overige tanks past wordt weggespoeld
+      var capAfterSale = +objOilTank.totalCap - +objOilTank.cap;
+      if (+objOilTank.contents > +capAfterSale) {
+        objOilTank.use(
+          +objOilTank.contents - +capAfterSale,
+          "Verkoop olietank"
+        );
       }
       objOilTank.amount = +objOilTank.amount - 1;
       objMoney.add(+objOilTank.price * 0.5, "Verkoop olietank", 20, 1);
@@ -1001,7 +1017,7 @@ var objFarmland = {
   init: function () {
     objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
     objFarmland.cost = parseInt(localStorage.getItem("FarmlandCost")) || 10;
-    objFarmland.harvest = parseInt(localStorage.getItem("Harvest")) || 100;
+    objFarmland.harvest = parseFloat(localStorage.getItem("Harvest")) || 100;
     objFarmland.GrainResearchCostVar =
       parseInt(localStorage.getItem("GrainResearchCostVar")) || 5000;
     objFarmland.GrainResearchDuration =
@@ -1027,16 +1043,6 @@ var objFarmland = {
     objFarmland.showResearch();
   },
 };
-
-//temp clearing function
-
-function clearingFlour() {
-  localStorage.removeItem("GrainSiloContents");
-
-  localStorage.setItem("FlourSiloContents", 20000);
-
-  location.reload();
-}
 
 // Windmill object
 var objWindmill = {
@@ -1125,9 +1131,9 @@ var objWindmill = {
       +objEnergy.available <
       (objWindmillController.amount * objWindmillController.energy) / 10
     ) {
-      objWindmill.amountAutomated = Math.floor(
-        objEnergy.available /
-          ((objWindmillController.amount * objWindmillController.energy) / 10)
+      objWindmill.amountAutomated = Math.min(
+        Math.floor(objEnergy.available / (objWindmillController.energy / 10)),
+        objWindmill.amount
       );
       if (objWindmill.amountAutomated === 0) {
         objWindmill.running = 0;
@@ -1167,10 +1173,8 @@ var objWindmill = {
   autogrind_loop: function () {
     let energyNeeded =
       objWindmill.amountAutomated * objWindmillController.energy;
-    if (
-      objGrainSilo.use(objWindmill.tempAmountAuto / 10) !==
-      objWindmill.tempAmountAuto / 10
-    ) {
+    // Eerst controleren of er genoeg graan is, daarna pas energie en graan gebruiken
+    if (+objGrainSilo.contents < objWindmill.tempAmountAuto / 10) {
       objWindmill.running = 0;
       objWindmill.tempAmountAuto = 0;
       objWindmill.autoGrindTimer = 0;
@@ -1190,7 +1194,7 @@ var objWindmill = {
       objWindmill.autoGrindTimerCountdown();
       return 0;
     }
-    objGrainSilo.show();
+    objGrainSilo.use(objWindmill.tempAmountAuto / 10);
     objWindmill.autoGrindTimer--;
     objWindmill.autoGrindTimerCountdown();
     objFlourSilo.fill(objWindmill.tempAmountAuto / 10);
@@ -1360,6 +1364,13 @@ var objFlour = {
 
 // Game settings knoppen
 function resetGame() {
+  if (
+    !confirm(
+      "Weet je zeker dat je het spel wilt resetten? Je voortgang gaat verloren!"
+    )
+  ) {
+    return;
+  }
   localStorage.clear();
   location.reload();
 }
@@ -1446,12 +1457,9 @@ var objEnergy = {
       localStorage.setItem("EnergyAvailable", +objEnergy.available);
       objEnergy.show();
       return +requestedAmount;
-    } else {
-      objEnergy.available = +objEnergy.available - +objEnergy.available;
-      objEnergy.show();
-      return +objEnergy.available;
     }
-    localStorage.setItem("EnergyAvailable", +objEnergy.available);
+    // Niet genoeg energie: niets afboeken, zodat de energie niet verloren gaat
+    return 0;
   },
   produce: function () {
     // Nuclear
@@ -1578,7 +1586,7 @@ var objEnergy = {
     document.getElementById("OilUsage").innerHTML =
       "<p>Olieverbruik: " +
       FixNumber(
-        objPowerPlant.amount +
+        +objPowerPlant.amount +
           +objPlasticFactory.activeFactories *
             +objPlasticFactory.oilNeededProduction
       ) +
@@ -1691,10 +1699,12 @@ var objChickenFarm = {
       if (+amount > +objChickenFarm.grainReserve) {
         var beschikbaar = +objChickenFarm.grainReserve;
         objChickenFarm.grainReserve = 0;
+        localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
         return +beschikbaar;
       }
 
       objChickenFarm.grainReserve = +objChickenFarm.grainReserve - +amount;
+      localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
       return +amount;
     }
     localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
@@ -2278,6 +2288,7 @@ var objCoalPowerPlant = {
         1
       );
       localStorage.setItem("CoalPowerPlants", objCoalPowerPlant.amount);
+      localStorage.setItem("CoalPowerPlantPrice", objCoalPowerPlant.price);
       objCoalPowerPlant.show();
     } else {
       notificationOverlay(
@@ -2310,7 +2321,7 @@ var objCoalPowerPlant = {
         " eenheden energie</p>";
       document.getElementById("CoalSellPowerPlant").innerHTML =
         "<p>Je kan een steenkool energiecentrale verkopen voor 75% van de prijs van de vorige centrale (" +
-        FixMoney((+objCoalPowerPlant.price / 110) * 100 * 0.75) +
+        FixMoney((+objCoalPowerPlant.price / 105) * 100 * 0.75) +
         ")</p>" +
         "<p>Bouw (of verkoop) een steenkoolenergiecentrale:</p>" +
         "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw!</button>" +
@@ -2937,7 +2948,10 @@ var objMines = {
       var mCost = mineType + "MineCost";
       var mActive = mineType + "AmountActive";
       var mProspected = mineType + "AmountProspected";
-      if (+mProspected - +mActive < 1) {
+      if (
+        +amountAdded == 1 &&
+        +objMines[mProspected] - +objMines[mActive] < 1
+      ) {
         notificationOverlay(
           "Geen locaties meer beschikbaar",
           "Mijnbouw",
@@ -3058,7 +3072,7 @@ var objMines = {
         mineCode +
         ", 0);' id='" +
         mineButton +
-        "'>Verkoop " +
+        "Sell'>Verkoop " +
         mineName +
         "</button>";
       return 0;
@@ -3177,10 +3191,7 @@ var objCoalMine = {
       +objEnergy.available <
       +objMines.coalAmountActive * +objCoalMine.energy
     ) {
-      var activeMines = Math.floor(
-        +objEnergy.available /
-          (+objMines.coalAmountActive * +objCoalMine.energy)
-      );
+      var activeMines = Math.floor(+objEnergy.available / +objCoalMine.energy);
     } else {
       var activeMines = +objMines.coalAmountActive;
     }
@@ -3244,6 +3255,8 @@ var objCoal = {
     if (+amount >= +objCoal.amount) {
       delivered = objCoal.amount;
       objCoal.amount = 0;
+      localStorage.setItem("coalAmount", +objCoal.amount);
+      objCoal.show();
       return delivered;
     }
     objCoal.amount = +objCoal.amount - +amount;
@@ -3257,8 +3270,11 @@ var objCoal = {
     var reason = "Verkoop overschot steenkool";
     if (+amountSold == 0) {
       amountSold = objCoal.amount;
-      objCoal.use(+amountSold - +coalNeeded);
       reason = "Handmatige verkoop steenkool";
+      if (+amountSold <= +coalNeeded) {
+        return 0;
+      }
+      objCoal.use(+amountSold - +coalNeeded);
     }
     if (+amountSold <= +coalNeeded) {
       return 0;
@@ -3271,7 +3287,7 @@ var objCoal = {
   },
   buy: function (amountBought) {
     if (objCoal.amount < +objCoal.storage * +objCoal.storageCap * 0.05) {
-      var cost = (+amountBought / 1000) * (+objCoal.price * 1.5);
+      var cost = +amountBought * (+objCoal.price * 1.5);
       if (+cost > +objMoney.amount) {
         notificationOverlay("Niet genoeg doekoe!", "Steenkool", "fa-euro-sign");
         return 0;
@@ -3329,10 +3345,7 @@ var objIronMine = {
       +objEnergy.available <
       +objMines.ironAmountActive * +objIronMine.energy
     ) {
-      var activeMines = Math.floor(
-        +objEnergy.available /
-          (+objMines.ironAmountActive * +objIronMine.energy)
-      );
+      var activeMines = Math.floor(+objEnergy.available / +objIronMine.energy);
     } else {
       var activeMines = +objMines.ironAmountActive;
     }
@@ -3630,11 +3643,11 @@ var objSteel = {
       " per ton</p>";
   },
   init: function () {
-    if (+objIronMelter.amount < 1 && objSteel.amount < 1) {
-      return 0;
-    }
     objSteel.amount = localStorage.getItem("steelAmount") || 0;
     objSteel.storage = localStorage.getItem("steelStorage") || 1;
+    if (+objIronMelter.amount < 1 && +objSteel.amount < 1) {
+      return 0;
+    }
     objSteel.show();
   },
 };
@@ -3858,7 +3871,7 @@ var objPlastic = {
   storageCap: 100000,
   storagePrice: 1500000,
   addStorage: function () {
-    if (moneyCheck(+objSteel.storagePrice) == 0) {
+    if (moneyCheck(+objPlastic.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
         "Kunststof opslag",
@@ -3949,9 +3962,7 @@ var objUraniumMine = {
       }
     }
     if (+objEnergy.available < +activeMines * +objUraniumMine.energy) {
-      activeMines = Math.floor(
-        +objEnergy.available / (+activeMines * +objUraniumMine.energy)
-      );
+      activeMines = Math.floor(+objEnergy.available / +objUraniumMine.energy);
       if (+activeMines == 0) {
         return 0;
       }
@@ -4501,16 +4512,19 @@ var objNuclearPowerPlant = {
       objNuclearPowerPlant.showUsage();
     }
     localStorage.setItem("pelletsUsed", +objNuclearPowerPlant.pelletsUsed);
+    localStorage.setItem("pelletsActive", +objNuclearPowerPlant.pelletsActive);
+    localStorage.setItem("ppFuelRods", +objNuclearPowerPlant.fuelRods);
     objNuclearPowerPlant.show();
   },
   produce: function () {
     objNuclearPowerPlant.addFuel();
-    objNuclearPowerPlant.activeReactors = +objNuclearPowerPlant.reactors;
-    if (+objNuclearPowerPlant.pelletsActive < +objNuclearPowerPlant.reactors) {
-      objNuclearPowerPlant.activeReactors = Math.floor(
-        +objNuclearPowerPlant.pelletsActive / +objNuclearPowerPlant.reactors
-      );
-    }
+    objNuclearPowerPlant.activeReactors = Math.min(
+      +objNuclearPowerPlant.reactors,
+      Math.floor(
+        +objNuclearPowerPlant.pelletsActive /
+          +objNuclearPowerPlant.reactorFuelUsage
+      )
+    );
     objNuclearPowerPlant.removeFuel(
       +(
         +objNuclearPowerPlant.activeReactors *
@@ -4611,10 +4625,14 @@ var objOilPumpAdv = {
         "High Tech Oliepomp",
         "fa-info-circle"
       );
+      return 0;
     }
     var amountResult = objOilPumpAdv.buildCheck(+amount);
     if (+amountResult > 0) {
-      objOilPump.remove(+amountResult);
+      // Iedere oude pomp afzonderlijk verkopen, zodat elke pomp wordt uitbetaald
+      for (let i = 0; i < +amountResult; i++) {
+        objOilPump.remove(1);
+      }
       objOilPumpAdv.add(+amountResult, 1);
     } else {
       return 0;
@@ -4671,9 +4689,7 @@ var objOilPumpAdv = {
   produce: function () {
     var pumpsActive = objOilPumpAdv.amount;
     if (+objOilPumpAdv.amount * +objOilPumpAdv.energy > +objEnergy.available) {
-      pumpsActive = Math.floor(
-        +objEnergy.available / (+pumpsActive * +objOilPumpAdv.energy)
-      );
+      pumpsActive = Math.floor(+objEnergy.available / +objOilPumpAdv.energy);
     }
     objEnergy.use(+pumpsActive * +objOilPumpAdv.energy, "Oliepompen");
     var productionTemp = +pumpsActive * objOilPumpAdv.production;
@@ -5181,7 +5197,7 @@ function quickSellButtons() {
     let paragraph = document.createElement("p");
     paragraph.appendChild(button);
 
-    document.getElementById(elementId).innerHTML = paragraph.outerHTML;
+    document.getElementById(elementId).replaceChildren(paragraph);
   });
 }
 
