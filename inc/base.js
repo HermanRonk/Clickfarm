@@ -263,7 +263,7 @@ var objMoney = {
     showHistory(description + " " + FixMoney(profitRound));
   },
   init: function () {
-    objMoney.amount = parseInt(localStorage.getItem("Money")) || 2000;
+    objMoney.amount = parseFloat(localStorage.getItem("Money")) || 2000;
     objMoney.show();
   },
 };
@@ -339,7 +339,7 @@ var objOil = {
     localStorage.setItem("OilPrice", objOil.price);
   },
   init: function () {
-    objOil.price = localStorage.getItem("Oilprice") || 10;
+    objOil.price = localStorage.getItem("OilPrice") || 10;
   },
 };
 
@@ -394,7 +394,7 @@ var objFarmRobot = {
       "De oogst is klaar over: " + objFarmRobot.robotTimer + " Seconden";
   },
   work: function () {
-    if (objFarmRobot.amount === 0) return 0;
+    if (+objFarmRobot.robots === 0) return 0;
     let tempEnergy = objEnergy.available;
     objFarmRobot.activeRobots = Math.floor(
       tempEnergy / objFarmRobot.robotEnergy
@@ -1017,7 +1017,7 @@ var objFarmland = {
   init: function () {
     objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
     objFarmland.cost = parseInt(localStorage.getItem("FarmlandCost")) || 10;
-    objFarmland.harvest = parseInt(localStorage.getItem("Harvest")) || 100;
+    objFarmland.harvest = parseFloat(localStorage.getItem("Harvest")) || 100;
     objFarmland.GrainResearchCostVar =
       parseInt(localStorage.getItem("GrainResearchCostVar")) || 5000;
     objFarmland.GrainResearchDuration =
@@ -1043,16 +1043,6 @@ var objFarmland = {
     objFarmland.showResearch();
   },
 };
-
-//temp clearing function
-
-function clearingFlour() {
-  localStorage.removeItem("GrainSiloContents");
-
-  localStorage.setItem("FlourSiloContents", 20000);
-
-  location.reload();
-}
 
 // Windmill object
 var objWindmill = {
@@ -1709,10 +1699,12 @@ var objChickenFarm = {
       if (+amount > +objChickenFarm.grainReserve) {
         var beschikbaar = +objChickenFarm.grainReserve;
         objChickenFarm.grainReserve = 0;
+        localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
         return +beschikbaar;
       }
 
       objChickenFarm.grainReserve = +objChickenFarm.grainReserve - +amount;
+      localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
       return +amount;
     }
     localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
@@ -2296,6 +2288,7 @@ var objCoalPowerPlant = {
         1
       );
       localStorage.setItem("CoalPowerPlants", objCoalPowerPlant.amount);
+      localStorage.setItem("CoalPowerPlantPrice", objCoalPowerPlant.price);
       objCoalPowerPlant.show();
     } else {
       notificationOverlay(
@@ -2328,7 +2321,7 @@ var objCoalPowerPlant = {
         " eenheden energie</p>";
       document.getElementById("CoalSellPowerPlant").innerHTML =
         "<p>Je kan een steenkool energiecentrale verkopen voor 75% van de prijs van de vorige centrale (" +
-        FixMoney((+objCoalPowerPlant.price / 110) * 100 * 0.75) +
+        FixMoney((+objCoalPowerPlant.price / 105) * 100 * 0.75) +
         ")</p>" +
         "<p>Bouw (of verkoop) een steenkoolenergiecentrale:</p>" +
         "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw!</button>" +
@@ -3262,6 +3255,8 @@ var objCoal = {
     if (+amount >= +objCoal.amount) {
       delivered = objCoal.amount;
       objCoal.amount = 0;
+      localStorage.setItem("coalAmount", +objCoal.amount);
+      objCoal.show();
       return delivered;
     }
     objCoal.amount = +objCoal.amount - +amount;
@@ -3648,11 +3643,11 @@ var objSteel = {
       " per ton</p>";
   },
   init: function () {
-    if (+objIronMelter.amount < 1 && objSteel.amount < 1) {
-      return 0;
-    }
     objSteel.amount = localStorage.getItem("steelAmount") || 0;
     objSteel.storage = localStorage.getItem("steelStorage") || 1;
+    if (+objIronMelter.amount < 1 && +objSteel.amount < 1) {
+      return 0;
+    }
     objSteel.show();
   },
 };
