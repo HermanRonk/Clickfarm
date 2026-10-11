@@ -4838,7 +4838,7 @@ function whichTransitionEvent() {
 // Notificatie functie
 function notificationOverlay(messageText, messageTitle, messageIcon) {
   let container = document.getElementById("notif");
-  if (container.children.length >= 3) container.firstChild.remove();
+  while (container.children.length >= 3) container.firstElementChild.remove();
 
   let dNotification = document.createElement("div");
   dNotification.setAttribute("class", "notification");
