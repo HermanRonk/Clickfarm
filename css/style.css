@@ -257,7 +257,8 @@ kbd2 {
 
 .rows {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    /* Vast kolomraster: een rij met maar één of twee kaarten rekt niet uit over de hele breedte */
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
     gap: var(--gap);
     margin-bottom: var(--gap);
 }
@@ -507,20 +508,4 @@ kbd2 {
     align-items: center;
     gap: 0.5rem;
     font-size: 0.9rem;
-}
-
-/* In brede kaarten twee label/waarde-paren naast elkaar */
-.rows > * {
-    container-type: inline-size;
-}
-
-@container (min-width: 600px) {
-    .stats-list {
-        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
-        column-gap: 1rem;
-    }
-
-    .stats-list dd:nth-of-type(odd) {
-        margin-right: 1.5rem;
-    }
 }
