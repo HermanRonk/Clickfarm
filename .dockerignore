@@ -5,3 +5,11 @@
 Dockerfile
 README.md
 LICENSE
+node_modules
+tests
+test-results
+playwright-report
+blob-report
+package.json
+package-lock.json
+playwright.config.js

@@ -1,0 +1,15 @@
+{
+  "name": "clickfarm-tests",
+  "private": true,
+  "description": "End-to-end tests voor Clickfarm (worden niet meegenomen in de container)",
+  "license": "MIT",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:docker": "node tests/helpers/docker.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}
