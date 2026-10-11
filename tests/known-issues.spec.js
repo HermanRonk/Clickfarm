@@ -9,17 +9,6 @@ const { startGame, reload, game, shownMap } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 test.describe("Bekende problemen", () => {
-  test("ieder id komt maar één keer voor in de pagina", async ({ page }) => {
-    test.fail(true, "Dubbele ids: coalMineButton (steenkoolmijn én -silo) en addPastaHelper");
-    await startGame(page, { state: { PlayerLevel: 12, NextLevel: threshold(12), Rlevel: 4 } });
-    const duplicates = await page.evaluate(() => {
-      const counts = {};
-      document.querySelectorAll("[id]").forEach((el) => (counts[el.id] = (counts[el.id] || 0) + 1));
-      return Object.keys(counts).filter((id) => counts[id] > 1);
-    });
-    expect(duplicates).toEqual([]);
-  });
-
   test("statusbalk toont alleen voorraden die al vrijgespeeld zijn", async ({ page }) => {
     test.fail(true, "Bloem, olie en energie staan al op level 1 in de navigatiebalk");
     await startGame(page);

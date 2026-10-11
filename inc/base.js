@@ -2148,7 +2148,7 @@ var objPastaHelper = {
         FixNumber(objPastaHelper.amount) +
         " pastahelper(s) in dienst</p>" +
         "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem een pastahelper aan!</button> " +
-        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='addPastaHelper'>Ontsla een pastahelper!</button> ";
+        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla een pastahelper!</button> ";
     }
   },
   init: function () {
@@ -3562,7 +3562,7 @@ var objIronMelter = {
         "<br> Energie: " +
         FixNumber(objIronMelter.amount * objIronMelter.energy) +
         "</p><p>" +
-        "<button type='button' class='btn btn-primary' onClick='objIronMelter.produce();' id='ironOreSiloButton'>Maak staal</button></p>";
+        "<button type='button' class='btn btn-primary' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button></p>";
     }
   },
   init: function () {
@@ -3633,7 +3633,7 @@ var objSteel = {
       "<br>Beschikbare ruimte: " +
       FixNumber(+objSteel.storage * +objSteel.storageCap - +objSteel.amount);
     document.getElementById("steelStorage").innerHTML =
-      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='steelStorage'>Koop staalopslag</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button> " +
       "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
   },
   showPrice: function () {

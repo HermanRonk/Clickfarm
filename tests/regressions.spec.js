@@ -190,4 +190,28 @@ test.describe("Bekende problemen opgelost", () => {
     expect(await game(page, () => objFarmland.cost)).toBe(10.5);
     await expect(page.locator("#FarmlandPrice")).toHaveText("Kosten landbouwgrond: € 10,50");
   });
+
+  test("#43 ieder id komt maar één keer voor in de pagina", async ({ page }) => {
+    // Level 12 met afgerond onderzoek, ijzer/hoogoven en pastahelpers: alle gegenereerde knoppen staan erop
+    await startGame(page, {
+      state: atLevel(12, { Rlevel: 4, ironAmountProspected: 1, ironSmelters: 1, coalAmountProspected: 1 }),
+    });
+    await expect(page.getByRole("button", { name: "Maak staal" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Ontsla een pastahelper!" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Bouw steenkoolsilo" })).toBeAttached();
+    const duplicates = await page.evaluate(() => {
+      const counts = {};
+      document.querySelectorAll("[id]").forEach((el) => (counts[el.id] = (counts[el.id] || 0) + 1));
+      return Object.keys(counts).filter((id) => counts[id] > 1);
+    });
+    expect(duplicates).toEqual([]);
+  });
+
+  test("#43 knop steenkoolmijn wordt uit- en aangezet, niet de siloknop", async ({ page }) => {
+    await startGame(page, { state: atLevel(8, { Rlevel: 4, Money: 1000000000, coalAmountProspected: 1 }) });
+    await expect(page.locator("#coalMineButton")).toHaveText("Bouw steenkoolmijn");
+    await page.locator("#coalMineButton").click();
+    await expect(page.locator("#coalMineButton")).toBeDisabled();
+    await expect(page.locator("#coalSiloButton")).toBeEnabled();
+  });
 });
