@@ -508,3 +508,19 @@ kbd2 {
     gap: 0.5rem;
     font-size: 0.9rem;
 }
+
+/* In brede kaarten twee label/waarde-paren naast elkaar */
+.rows > * {
+    container-type: inline-size;
+}
+
+@container (min-width: 600px) {
+    .stats-list {
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+        column-gap: 1rem;
+    }
+
+    .stats-list dd:nth-of-type(odd) {
+        margin-right: 1.5rem;
+    }
+}
