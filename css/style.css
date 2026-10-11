@@ -509,3 +509,49 @@ kbd2 {
     gap: 0.5rem;
     font-size: 0.9rem;
 }
+
+/* Uitleg per kaart ("?"-knop, zie initHelp in inc/base.js) */
+.rows > * {
+    position: relative;
+}
+
+.rows h2 {
+    padding-right: 2rem;
+}
+
+.help-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.help-toggle:hover,
+.help-toggle[aria-expanded="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.help {
+    margin: 0 0 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-soft-text);
+    font-size: 0.88rem;
+}
+
+.help p {
+    margin: 0;
+}
+
