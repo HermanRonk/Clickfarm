@@ -12,9 +12,9 @@ function turnDebug(inputDB) {
   localStorage.setItem("debug", debug);
   if (debug === 1) {
     eldebugBTN.innerHTML =
-      '<i class="far fa-fw fa-check-square"></i> Zet debug uit';
+      icon("check-square") + " Zet debug uit";
   } else {
-    eldebugBTN.innerHTML = '<i class="far fa-fw fa-square"></i> Zet debug aan';
+    eldebugBTN.innerHTML = icon("square") + " Zet debug aan";
   }
 }
 
@@ -121,18 +121,63 @@ var Display = {
   hide: function (cIdentifier) {
     this.show(cIdentifier, false);
   },
-  // Rijen zonder zichtbare inhoud verbergen, los van de weergave per level/onderzoek
+  // Rijen en kolommen zonder zichtbare inhoud verbergen, los van de weergave per level/onderzoek
   updateRows: function () {
     document.querySelectorAll(".rows").forEach(function (row) {
-      var filled = Array.from(row.children).some(function (child) {
-        return (
-          child.style.display !== "none" && child.textContent.trim() !== ""
-        );
+      var filled = false;
+      Array.from(row.children).forEach(function (child) {
+        var hasContent = child.textContent.trim() !== "";
+        child.classList.toggle("col-empty", !hasContent);
+        if (hasContent && child.style.display !== "none") filled = true;
       });
       row.classList.toggle("row-empty", !filled);
     });
   },
 };
+
+// SVG-icoon uit de sprite in index.html ("fa-euro-sign" en "euro-sign" werken allebei)
+function icon(name) {
+  return (
+    '<svg class="icon" aria-hidden="true"><use href="#i-' +
+    String(name).replace(/^fa-/, "") +
+    '"></use></svg>'
+  );
+}
+
+// Dropdownmenu's: openen/sluiten met de knop, sluiten bij een keuze, ernaast klikken of Escape
+function closeDropdowns(except) {
+  document.querySelectorAll(".dropdown.open").forEach(function (dropdown) {
+    if (dropdown === except) return;
+    dropdown.classList.remove("open");
+    dropdown
+      .querySelector(".dropdown-toggle")
+      .setAttribute("aria-expanded", "false");
+  });
+}
+
+document.addEventListener("click", function (event) {
+  var toggle = event.target.closest(".dropdown-toggle");
+  if (toggle) {
+    var dropdown = toggle.closest(".dropdown");
+    closeDropdowns(dropdown);
+    var open = dropdown.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(open));
+    return;
+  }
+  if (
+    event.target.closest(".dropdown-item") ||
+    !event.target.closest(".dropdown")
+  ) {
+    closeDropdowns();
+  }
+});
+
+document.addEventListener("keydown", function (event) {
+  if (event.key !== "Escape") return;
+  var open = document.querySelector(".dropdown.open .dropdown-toggle");
+  closeDropdowns();
+  if (open) open.focus();
+});
 
 // Functie voor het goed weergeven van bedragen
 function FixMoney(InputMoney) {
@@ -4799,10 +4844,8 @@ function notificationOverlay(messageText, messageTitle, messageIcon) {
   dNotification.setAttribute("class", "notification");
   dNotification.innerHTML =
     '<div class="notification-tooltip">' +
-    '<div class="icon">' +
-    '<i class="fas ' +
-    messageIcon +
-    '"></i>' +
+    '<div class="notification-icon">' +
+    icon(messageIcon) +
     "</div>" +
     '<div class="text"><h5>' +
     messageTitle +
@@ -5113,7 +5156,7 @@ function showQuickSell(inputQS) {
   if (quickSell === 1) {
     document.getElementById("sellMenu").style.display = "";
     elverkooptabBTN.innerHTML =
-      '<i class="far fa-fw fa-check-square"></i> Zet verkooptab uit (lvl9)';
+      icon("check-square") + " Zet verkooptab uit (lvl9)";
     localStorage.setItem("QS", quickSell);
     quickSellMenu();
     quickSellButtons();
@@ -5121,7 +5164,7 @@ function showQuickSell(inputQS) {
   } else {
     document.getElementById("sellMenu").style.display = "none";
     elverkooptabBTN.innerHTML =
-      '<i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)';
+      icon("square") + " Zet verkooptab aan (lvl9)";
     localStorage.setItem("QS", quickSell);
   }
 }
@@ -5137,10 +5180,10 @@ function turnAutoClose(input) {
   elAutoCloseBTN = document.getElementById("autocloseBTN");
   if (closeNotifications === 1) {
     elAutoCloseBTN.innerHTML =
-      '<i class="far fa-fw fa-check-square"></i> Zet auto-sluit berichten uit';
+      icon("check-square") + " Zet auto-sluit berichten uit";
   } else {
     elAutoCloseBTN.innerHTML =
-      '<i class="far fa-fw fa-square"></i> Zet auto-sluit berichten aan';
+      icon("square") + " Zet auto-sluit berichten aan";
   }
 }
 
@@ -5261,10 +5304,10 @@ var generateWeighedList = function (list, weight) {
 function changeState() {
   var elpauseBTN = document.getElementById("pauseBTN");
   if (paused === 0) {
-    elpauseBTN.innerHTML = '<i class="fas fa-fw fa-play"></i> Continueer spel';
+    elpauseBTN.innerHTML = icon("play") + " Continueer spel";
     paused = 1;
   } else {
-    elpauseBTN.innerHTML = '<i class="fas fa-fw fa-pause"></i> Pauzeer spel';
+    elpauseBTN.innerHTML = icon("pause") + " Pauzeer spel";
     paused = 0;
   }
 }
