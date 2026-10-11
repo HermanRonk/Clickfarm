@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <title>Spelinformatie - Clickfarm.nl</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+    <header class="topbar">
+        <a class="brand" href="./">Clickfarm.nl</a>
+        <a class="back-link" href="./">Terug naar het spel</a>
+    </header>
+
+    <main class="info">
+        <section class="info-card">
+            <h1>Spelinformatie</h1>
+            <p>Clickfarm begint met een stukje landbouwgrond en groeit uit tot een industrie met mijnen, staal en kernenergie. Hieronder lees je hoe het spel werkt en wat ieder level brengt.</p>
+        </section>
+
+        <section class="info-card">
+            <h2>Hoe het werkt</h2>
+            <ul>
+                <li><strong>Ticks.</strong> Het spel loopt in stappen van één seconde. Iedere tick produceren je machines, gebruiken ze energie en grondstoffen, en worden je voorraden bijgewerkt.</li>
+                <li><strong>Prijzen.</strong> Marktprijzen veranderen iedere 10 seconden. Verkoop als de prijs hoog is, of laat de salescomputer dat voor je doen.</li>
+                <li><strong>Opslag.</strong> Iedere grondstof heeft een maximale opslag. Wat niet past, wordt automatisch verkocht, maar voor minder dan de marktprijs. Breid je opslag dus op tijd uit.</li>
+                <li><strong>Energie.</strong> Machines hebben energie nodig. Is er te weinig, dan draaien ze maar gedeeltelijk. Energie die niet in je opslag past, gaat verloren.</li>
+                <li><strong>Levels.</strong> Haalt je vermogen de drempel, dan ga je een level omhoog en komen er nieuwe onderdelen vrij. Je geld blijft gewoon van jou.</li>
+                <li><strong>Uitleg in het spel.</strong> Iedere kaart heeft rechtsboven een <strong>?</strong>-knop met uitleg over dat onderdeel.</li>
+                <li><strong>Voortgang.</strong> Je voortgang wordt automatisch in je browser bewaard. Via <em>Game opties → Exporteer save-code</em> neem je je spel mee naar een andere browser.</li>
+            </ul>
+        </section>
+
+        <section class="info-card">
+            <h2>Levels</h2>
+            <p class="hint">Ieder level is ingeklapt, zodat je niet vooruit leest wat er nog komt. Klik op een level om het te openen.</p>
+
+            <details id="level-1">
+                <summary>Level 1</summary>
+                <p>Je begint met € 2.000,00 en één veld.</p>
+                <ul>
+                    <li><strong>Landbouw:</strong> bewerk je velden voor graan en koop extra velden.</li>
+                    <li><strong>Graan:</strong> verkoop graan en koop silo's.</li>
+                </ul>
+                <p class="hint">Tip: investeer eerst in velden; meer velden betekent meer graan per oogst.</p>
+                <p>Volgend level bij <strong>€ 3.000,00</strong>.</p>
+            </details>
+
+            <details id="level-2">
+                <summary>Level 2</summary>
+                <ul>
+                    <li><strong>Bloem en windmolens:</strong> maal graan tot bloem, dat meer waard is.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 15.000,00</strong>.</p>
+            </details>
+
+            <details id="level-3">
+                <summary>Level 3</summary>
+                <ul>
+                    <li><strong>Olie:</strong> pomp olie met de hand en koop olietanks.</li>
+                    <li><strong>Onderzoek:</strong> graanveredeling verhoogt de opbrengst per veld.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 75.000,00</strong>.</p>
+            </details>
+
+            <details id="level-4">
+                <summary>Level 4</summary>
+                <ul>
+                    <li><strong>Oliepompen:</strong> pompen olie automatisch, maar gebruiken energie.</li>
+                    <li><strong>Oliecentrales en energieopslag:</strong> zet olie om in energie.</li>
+                </ul>
+                <p class="hint">Tip: bouw centrales en pompen samen; een centrale levert genoeg energie voor 10 pompen.</p>
+                <p>Volgend level bij <strong>€ 375.000,00</strong>.</p>
+            </details>
+
+            <details id="level-5">
+                <summary>Level 5</summary>
+                <ul>
+                    <li><strong>Farmrobots:</strong> bewerken je velden automatisch.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 1.500.000,00</strong>.</p>
+            </details>
+
+            <details id="level-6">
+                <summary>Level 6</summary>
+                <ul>
+                    <li><strong>Kippen en eieren:</strong> kippen eten graan en leggen eieren.</li>
+                    <li><strong>Pasta:</strong> maak pasta van bloem en eieren.</li>
+                    <li><strong>Windmolencontrollers:</strong> laten windmolens automatisch malen.</li>
+                </ul>
+                <p class="hint">Tip: houd genoeg graan in voorraad, anders sterven je kippen.</p>
+                <p>Volgend level bij <strong>€ 4.500.000,00</strong>.</p>
+            </details>
+
+            <details id="level-7">
+                <summary>Level 7</summary>
+                <ul>
+                    <li><strong>Kunststof:</strong> fabrieken maken kunststof van olie en energie.</li>
+                    <li><strong>Salescomputer:</strong> verkoopt automatisch zodra de prijs hoog genoeg is.</li>
+                    <li><strong>Pastahelpers:</strong> bedienen je pastafabrieken.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 18.000.000,00</strong>.</p>
+            </details>
+
+            <details id="level-8">
+                <summary>Level 8</summary>
+                <ul>
+                    <li><strong>Mijnbouwonderzoek:</strong> drie fases onderzoek.</li>
+                    <li>Daarna: <strong>prospecting</strong> naar mijnlocaties en <strong>mijnen</strong> voor steenkool en ijzererts.</li>
+                    <li>Met mijnen: <strong>hoogovens en staal</strong>, en <strong>kolencentrales</strong> voor meer energie.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 90.000.000,00</strong>.</p>
+            </details>
+
+            <details id="level-9">
+                <summary>Level 9</summary>
+                <ul>
+                    <li><strong>Verkooptab:</strong> verkoop alles met één klik bovenaan de pagina (aanzetten via <em>Game opties</em>).</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 450.000.000,00</strong>.</p>
+            </details>
+
+            <details id="level-10">
+                <summary>Level 10</summary>
+                <ul>
+                    <li><strong>Uranium:</strong> uraniummijnen (na het mijnbouwonderzoek).</li>
+                    <li><strong>Grote olietanks</strong> en <strong>high-tech oliepompen</strong>.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 2.250.000.000,00</strong>.</p>
+            </details>
+
+            <details id="level-11">
+                <summary>Level 11</summary>
+                <ul>
+                    <li><strong>Kernenergie:</strong> maak splijtstofstaven van uranium en bouw kerncentrales met reactoren.</li>
+                </ul>
+                <p class="hint">Tip: afval van splijtstofstaven kost iedere minuut opslag; houd daar rekening mee.</p>
+                <p>Volgend level bij <strong>€ 11.250.000.000,00</strong>.</p>
+            </details>
+
+            <details id="level-12">
+                <summary>Level 12</summary>
+                <ul>
+                    <li><strong>Markt:</strong> koop eieren, staal en afvalstaven bij.</li>
+                </ul>
+                <p>Volgend level bij <strong>€ 56.250.000.000,00</strong>. Daarna wordt iedere drempel 5 keer zo hoog.</p>
+            </details>
+        </section>
+    </main>
+</body>
+
+</html>

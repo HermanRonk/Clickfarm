@@ -21,6 +21,12 @@ test.describe("Container", () => {
     expect(headers["server"]).not.toMatch(/\d/);
   });
 
+  test("de informatiepagina wordt meegeleverd", async ({ request }) => {
+    const res = await request.get("/info.html");
+    expect(res.status()).toBe(200);
+    expect(await res.text()).toContain("Spelinformatie");
+  });
+
   test("test- en buildbestanden zitten niet in de container", async ({ request }) => {
     for (const path of [
       "/package.json",

@@ -2,7 +2,7 @@ FROM nginxinc/nginx-unprivileged:1.31.6-alpine
 LABEL authors="Herman Ronk"
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY index.html favicon.ico /usr/share/nginx/html/
+COPY index.html info.html favicon.ico /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY inc /usr/share/nginx/html/inc
 
