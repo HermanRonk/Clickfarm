@@ -1,7 +1,7 @@
 // Regressietests voor eerder opgeloste bugs en exploits.
 // Iedere test noemt de commit waarin het probleem is opgelost.
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, tick, game, storage } = require("./helpers/game");
+const { startGame, reload, tick, game, shownMap, storage } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 const atLevel = (level, extra = {}) => ({ PlayerLevel: level, NextLevel: threshold(level), ...extra });
@@ -205,6 +205,22 @@ test.describe("Bekende problemen opgelost", () => {
       return Object.keys(counts).filter((id) => counts[id] > 1);
     });
     expect(duplicates).toEqual([]);
+  });
+
+  test("#45 bovenbalk toont alleen voorraden die al vrijgespeeld zijn", async ({ page }) => {
+    await startGame(page);
+    const topBar = ["MoneyTop", "GrainTop", "FlourTop", "OilTop", "EnergyStats"];
+    expect(await shownMap(page, topBar)).toEqual({
+      MoneyTop: true,
+      GrainTop: true,
+      FlourTop: false,
+      OilTop: false,
+      EnergyStats: false,
+    });
+    // Na een level up naar 2 verschijnt bloem direct
+    await game(page, () => objMoney.add(1000, "test"));
+    await tick(page, 1);
+    expect((await shownMap(page, ["FlourTop"])).FlourTop).toBe(true);
   });
 
   test("#43 knop steenkoolmijn wordt uit- en aangezet, niet de siloknop", async ({ page }) => {

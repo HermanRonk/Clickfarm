@@ -9,13 +9,6 @@ const { startGame, reload, game, shownMap } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 test.describe("Bekende problemen", () => {
-  test("statusbalk toont alleen voorraden die al vrijgespeeld zijn", async ({ page }) => {
-    test.fail(true, "Bloem, olie en energie staan al op level 1 in de navigatiebalk");
-    await startGame(page);
-    const shown = await shownMap(page, ["FlourTop", "OilTop", "EnergyStats"]);
-    expect(shown).toEqual({ FlourTop: false, OilTop: false, EnergyStats: false });
-  });
-
   test("geen lege rijen zichtbaar op level 1", async ({ page }) => {
     test.fail(true, "Rijen zonder zichtbare inhoud worden als lege kaders getoond");
     await startGame(page);

@@ -51,6 +51,9 @@ window.onload = function () {
     "Uranium-col",
     "nuclearFuel-row",
     "market-row",
+    "FlourTop",
+    "OilTop",
+    "EnergyStats",
   ]);
   cleanupLegacyKeys();
   document.getElementById("sellMenu").style.display = "none";
@@ -197,14 +200,18 @@ var objPlayerInfo = {
         Display.show("farmland-automation");
 
       case 4: // Level 4 behaald
-        Display.show(["pomp-col", "energieproductie-col", "energy-col"]);
-        document.getElementById("EnergyStats").style.disabled = false;
+        Display.show([
+          "pomp-col",
+          "energieproductie-col",
+          "energy-col",
+          "EnergyStats",
+        ]);
 
       case 3: // Level 3 behaald
-        Display.show(["graanopbrengst-col", "olie-col", "Oilstock"]);
+        Display.show(["graanopbrengst-col", "olie-col", "Oilstock", "OilTop"]);
 
       case 2: // Level 2 behaald
-        Display.show(["flour-col", "windmills-col", "Flourstock"]);
+        Display.show(["flour-col", "windmills-col", "Flourstock", "FlourTop"]);
 
       case 1: // Level 1 behaald
         Display.show(["landbouw-col", "grain-col"]);

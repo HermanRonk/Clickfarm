@@ -1,5 +1,5 @@
 // Verwachte voortgang per level, afgeleid van objPlayerInfo (inc/base.js):
-// - unlocks: welke onderdelen bij het bereiken van dat level zichtbaar worden (proceslevel)
+// - unlocks: welke onderdelen (ook in de bovenbalk) bij het bereiken van dat level zichtbaar worden (proceslevel)
 // - threshold: het geldbedrag dat nodig is voor het volgende level (NextLevel),
 //   beginnend bij 3.000 en daarna vermenigvuldigd met level_multiplier.
 //
@@ -9,9 +9,9 @@ const START_MONEY = 2000;
 
 const LEVELS = [
   { level: 1, threshold: 3000, unlocks: ["landbouw-col", "grain-col", "Grainstock"] },
-  { level: 2, threshold: 15000, unlocks: ["flour-col", "windmills-col", "Flourstock"] },
-  { level: 3, threshold: 75000, unlocks: ["graanopbrengst-col", "olie-col", "Oilstock"] },
-  { level: 4, threshold: 375000, unlocks: ["pomp-col", "energieproductie-col", "energy-col"] },
+  { level: 2, threshold: 15000, unlocks: ["flour-col", "windmills-col", "Flourstock", "FlourTop"] },
+  { level: 3, threshold: 75000, unlocks: ["graanopbrengst-col", "olie-col", "Oilstock", "OilTop"] },
+  { level: 4, threshold: 375000, unlocks: ["pomp-col", "energieproductie-col", "energy-col", "EnergyStats"] },
   { level: 5, threshold: 1500000, unlocks: ["farmland-automation"] },
   { level: 6, threshold: 4500000, unlocks: ["WindmillController", "chicken-col", "pasta-col"] },
   { level: 7, threshold: 18000000, unlocks: ["AutoSell-col", "plastic-row"] },
