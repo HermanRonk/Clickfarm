@@ -20,14 +20,6 @@ test.describe("Bekende problemen", () => {
     expect(emptyRows).toEqual([]);
   });
 
-  test("verkooptab kan pas vanaf level 9 aangezet worden", async ({ page }) => {
-    test.fail(true, "Onder level 9 toont de verkooptab een lege balk");
-    await startGame(page);
-    await page.locator("#navbarOptionDropdown").click();
-    await page.locator("#verkooptabBTN").click();
-    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(false);
-  });
-
   test("koper-, goud- en diamantmijnen kunnen gebouwd worden", async ({ page }) => {
     test.fail(true, "README: resterende mijnen implementeren (knoppen staan uitgecommentarieerd)");
     await startGame(page, { state: { PlayerLevel: 12, NextLevel: threshold(12), Rlevel: 4 } });

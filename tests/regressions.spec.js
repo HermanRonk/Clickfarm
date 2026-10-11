@@ -223,6 +223,28 @@ test.describe("Bekende problemen opgelost", () => {
     expect((await shownMap(page, ["FlourTop"])).FlourTop).toBe(true);
   });
 
+  test("#47 verkooptab kan pas vanaf level 9 aangezet worden", async ({ page }) => {
+    await startGame(page, { state: atLevel(8) });
+    await page.locator("#navbarOptionDropdown").click();
+    await expect(page.locator("#verkooptabBTN")).toBeDisabled();
+    // Ook direct aanroepen toont de balk niet, maar geeft een melding
+    await game(page, () => showQuickSell(1));
+    await expect(page.locator("#notif")).toContainText("De verkooptab is beschikbaar vanaf level 9");
+    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(false);
+
+    // Bij level 9 komt de optie beschikbaar
+    await game(page, (target) => objMoney.add(target - objMoney.amount, "test"), threshold(8));
+    await tick(page, 1);
+    await expect(page.locator("#verkooptabBTN")).toBeEnabled();
+    await page.locator("#verkooptabBTN").click();
+    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(true);
+  });
+
+  test("#47 oude save met verkooptab aan onder level 9 toont geen lege balk", async ({ page }) => {
+    await startGame(page, { state: atLevel(3, { QS: 1 }) });
+    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(false);
+  });
+
   test("#43 knop steenkoolmijn wordt uit- en aangezet, niet de siloknop", async ({ page }) => {
     await startGame(page, { state: atLevel(8, { Rlevel: 4, Money: 1000000000, coalAmountProspected: 1 }) });
     await expect(page.locator("#coalMineButton")).toHaveText("Bouw steenkoolmijn");

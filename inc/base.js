@@ -165,6 +165,11 @@ var objPlayerInfo = {
       localStorage.setItem("NextLevel", objPlayerInfo.nextlevel);
     }
 
+    // Verkooptab is pas vanaf level 9 beschikbaar
+    var elverkooptabBTN = document.getElementById("verkooptabBTN");
+    elverkooptabBTN.disabled = +objPlayerInfo.level < 9;
+    elverkooptabBTN.classList.toggle("disabled", +objPlayerInfo.level < 9);
+
     // Maak tabs zichtbaar op basis van level (gebruikmakende van Switch' fallthrough)
     switch (+objPlayerInfo.level) {
       default: // Hoger dan level 12
@@ -178,8 +183,8 @@ var objPlayerInfo = {
       case 10: // Level 10 behaald
         Display.show("Uranium-col");
 
-      case 9: // Level 10 behaald
-      // Geen nieuwe functionaliteiten?
+      case 9: // Level 9 behaald
+      // Verkooptab beschikbaar (zie hierboven)
 
       case 8: // Level 8 behaald
         Display.show([
@@ -5079,6 +5084,17 @@ var quickSell = parseInt(localStorage.getItem("QS")) || 0;
 
 function showQuickSell(inputQS) {
   var elverkooptabBTN = document.getElementById("verkooptabBTN");
+  if (+objPlayerInfo.level < 9) {
+    document.getElementById("sellMenu").style.display = "none";
+    if (inputQS === 1) {
+      notificationOverlay(
+        "De verkooptab is beschikbaar vanaf level 9",
+        "Verkooptab",
+        "fa-info"
+      );
+    }
+    return;
+  }
   if (inputQS === 1) quickSell = 1 - quickSell;
 
   if (quickSell === 1) {
