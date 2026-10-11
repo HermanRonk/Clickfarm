@@ -2056,7 +2056,7 @@ var objPastaFactory = {
     } else {
       notificationOverlay(
         "Geen fabrieken om te verkopen",
-        "Pastafabrieken",
+        "Pastafabriek",
         "fa-info"
       );
     }
@@ -2161,7 +2161,7 @@ var objPastaFactory = {
   },
   show: function () {
     document.getElementById("PastaFactory").innerHTML = renderStats([
-      ["Pastafabrieken", FixNumber(objPastaFactory.amount)],
+      ["Pastafabriek", FixNumber(objPastaFactory.amount)],
       ["Prijs per fabriek", FixMoney(objPastaFactory.cost)],
       ["Verkoopwaarde", FixMoney(objPastaFactory.cost * 0.75)],
     ]);
@@ -2267,7 +2267,7 @@ var objPastaHelper = {
     } else {
       notificationOverlay(
         "Er is niemand om te ontslaan!",
-        "Ontslag pastahelper",
+        "Pastahelper",
         "fa-address-card"
       );
       return 0;
@@ -2345,7 +2345,7 @@ var objPowerPlant = {
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Energiecentrale",
+        "Oliecentrale",
         "fa-euro-sign"
       );
     }
@@ -2367,7 +2367,7 @@ var objPowerPlant = {
     } else {
       notificationOverlay(
         "Geen energiecentrales om te verkopen",
-        "Energiecentrale",
+        "Oliecentrale",
         "fa-info"
       );
     }
@@ -2412,7 +2412,7 @@ var objCoalPowerPlant = {
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Steenkool energiecentrale",
+        "Kolencentrale",
         "fa-euro-sign"
       );
     }
@@ -2435,7 +2435,7 @@ var objCoalPowerPlant = {
     } else {
       notificationOverlay(
         "Geen centrales om te verkopen",
-        "Steenkool energiecentrale",
+        "Kolencentrale",
         "fa-info"
       );
     }
@@ -2510,7 +2510,7 @@ var objSalesComputer = {
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Sales Computer",
+        "Salescomputer",
         "fa-euro-sign"
       );
     }
@@ -2524,7 +2524,7 @@ var objSalesComputer = {
       objSalesComputer.show();
     } else {
       notificationOverlay(
-        "Geen CPUs om te verkopen",
+        "Geen CPU's om te verkopen",
         "Salescomputer",
         "fa-info"
       );
@@ -2794,7 +2794,7 @@ var objResearch = {
       ) {
         notificationOverlay(
           "Niet genoeg doekoe!",
-          "Mijnbouw onderzoek",
+          "Mijnbouwonderzoek",
           "fa-euro-sign"
         );
         return 0;
@@ -3387,7 +3387,7 @@ var objCoal = {
     if (moneyCheck(+objCoal.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Steelkool opslag",
+        "Steenkoolopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -3499,7 +3499,7 @@ var objIronOre = {
     if (moneyCheck(+objIronOre.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Ijzererts opslag",
+        "IJzerertsopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -3663,11 +3663,7 @@ var objSteel = {
   storagePrice: 15000000,
   addStorage: function () {
     if (moneyCheck(+objSteel.storagePrice) == 0) {
-      notificationOverlay(
-        "Niet genoeg doekoe!",
-        "Ijzererts opslag",
-        "fa-euro-sign"
-      );
+      notificationOverlay("Niet genoeg doekoe!", "Staalopslag", "fa-euro-sign");
       return 0;
     } else {
       objMoney.use(+objSteel.storagePrice);
@@ -3757,7 +3753,7 @@ var objPlasticFactory = {
       Price = +objPlasticFactory.cost * 0.75;
       if (objPlasticFactory.amount == 0) {
         notificationOverlay(
-          "Geen plasticfabrieken om te verkopen",
+          "Geen kunststoffabrieken om te verkopen",
           "Kunststoffabriek",
           "fa-industry"
         );
@@ -3830,7 +3826,7 @@ var objPlasticFactory = {
     if (objPlasticFactory.amount == 0) {
       if (typeProduction == 0) {
         notificationOverlay(
-          "Geen Kunststoffabrieken!",
+          "Geen kunststoffabrieken!",
           "Kunststoffabriek",
           "fa-industry"
         );
@@ -3977,7 +3973,7 @@ var objPlastic = {
     if (moneyCheck(+objPlastic.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Kunststof opslag",
+        "Kunststofopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -4147,7 +4143,7 @@ var objUraniumOre = {
     if (moneyCheck(+objUraniumOre.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Ijzererts opslag",
+        "Uraniumopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -4750,7 +4746,7 @@ var objOilPumpAdv = {
     if (+amount == 0) {
       notificationOverlay(
         "Geen pompen om te upgraden!",
-        "High Tech Oliepomp",
+        "High-tech oliepomp",
         "fa-info-circle"
       );
       return 0;
@@ -4773,7 +4769,7 @@ var objOilPumpAdv = {
     if (+amount == 0) {
       notificationOverlay(
         "Niet genoeg monnies!",
-        "High Tech Oliepomp",
+        "High-tech oliepomp",
         "fa-euro-sign"
       );
     }
@@ -4781,7 +4777,7 @@ var objOilPumpAdv = {
       amount = Math.floor(+objSteel.amount / +objOilPumpAdv.steelNeeded);
     }
     if (+amount == 0) {
-      notificationOverlay("Niet genoeg staal!", "High Tech Oliepomp", "fa-box");
+      notificationOverlay("Niet genoeg staal!", "High-tech oliepomp", "fa-box");
     }
     return +amount;
   },
@@ -4809,7 +4805,7 @@ var objOilPumpAdv = {
       document.getElementById("o2sell").disabled = true;
       notificationOverlay(
         "Geen pompen om te verkopen!",
-        "High Tech Oliepomp",
+        "High-tech oliepomp",
         "fa-box"
       );
     }
@@ -5079,7 +5075,7 @@ var objMarket = {
     if (resType === "eggs") {
       cost = +objEgg.price * 1.5;
       if (moneyCheck(+cost * +amount) === 0) {
-        notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+        notificationOverlay("Niet genoeg doekoe!", "Markt", "fa-euro-sign");
         return 0;
       } else {
         objMoney.use(+cost * amount);
@@ -5090,7 +5086,7 @@ var objMarket = {
     if (resType === "steel") {
       cost = +objSteel.price * 1.25;
       if (moneyCheck(+cost * +amount) === 0) {
-        notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+        notificationOverlay("Niet genoeg doekoe!", "Markt", "fa-euro-sign");
         return 0;
       } else {
         objMoney.use(+cost * amount);
@@ -5101,7 +5097,7 @@ var objMarket = {
     if (resType === "used_fuelrod") {
       cost = +objFuelRod.wastePrice * 0.5;
       if (moneyCheck(+cost * +amount) === 0) {
-        notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+        notificationOverlay("Niet genoeg doekoe!", "Markt", "fa-euro-sign");
         return 0;
       } else {
         objMoney.use(+cost * amount);
