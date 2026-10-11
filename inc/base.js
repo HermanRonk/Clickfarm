@@ -191,7 +191,7 @@ function FixMoney(InputMoney) {
 // Functie voor het goed weergeven van hoeveelheden
 function FixNumber(InputNumber) {
   InputNumber = parseFloat(+InputNumber);
-  return InputNumber.toLocaleString();
+  return InputNumber.toLocaleString("nl-NL");
 }
 
 // Functie van het goed weergeven van afgeronde gewichten
