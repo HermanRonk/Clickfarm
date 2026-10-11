@@ -46,7 +46,7 @@ test.describe("Exploits (2b48be9)", () => {
 
   test("olie verkopen met minder olie dan de centrales nodig hebben geeft geen negatieve verkoop", async ({ page }) => {
     await startGame(page, { state: atLevel(4, { Money: 1000, Oil: 20, PowerPlants: 10 }) });
-    await page.getByRole("button", { name: "Verkoop olie!" }).click();
+    await page.getByRole("button", { name: "Verkoop olie", exact: true }).click();
     expect(await game(page, () => objMoney.amount)).toBe(1000);
     expect(await game(page, () => +objOilTank.contents)).toBe(20);
   });
@@ -106,7 +106,7 @@ test.describe("Productieberekeningen (c96de1e)", () => {
 test.describe("Knoppen en weergave (6dc6102)", () => {
   test("olieverbruik wordt opgeteld, niet als tekst aan elkaar geplakt", async ({ page }) => {
     await startGame(page, { state: atLevel(4, { PowerPlants: 2 }) });
-    await expect(page.locator("#OilUsage")).toHaveText("Olieverbruik: 2");
+    await expect(stat(page, "#OilUsage", "Olieverbruik per tick")).toHaveText("2 vaten");
   });
 
   test("kunststofopslag controleert het saldo tegen de eigen prijs", async ({ page }) => {

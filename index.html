@@ -207,61 +207,72 @@
         </div>
         <div class="row rows" id="tier2-row">
             <div class="container col-sm" id="olie-col">
-                <h2>Olie:</h2>
-                <button type="button" class="btn btn-dark" onClick="objOilTank.fill(1)">Pomp olie!</button>
+                <h2>Olie</h2>
                 <div id="clickCount"></div>
                 <div id="Oilprice"></div>
-                <button type="button" class="btn btn-danger" onClick="objOil.sellOil()">Verkoop olie!</button>
-                <h2>Koop extra olietanks:</h2>
-                <div id="OilTankPrice"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-success" onClick="objOilTank.fill(1)">Pomp olie</button>
+                    <button type="button" class="btn btn-danger" onClick="objOil.sellOil()">Verkoop olie</button>
+                </div>
+                <h3>Olietanks</h3>
                 <div id="oilTank"></div>
-                <div id="oilTankSmall">
-                    <p><button type="button" class="btn btn-primary" onClick="objOilTank.add(0);" id="buySmallOilTank">Koop olietank</button> <button type="button" class="btn btn-danger" onClick="objOilTank.remove();" id="sellOilTank">Verkoop olietank</button> </p>
+                <div id="OilTankPrice"></div>
+                <div class="actions">
+                    <span id="oilTankSmall">
+                        <button type="button" class="btn btn-primary" onClick="objOilTank.add(0);" id="buySmallOilTank">Koop olietank</button>
+                        <button type="button" class="btn btn-danger" onClick="objOilTank.remove();" id="sellOilTank">Verkoop olietank</button>
+                    </span>
+                    <span id="oilTankBig">
+                        <button type="button" class="btn btn-primary" onClick="objOilTank.add(1);" id="oilTankAddBig">Koop grote olietank</button>
+                    </span>
                 </div>
-                <div id="oilTankBig">
-                    <p><button type="button" class="btn btn-primary" onClick="objOilTank.add(1);" id="oilTankAddBig">Koop olietank (groot)</button></p>
-                    
-                </div>
-                 
-                <div id="pomp-col">
-                    <h2>Automatiseer:</h2>
-                    <div id="oil1">
-                        <p>Een oliepomp verbruikt 1 energie per tick (en produceert 1 olie per tick</p>
-                        <button type="button" class="btn btn-primary" onClick="objOilPump.add();">Bouw!</button> <button type="button" class="btn btn-warning" onClick="objOilPump.remove(1);" id="sellOilPump">Verkoop!</button>
-                        <div id="FactoryCost"></div>
-                        <div id="FactoryCount"></div>
-                    </div>
-                    <div id="oil2">
-                    <div id="o2intro"></div> 
-                    <div id="o2buttons">
-                            <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.add(1,0);' id='v2buy'>Koop v2 oliepomp</button> <button type='button' class='btn btn-warning' onClick='objOilPumpAdv.sell();' id='o2sell'>Verkoop v2 oliepomp</button>
-                    </div><br>
-                    <div id="o2upgrade"></div>
-                    <div id="o2upgradeButton">
-                            <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(1);' id='v2upgrade'>Upgrade 1x</button> <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(10);' id='o2buy'>Upgrade 10x</button>
-                    </div>
 
-                    <div id="o2stats"></div>   
+            </div>
+            <div class="container col-sm" id="pomp-col">
+                <h2>Oliepompen</h2>
+                <div id="oil1">
+                    <div id="FactoryCount"></div>
+                    <div id="FactoryCost"></div>
+                    <p class="hint">Een pomp gebruikt 1 energie en levert 1 vat olie per tick.</p>
+                    <div class="actions">
+                        <button type="button" class="btn btn-primary" onClick="objOilPump.add();">Bouw oliepomp</button>
+                        <button type="button" class="btn btn-warning" onClick="objOilPump.remove(1);" id="sellOilPump">Verkoop oliepomp</button>
+                    </div>
+                </div>
+                <div id="oil2">
+                    <div id="o2intro"></div>
+                    <div id="o2stats"></div>
+                    <div class="actions" id="o2buttons">
+                        <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.add(1,0);' id='v2buy'>Koop high-tech pomp</button>
+                        <button type='button' class='btn btn-warning' onClick='objOilPumpAdv.sell();' id='o2sell'>Verkoop high-tech pomp</button>
+                    </div>
+                    <div id="o2upgrade"></div>
+                    <div class="actions" id="o2upgradeButton">
+                        <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(1);' id='v2upgrade'>Upgrade 1 pomp</button>
+                        <button type='button' class='btn btn-primary' onClick='objOilPumpAdv.upgrade(10);' id='o2buy'>Upgrade 10 pompen</button>
                     </div>
                 </div>
             </div>
             <div class="container col-sm" id="energieproductie-col">
-                <h2>Energie (olie):</h2>
+                <h2>Oliecentrales</h2>
                 <div id="PowerPlantAmount"></div>
                 <div id="PowerPlantPrice"></div>
-                <p>Bouw een simpele energiecentrale:</p>
-                <p>(Gebruikt 1 olie per tick, levert 10 energie)</p>
                 <div id="SellPowerPlant"></div>
-                <button type="button" class="btn btn-primary" onClick="objPowerPlant.add();">Bouw!</button>
-                <button type="button" class="btn btn-warning" onClick="objPowerPlant.sell();" id="powerPlantSell">Verkoop!</button>
+                <p class="hint">Een centrale gebruikt 1 vat olie en levert 10 energie per tick.</p>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objPowerPlant.add();">Bouw oliecentrale</button>
+                    <button type="button" class="btn btn-warning" onClick="objPowerPlant.sell();" id="powerPlantSell">Verkoop oliecentrale</button>
+                </div>
 
-                <h2>Energieopslag:</h2>
+                <h3>Energieopslag</h3>
                 <div id="EnergieOpslag"></div>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1);">Bouw opslag!</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10);">x10</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(100);">x100</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1000);">x1000</button>
-                <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10000);">x10000</button>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1);">+1</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10);">+10</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(100);">+100</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1000);">+1.000</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10000);">+10.000</button>
+                </div>
             </div>
             <div class="container col-sm" id="coalPower">
                 <div id="CoalPowerPlantAmount"></div>

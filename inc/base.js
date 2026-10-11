@@ -873,75 +873,40 @@ var objOilTank = {
   visual: function () {
     var percentageFilled = (+objOilTank.contents / +objOilTank.totalCap) * 100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("Oilstock").innerHTML =
-      '<p>Olie:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objOilTank.contents) +
-      "l (" +
-      percentageFilled +
-      "%)</div></div>";
+    document.getElementById("Oilstock").innerHTML = renderBar(
+      "Olie",
+      FixUnit(objOilTank.contents, "vaten"),
+      percentageFilled
+    );
   },
   show: function () {
     var TempCap = +objOilTank.totalCap - +objOilTank.contents;
+    var bigTanks = +objPlayerInfo.level > 9;
+    var onlyBig = bigTanks && +objOilTank.amount == 0 && +objOilTank.amountBig > 0;
 
-    if (+objPlayerInfo.level > 9) {
-      document.getElementById("OilTankPrice").innerHTML =
-        "<p>Een extra olietank (klein) kan " +
-        FixNumber(objOilTank.cap) +
-        " vaten bevatten en kost: " +
-        FixMoney(objOilTank.price) +
-        "<br>Een grote olietank kan " +
-        FixNumber(objOilTank.capBig) +
-        " vaten bevatten en kost " +
-        FixMoney(objOilTank.priceBig) +
-        "</p><p>Kleine olietanks kunnen verkocht worden voor 50% van de aanschafwaarde, eventuele olie in deze tanks wordt weggespoeld!</p>";
-      document.getElementById("oilTankBig").style.display = "";
-      document.getElementById("sellOilTank").style.display = "";
+    document.getElementById("oilTank").innerHTML =
+      renderStats([
+        ["Tanks", FixNumber(objOilTank.amount)],
+        bigTanks && ["Grote tanks", FixNumber(objOilTank.amountBig)],
+        ["Vrije ruimte", FixUnit(TempCap, "vaten")],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 80% van de marktprijs.");
+    document.getElementById("OilTankPrice").innerHTML =
+      renderStats([
+        ["Prijs per tank", FixMoney(objOilTank.price)],
+        ["Capaciteit per tank", FixUnit(objOilTank.cap, "vaten")],
+        bigTanks && ["Prijs grote tank", FixMoney(objOilTank.priceBig)],
+        bigTanks && ["Capaciteit grote tank", FixUnit(objOilTank.capBig, "vaten")],
+      ]) +
+      renderHint(
+        "Een tank verkopen levert 50% van de prijs op; olie die daarna niet meer past gaat verloren."
+      );
+    document.getElementById("oilTankBig").style.display = bigTanks ? "" : "none";
+    document.getElementById("oilTankSmall").style.display = onlyBig ? "none" : "";
 
-      if (+objOilTank.amount == 0 && +objOilTank.amountBig > 0) {
-        document.getElementById("oilTankSmall").style.display = "none";
-        document.getElementById("sellOilTank").style.display = "none";
-        document.getElementById("buySmallOilTank").style.display = "none";
-        document.getElementById("oilTank").innerHTML =
-          "Er zijn " +
-          FixNumber(objOilTank.amountBig) +
-          " tanks (groot) beschikbaar met nog " +
-          FixNumber(TempCap) +
-          "l aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
-      }
-      if (+objOilTank.amount > 0 && +objOilTank.amountBig > 0) {
-        document.getElementById("oilTankSmall").style.display = "";
-        document.getElementById("oilTank").innerHTML =
-          "Er zijn " +
-          FixNumber(objOilTank.amountBig) +
-          " grote tanks en " +
-          FixNumber(objOilTank.amount) +
-          " kleine tanks beschikbaar met nog " +
-          FixNumber(TempCap) +
-          " vaten aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
-      }
-    } else {
-      document.getElementById("OilTankPrice").innerHTML =
-        "<p>Een extra olietank kan " +
-        FixNumber(objOilTank.cap) +
-        " vaten bevatten en kost: " +
-        FixMoney(objOilTank.price) +
-        "</p>";
-      document.getElementById("oilTank").innerHTML =
-        "Er zijn " +
-        FixNumber(objOilTank.amount) +
-        " tanks (klein) beschikbaar met nog " +
-        FixNumber(TempCap) +
-        "l aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
-      document.getElementById("oilTankSmall").style.display = "";
-      document.getElementById("oilTankBig").style.display = "none";
-    }
-
-    document.getElementById("clickCount").innerHTML =
-      "<p>Aantal vaten olie op voorraad: " +
-      FixNumber(objOilTank.contents) +
-      "</p>";
+    document.getElementById("clickCount").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objOilTank.contents, "vaten")],
+    ]);
 
     document.getElementById("OilTop").innerHTML =
       "Olie: <kbd2>" +
@@ -1528,10 +1493,12 @@ var objOilPump = {
       document.getElementById("sellOilPump").disabled = false;
     }
 
-    document.getElementById("FactoryCount").innerHTML =
-      "<p>Aantal pompen: " + FixNumber(objOilPump.amount) + "</p>";
-    document.getElementById("FactoryCost").innerHTML =
-      "<p>Kosten van een pomp: " + FixMoney(objOilPump.price) + "</p>";
+    document.getElementById("FactoryCount").innerHTML = renderStats([
+      ["Oliepompen", FixNumber(objOilPump.amount)],
+    ]);
+    document.getElementById("FactoryCost").innerHTML = renderStats([
+      ["Prijs per pomp", FixMoney(objOilPump.price)],
+    ]);
     objOilPumpAdv.show();
     localStorage.setItem("FactoryCost", objOilPump.price);
   },
@@ -1672,41 +1639,54 @@ var objEnergy = {
     objEnergy.show();
   },
   show: function () {
-    document.getElementById("EnergieOpslag").innerHTML =
-      "<p>Op dit moment is er maximaal " +
-      FixNumber(+objEnergy.capacitors * +objEnergy.storageCap) +
-      " units opslag beschikbaar</p>" +
-      "<p>Iedere unit kan " +
-      FixNumber(objEnergy.storageCap) +
-      " energie opslaan en kost: " +
-      FixMoney(objEnergy.capaCost) +
-      "</p>";
+    document.getElementById("EnergieOpslag").innerHTML = renderStats([
+      [
+        "Opslagcapaciteit",
+        FixNumber(+objEnergy.capacitors * +objEnergy.storageCap),
+      ],
+      ["Prijs per opslagunit", FixMoney(objEnergy.capaCost)],
+      ["Capaciteit per unit", FixNumber(objEnergy.storageCap)],
+    ]);
     document.getElementById("EnergyStats").innerHTML =
       "Energie: <kbd2>" +
       FixNumber(objEnergy.available) +
       "/" +
       FixNumber(objEnergy.capacitors * objEnergy.storageCap) +
       "</kbd2>";
-    document.getElementById("TotalEnergyProduction").innerHTML =
-      "<p>De huidige energieproductie: " +
-      FixNumber(
-        +objPowerPlant.amount * +objPowerPlant.yield +
-          +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
-          +objNuclearPowerPlant.reactors *
-            +objNuclearPowerPlant.reactorProduction
-      ) +
-      "</p>";
-    document.getElementById("OilUsage").innerHTML =
-      "<p>Olieverbruik: " +
-      FixNumber(
-        +objPowerPlant.amount +
-          +objPlasticFactory.activeFactories *
-            +objPlasticFactory.oilNeededProduction
-      ) +
-      "</p>";
-    document.getElementById("CurrentEnergyUsage").innerHTML =
-      "<p>De huidige piekenergievraag: " +
-      FixNumber(
+    document.getElementById("AvailableEnergy").innerHTML = renderStats([
+      [
+        "Opgeslagen",
+        FixNumber(objEnergy.available) +
+          " / " +
+          FixNumber(objEnergy.capacitors * objEnergy.storageCap),
+      ],
+    ]);
+    document.getElementById("TotalEnergyProduction").innerHTML = renderStats([
+      [
+        "Productie per tick",
+        FixNumber(
+          +objPowerPlant.amount * +objPowerPlant.yield +
+            +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
+            +objNuclearPowerPlant.reactors *
+              +objNuclearPowerPlant.reactorProduction
+        ),
+      ],
+    ]);
+    document.getElementById("OilUsage").innerHTML = renderStats([
+      [
+        "Olieverbruik per tick",
+        FixUnit(
+          +objPowerPlant.amount +
+            +objPlasticFactory.activeFactories *
+              +objPlasticFactory.oilNeededProduction,
+          "vaten"
+        ),
+      ],
+    ]);
+    document.getElementById("CurrentEnergyUsage").innerHTML = renderStats([
+      [
+        "Piekvraag per tick",
+        FixNumber(
         +objOilPump.amount +
           +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy +
           (objWindmillController.amount * objWindmillController.energy) / 10 +
@@ -1714,8 +1694,9 @@ var objEnergy = {
           +objMines.uraniumAmountActive * +objUraniumMine.energy +
           +objOilPumpAdv.amount * +objOilPumpAdv.energy +
           +objMines.ironAmountActive * +objIronMine.energy
-      ) +
-      "</p>";
+        ),
+      ],
+    ]);
   },
   init: function () {
     objEnergy.available = localStorage.getItem("EnergyAvailable") || 0;
@@ -2347,18 +2328,15 @@ var objPowerPlant = {
     objPowerPlant.show();
   },
   show: function () {
-    document.getElementById("PowerPlantAmount").innerHTML =
-      "<p>Op dit moment zijn er " +
-      FixNumber(objPowerPlant.amount) +
-      " energiecentrales.";
-    document.getElementById("PowerPlantPrice").innerHTML =
-      "<p>Kosten eenvoudige energiecentrale: " +
-      FixMoney(objPowerPlant.price) +
-      "</p>";
-    document.getElementById("SellPowerPlant").innerHTML =
-      "<p>Je kan een energiecentrale verkopen voor 75% van de prijs van de vorige centrale (" +
-      FixMoney((+objPowerPlant.price / 110) * 100 * 0.75) +
-      ")</p>";
+    document.getElementById("PowerPlantAmount").innerHTML = renderStats([
+      ["Centrales", FixNumber(objPowerPlant.amount)],
+    ]);
+    document.getElementById("PowerPlantPrice").innerHTML = renderStats([
+      ["Prijs per centrale", FixMoney(objPowerPlant.price)],
+    ]);
+    document.getElementById("SellPowerPlant").innerHTML = renderStats([
+      ["Verkoopwaarde", FixMoney((+objPowerPlant.price / 110) * 100 * 0.75)],
+    ]);
     objEnergy.show();
   },
   init: function () {
@@ -2421,24 +2399,25 @@ var objCoalPowerPlant = {
   show: function () {
     if (objMines.coalAmountActive >= 1) {
       document.getElementById("CoalPowerPlantAmount").innerHTML =
-        "<h2>Energie (steenkool):</h2><p>Op dit moment zijn er " +
-        FixNumber(objCoalPowerPlant.amount) +
-        " energiecentrales.</p>";
-      document.getElementById("CoalPowerPlantPrice").innerHTML =
-        "<p>Kosten steenkool energiecentrale: " +
-        FixMoney(objCoalPowerPlant.price) +
-        "</p>  <p>Deze centrale gebruikt " +
-        FixNumber(objCoalPowerPlant.CoalUsageTons) +
-        " ton steenkool per tick en levert daarvoor " +
-        FixNumber(objCoalPowerPlant.yield) +
-        " eenheden energie</p>";
+        "<h2>Kolencentrales</h2>" +
+        renderStats([["Centrales", FixNumber(objCoalPowerPlant.amount)]]);
+      document.getElementById("CoalPowerPlantPrice").innerHTML = renderStats([
+        ["Prijs per centrale", FixMoney(objCoalPowerPlant.price)],
+        [
+          "Verkoopwaarde",
+          FixMoney((+objCoalPowerPlant.price / 105) * 100 * 0.75),
+        ],
+        [
+          "Steenkool per centrale",
+          FixUnit(objCoalPowerPlant.CoalUsageTons, "ton per tick"),
+        ],
+        ["Energie per centrale", FixNumber(objCoalPowerPlant.yield) + " per tick"],
+      ]);
       document.getElementById("CoalSellPowerPlant").innerHTML =
-        "<p>Je kan een steenkool energiecentrale verkopen voor 75% van de prijs van de vorige centrale (" +
-        FixMoney((+objCoalPowerPlant.price / 105) * 100 * 0.75) +
-        ")</p>" +
-        "<p>Bouw (of verkoop) een steenkoolenergiecentrale:</p>" +
-        "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw!</button>" +
-        " <button type='button' class='btn btn-warning' onClick='objCoalPowerPlant.sell();' id='CoalpowerPlantSell'>Verkoop!</button>";
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw kolencentrale</button>" +
+        " <button type='button' class='btn btn-warning' onClick='objCoalPowerPlant.sell();' id='CoalpowerPlantSell'>Verkoop kolencentrale</button>" +
+        "</div>";
       objEnergy.show();
       objCoal.show();
     }
@@ -3431,13 +3410,7 @@ var objCoal = {
     percentageFilled = Math.round(percentageFilled * 100) / 100;
     if (objCoalPowerPlant.amount > 0) {
       document.getElementById("CoalStock").innerHTML =
-        '<p>Steenkool:</p><div class="progress"><div class="progress-bar" style="width:' +
-        percentageFilled +
-        '%">' +
-        FixNumber(objCoal.amount) +
-        "kg (" +
-        percentageFilled +
-        "%)</div></div>";
+        renderBar("Steenkool", FixUnit(objCoal.amount, "ton"), percentageFilled);
     }
   },
   init: function () {
@@ -4819,21 +4792,22 @@ var objOilPumpAdv = {
       document.getElementById("oil2").style.display = "none";
     }
     document.getElementById("o2intro").innerHTML =
-      "<h3>High Tech oliepomp</h3><p>Met een productie van " +
-      FixNumber(objOilPumpAdv.production) +
-      " olie per tick presteren deze " +
-      "pompen aanzienlijk beter dan het oude model. Een pomp gebruikt " +
-      FixNumber(objOilPumpAdv.energy) +
-      " energie per tick</p><p>Het bouwen van een nieuwe pomp kost: " +
-      FixMoney(objOilPumpAdv.price) +
-      " en " +
-      FixNumber(objOilPumpAdv.steelNeeded) +
-      " ton staal</p>";
+      "<h3>High-tech oliepompen</h3>" +
+      renderStats([
+        [
+          "Productie per pomp",
+          FixUnit(objOilPumpAdv.production, "vaten per tick"),
+        ],
+        ["Energie per pomp", FixNumber(objOilPumpAdv.energy) + " per tick"],
+        ["Prijs per pomp", FixMoney(objOilPumpAdv.price)],
+        ["Staal per pomp", FixUnit(objOilPumpAdv.steelNeeded, "ton")],
+      ]);
     if (+objOilPump.amount > 0) {
-      document.getElementById("o2upgrade").innerHTML =
-        "<p>Je kan je oude pompen upgraden. Het oude model wordt verkocht (75% van de aanschafwaarde, " +
-        FixMoney(+objOilPump.price * 0.75) +
-        ") en een nieuwe pomp wordt geplaatst</p>";
+      document.getElementById("o2upgrade").innerHTML = renderHint(
+        "Upgraden verkoopt een gewone pomp voor 75% (" +
+          FixMoney(+objOilPump.price * 0.75) +
+          ") en plaatst er een high-tech pomp voor terug."
+      );
     } else {
       document.getElementById("o2upgradeButton").style.display = "none";
     }
@@ -4845,14 +4819,17 @@ var objOilPumpAdv = {
     objOilPumpAdv.showStats();
   },
   showStats: function () {
-    document.getElementById("o2stats").innerHTML =
-      "<h2>Stats</h2><p>Aantal pompen: " +
-      FixNumber(objOilPumpAdv.amount) +
-      "<br>Productie (per tick): " +
-      FixNumber(+objOilPumpAdv.amount * +objOilPumpAdv.production) +
-      "<br>Energieverbruik (per tick):" +
-      FixNumber(+objOilPumpAdv.amount * +objOilPumpAdv.energy) +
-      " </p>";
+    document.getElementById("o2stats").innerHTML = renderStats([
+      ["High-tech pompen", FixNumber(objOilPumpAdv.amount)],
+      [
+        "Productie per tick",
+        FixUnit(+objOilPumpAdv.amount * +objOilPumpAdv.production, "vaten"),
+      ],
+      [
+        "Energie per tick",
+        FixNumber(+objOilPumpAdv.amount * +objOilPumpAdv.energy),
+      ],
+    ]);
   },
   init: function () {
     objOilPumpAdv.amount = localStorage.getItem("oilPumpAmount") || 0;

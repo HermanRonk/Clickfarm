@@ -132,10 +132,10 @@ test.describe("Windmolens en bloem (level 2)", () => {
 test.describe("Olie en energie (level 3-4)", () => {
   test("olie pompen en verkopen", async ({ page }) => {
     await startGame(page, { state: { PlayerLevel: 3, NextLevel: threshold(3), Oil: 0 } });
-    for (let i = 0; i < 5; i++) await button(page, "Pomp olie!").click();
+    for (let i = 0; i < 5; i++) await button(page, "Pomp olie").click();
     expect(await game(page, () => +objOilTank.contents)).toBe(5);
     const price = await game(page, () => +objOil.price);
-    await button(page, "Verkoop olie!").click();
+    await button(page, "Verkoop olie").click();
     expect(await game(page, () => +objOilTank.contents)).toBe(0);
     expect(await game(page, () => objMoney.amount)).toBeCloseTo(2000 + 5 * price, 2);
   });
@@ -150,6 +150,7 @@ test.describe("Olie en energie (level 3-4)", () => {
     expect(await game(page, () => +objEnergy.available)).toBe(26);
     expect(await game(page, () => +objOilTank.contents)).toBe(101);
     await expect(page.locator("#EnergyStats")).toContainText("26/1.000");
+    await expect(stat(page, "#energy-col", "Opgeslagen")).toHaveText("26 / 1.000");
   });
 
   test("energieopslag is begrensd door de capaciteit", async ({ page }) => {
