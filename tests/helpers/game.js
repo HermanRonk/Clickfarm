@@ -1,6 +1,8 @@
 // Hulpfuncties om het spel in een voorspelbare toestand te starten en te bedienen.
 const { expect } = require("@playwright/test");
 
+const START_TIME = new Date("2026-01-01T12:00:00Z").getTime();
+
 /**
  * Start het spel met een nep-klok (zodat de hoofdloop van 1 seconde te versnellen is),
  * een vaste random-seed en optioneel een vooraf ingevulde localStorage.
@@ -17,7 +19,10 @@ async function startGame(page, { state = {}, seed = 42, errors = true } = {}) {
     });
   }
 
-  await page.clock.install();
+  // Klok stilzetten: de tijd loopt alleen door via tick(), niet vanzelf in real time
+  // (anders draait de hoofdloop tijdens het wachten mee en worden tests onvoorspelbaar)
+  await page.clock.install({ time: START_TIME });
+  await page.clock.pauseAt(START_TIME + 1000);
   await page.addInitScript(
     ({ state, seed }) => {
       // Deterministische Math.random (mulberry32)
