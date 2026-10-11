@@ -25,9 +25,9 @@ De bestanden:
 
 | Pad | Inhoud |
 | --- | --- |
-| `index.html` | De pagina (Bootstrap 5 en Font Awesome via jsDelivr) |
+| `index.html` | De pagina, inclusief de iconen (geen externe bibliotheken of CDN) |
 | `inc/base.js` | Alle spellogica |
-| `css/style.css` | Eigen opmaak |
+| `css/style.css` | Alle opmaak, met automatisch donker thema |
 | `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |
 | `tests/`, `package.json`, `playwright.config.js` | End-to-end tests (gaan niet mee in de container) |
 
