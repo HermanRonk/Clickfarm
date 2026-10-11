@@ -56,6 +56,7 @@ window.onload = function () {
   ]);
   cleanupLegacyKeys();
   initHelp();
+  objLayout.init();
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
   objMoney.init();
@@ -127,7 +128,7 @@ var Display = {
       var filled = false;
       Array.from(row.children).forEach(function (child) {
         var text = child.textContent;
-        child.querySelectorAll(".help-ui").forEach(function (help) {
+        child.querySelectorAll(".help-ui, .card-ui").forEach(function (help) {
           text = text.replace(help.textContent, "");
         });
         var hasContent = text.trim() !== "";
@@ -348,6 +349,254 @@ function initHelp() {
     card.prepend(button);
   });
 }
+
+// Indeling van de kaarten: volgorde per rij en ingeklapte kaarten.
+// Aanpassen kan alleen in de bewerkstand (Game opties > Indeling bewerken, alleen op desktop).
+// Kaarten verplaatsen kan alleen binnen hun eigen rij, zodat de volgorde van vrijspelen intact blijft.
+var objLayout = {
+  editing: false,
+  collapsed: [],
+  defaultOrder: {},
+  dragging: null,
+  canEdit: function () {
+    return window.matchMedia("(min-width: 1024px) and (pointer: fine)").matches;
+  },
+  cards: function () {
+    return Object.keys(helpTexts)
+      .map(function (id) {
+        return document.getElementById(id);
+      })
+      .filter(function (card) {
+        return card && card.parentElement.classList.contains("rows");
+      });
+  },
+  rows: function () {
+    return Array.from(document.querySelectorAll(".rows[id]"));
+  },
+  childIds: function (row) {
+    return Array.from(row.children)
+      .map(function (child) {
+        return child.id;
+      })
+      .filter(Boolean);
+  },
+  // Zet de kaarten van een rij in de gegeven volgorde; onbekende kaarten komen achteraan
+  applyOrder: function (row, ids) {
+    var children = Array.from(row.children);
+    var position = function (child) {
+      var index = ids.indexOf(child.id);
+      return index === -1 ? ids.length + children.indexOf(child) : index;
+    };
+    children
+      .slice()
+      .sort(function (a, b) {
+        return position(a) - position(b);
+      })
+      .forEach(function (child) {
+        row.appendChild(child);
+      });
+  },
+  load: function () {
+    try {
+      var saved = JSON.parse(localStorage.getItem("layout") || "{}") || {};
+      return {
+        order:
+          saved.order && typeof saved.order === "object" ? saved.order : {},
+        collapsed: Array.isArray(saved.collapsed) ? saved.collapsed : [],
+      };
+    } catch (error) {
+      return { order: {}, collapsed: [] };
+    }
+  },
+  save: function () {
+    var order = {};
+    objLayout.rows().forEach(function (row) {
+      order[row.id] = objLayout.childIds(row);
+    });
+    localStorage.setItem(
+      "layout",
+      JSON.stringify({ order: order, collapsed: objLayout.collapsed })
+    );
+  },
+  setCollapsed: function (card, collapsed) {
+    card.classList.toggle("card-collapsed", collapsed);
+    var button = card.querySelector(".collapse-toggle");
+    var title = helpTexts[card.id][0];
+    button.innerHTML = icon(collapsed ? "chevron-down" : "chevron-up");
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute(
+      "aria-label",
+      collapsed ? "Klap " + title + " uit" : "Klap " + title + " in"
+    );
+  },
+  toggleCollapse: function (cardId) {
+    if (!objLayout.editing) return;
+    var card = document.getElementById(cardId);
+    var collapsed = !card.classList.contains("card-collapsed");
+    objLayout.collapsed = objLayout.collapsed.filter(function (id) {
+      return id !== cardId;
+    });
+    if (collapsed) objLayout.collapsed.push(cardId);
+    objLayout.setCollapsed(card, collapsed);
+    objLayout.save();
+    Display.updateRows();
+  },
+  // Schuif een kaart één zichtbare plek naar links (-1) of rechts (+1) binnen zijn rij
+  move: function (cardId, direction) {
+    if (!objLayout.editing) return;
+    var card = document.getElementById(cardId);
+    var sibling = card;
+    do {
+      sibling =
+        direction < 0
+          ? sibling.previousElementSibling
+          : sibling.nextElementSibling;
+    } while (sibling && !sibling.checkVisibility());
+    if (!sibling) return;
+    if (direction < 0) card.parentElement.insertBefore(card, sibling);
+    else card.parentElement.insertBefore(sibling, card);
+    objLayout.save();
+  },
+  reset: function () {
+    objLayout.rows().forEach(function (row) {
+      objLayout.applyOrder(row, objLayout.defaultOrder[row.id] || []);
+    });
+    objLayout.collapsed = [];
+    objLayout.cards().forEach(function (card) {
+      objLayout.setCollapsed(card, false);
+    });
+    localStorage.removeItem("layout");
+    Display.updateRows();
+  },
+  toggleEdit: function () {
+    if (!objLayout.editing && !objLayout.canEdit()) return;
+    objLayout.editing = !objLayout.editing;
+    document.body.classList.toggle("edit-mode", objLayout.editing);
+    document.getElementById("editBar").hidden = !objLayout.editing;
+    objLayout.cards().forEach(function (card) {
+      card.draggable = objLayout.editing;
+    });
+    document.getElementById("editLayoutBTN").innerHTML =
+      icon(objLayout.editing ? "check-square" : "square") +
+      " Indeling bewerken";
+  },
+  // Balk met sleepgreep, pijlen en inklapknop, plus de titel die een ingeklapte kaart toont
+  addTools: function (card) {
+    var title = helpTexts[card.id][0];
+    var tools = document.createElement("div");
+    tools.className = "card-tools card-ui";
+    tools.innerHTML =
+      '<span class="drag-handle" title="Sleep om te verplaatsen">' +
+      icon("grip-vertical") +
+      "</span>" +
+      '<button type="button" class="tool-button" data-move="-1" aria-label="' +
+      title +
+      ' naar links">' +
+      icon("arrow-left") +
+      "</button>" +
+      '<button type="button" class="tool-button" data-move="1" aria-label="' +
+      title +
+      ' naar rechts">' +
+      icon("arrow-right") +
+      "</button>" +
+      '<button type="button" class="tool-button collapse-toggle"></button>';
+    var collapsedTitle = document.createElement("div");
+    collapsedTitle.className = "collapsed-title card-ui";
+    collapsedTitle.innerHTML =
+      "<h2>" + title + '</h2><span class="hint">ingeklapt</span>';
+    card.prepend(collapsedTitle);
+    card.prepend(tools);
+    tools.addEventListener("click", function (event) {
+      var button = event.target.closest("button");
+      if (!button) return;
+      if (button.dataset.move) objLayout.move(card.id, +button.dataset.move);
+      else objLayout.toggleCollapse(card.id);
+    });
+  },
+  initDragAndDrop: function () {
+    var sameRow = function (target) {
+      return (
+        objLayout.dragging &&
+        target &&
+        target !== objLayout.dragging &&
+        target.parentElement === objLayout.dragging.parentElement
+      );
+    };
+    var cardOf = function (element) {
+      return element.closest && element.closest(".rows > [id]");
+    };
+    document.addEventListener("dragstart", function (event) {
+      var card = cardOf(event.target);
+      if (!objLayout.editing || !card || !card.draggable) return;
+      objLayout.dragging = card;
+      card.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", card.id);
+    });
+    document.addEventListener("dragover", function (event) {
+      var target = cardOf(event.target);
+      document.querySelectorAll(".drop-target").forEach(function (el) {
+        if (el !== target) el.classList.remove("drop-target");
+      });
+      if (!sameRow(target)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      target.classList.add("drop-target");
+    });
+    document.addEventListener("drop", function (event) {
+      var target = cardOf(event.target);
+      if (!sameRow(target)) return;
+      event.preventDefault();
+      var row = target.parentElement;
+      var children = Array.from(row.children);
+      if (children.indexOf(objLayout.dragging) < children.indexOf(target)) {
+        row.insertBefore(objLayout.dragging, target.nextElementSibling);
+      } else {
+        row.insertBefore(objLayout.dragging, target);
+      }
+      objLayout.save();
+    });
+    document.addEventListener("dragend", function () {
+      document
+        .querySelectorAll(".dragging, .drop-target")
+        .forEach(function (el) {
+          el.classList.remove("dragging", "drop-target");
+        });
+      objLayout.dragging = null;
+    });
+  },
+  init: function () {
+    objLayout.rows().forEach(function (row) {
+      objLayout.defaultOrder[row.id] = objLayout.childIds(row);
+    });
+    var saved = objLayout.load();
+    objLayout.rows().forEach(function (row) {
+      // Alleen kaarten die echt in deze rij horen; zo kan een save geen kaart naar een andere rij verplaatsen
+      if (Array.isArray(saved.order[row.id])) {
+        objLayout.applyOrder(row, saved.order[row.id]);
+      }
+    });
+    objLayout.collapsed = saved.collapsed.filter(function (id) {
+      return helpTexts[id] && document.getElementById(id);
+    });
+    objLayout.cards().forEach(function (card) {
+      objLayout.addTools(card);
+      objLayout.setCollapsed(card, objLayout.collapsed.indexOf(card.id) !== -1);
+    });
+    objLayout.initDragAndDrop();
+
+    // De optie staat alleen in het menu op desktop
+    var media = window.matchMedia("(min-width: 1024px) and (pointer: fine)");
+    var updateMenu = function () {
+      document.getElementById("editLayoutBTN").style.display = media.matches
+        ? ""
+        : "none";
+      if (!media.matches && objLayout.editing) objLayout.toggleEdit();
+    };
+    media.addEventListener("change", updateMenu);
+    updateMenu();
+  },
+};
 
 // Functie voor het goed weergeven van bedragen
 function FixMoney(InputMoney) {

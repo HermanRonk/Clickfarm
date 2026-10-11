@@ -35,7 +35,7 @@ test.describe("Opmaak", () => {
     await expect(menu).toBeHidden();
 
     await toggle.click();
-    await page.locator("#landbouw-col h2").click();
+    await page.locator("#landbouw-col > h2").click();
     await expect(menu).toBeHidden();
 
     await toggle.click();

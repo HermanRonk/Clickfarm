@@ -602,3 +602,116 @@ kbd2 {
 .info details[open] summary {
     margin-bottom: 0.5rem;
 }
+
+/* Indeling bewerken (zie objLayout in inc/base.js) */
+.edit-bar {
+    position: sticky;
+    top: 3.4rem;
+    z-index: 900;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+    max-width: 1600px;
+    margin: var(--gap) auto 0;
+    padding: 0.6rem 1rem;
+    background: var(--accent-soft);
+    color: var(--accent-soft-text);
+    border: 1px dashed var(--accent);
+    border-radius: var(--radius);
+}
+
+.edit-bar[hidden] {
+    display: none;
+}
+
+.edit-bar p {
+    margin: 0;
+}
+
+.edit-bar .btn {
+    margin-bottom: 0;
+}
+
+.card-tools,
+.collapsed-title {
+    display: none;
+}
+
+.edit-mode .card-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: -0.3rem 2rem 0.6rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--border);
+}
+
+.drag-handle {
+    display: inline-flex;
+    padding: 0.3rem;
+    color: var(--muted);
+    cursor: grab;
+}
+
+.tool-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.tool-button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.collapse-toggle {
+    margin-left: auto;
+}
+
+.edit-mode .rows > [draggable="true"] {
+    outline: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+    outline-offset: -1px;
+}
+
+.rows > .dragging {
+    opacity: 0.45;
+}
+
+.rows > .drop-target {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Ingeklapte kaart: alleen de titel, en niet zo hoog als de buren in de rij */
+.rows > .card-collapsed {
+    align-self: start;
+}
+
+.card-collapsed > :not(.card-ui) {
+    display: none !important;
+}
+
+.card-collapsed > .collapsed-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.collapsed-title h2 {
+    margin: 0;
+    padding-right: 0;
+}
+
+.collapsed-title .hint {
+    margin: 0;
+}
