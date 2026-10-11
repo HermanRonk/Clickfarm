@@ -64,23 +64,23 @@
         <div class="row rows" id="stats-row">
             <div class="container col-sm" id="geld-col">
                 <div id="debug"></div>
-                <h2>Financiën:</h2>
+                <h2>Financiën</h2>
                 <div id="MoneyAmount"></div>
                 <div id="HistoryMessages"></div>
             </div>
             <div class="container col-sm" id="level-col">
-                <h2>Level:</h2>
+                <h2>Level</h2>
                 <div id="currentlevel"></div>
                 <div id="nextlevel"></div>
             </div>
             <div class="container col-sm" id="opslag-col">
-                <h2>Voorraden:</h2>
+                <h2>Voorraden</h2>
                 <div id="Grainstock"></div>
                 <div id="Flourstock"></div>
                 <div id="Oilstock"></div>
             </div>
             <div class="container col-sm" id="energy-col">
-                <h2>Energie:</h2>
+                <h2>Energie</h2>
                 <div id="TotalEnergyProduction"></div>
                 <div id="CurrentEnergyUsage"></div>
                 <div id="AvailableEnergy"></div>
@@ -121,71 +121,88 @@
 
         <div class="row rows" id="tier1-row">
             <div class="container col-sm" id="landbouw-col">
-                <h2>Landbouw:</h2>
+                <h2>Landbouw</h2>
                 <div id="Farmland"></div>
-                <div id="FarmManual">
-                    <button id="farmlandWorkBTN" type="button" class="btn btn-success" onClick="objFarmland.work()">Bewerk landbouwgrond</button>
-                    <div id="FarmlandTimer"></div>
-                </div>
                 <div id="FarmHarvestPerField"></div>
-                <h3>Uitbreiden:</h3>
+                <div id="FarmManual">
+                    <div class="actions">
+                        <button id="farmlandWorkBTN" type="button" class="btn btn-success" onClick="objFarmland.work()">Bewerk landbouwgrond</button>
+                    </div>
+                    <div id="FarmlandTimer" class="timer"></div>
+                </div>
+                <h3>Uitbreiden</h3>
                 <div id="FarmlandPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFarmland.addfarm()">Koop landbouwgrond</button>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objFarmland.addfarm()">Koop landbouwgrond</button>
+                </div>
             </div>
 
             <div class="container col-sm" id="grain-col">
-                <h2>Graan:</h2>
+                <h2>Graan</h2>
                 <div id="GrainAmount"></div>
                 <div id="GrainPrice"></div>
-                <button type="button" class="btn btn-danger" onClick="objGrain.sell()">Verkoop graan!</button>
                 <div id="GrainSilo"></div>
-                <h2>Koop extra silo's:</h2>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onClick="objGrain.sell()">Verkoop graan</button>
+                </div>
+                <h3>Silo's uitbreiden</h3>
                 <div id="GrainSiloPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objGrainSilo.add();">Koop graansilo</button>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objGrainSilo.add();">Koop graansilo</button>
+                </div>
             </div>
             <div class="container col-sm" id="flour-col">
-                <h2>Bloem:</h2>
-                <div id="FlourSilo"></div>
-
+                <h2>Bloem</h2>
                 <div id="Flour"></div>
                 <div id="FlourPrice"></div>
-                <button type="button" class="btn btn-danger" onClick="objFlour.sell()">Verkoop bloem!</button>
-                <h2>Koop extra silo's</h2>
+                <div id="FlourSilo"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onClick="objFlour.sell()">Verkoop bloem</button>
+                </div>
+                <h3>Silo's uitbreiden</h3>
                 <div id="FlourSiloPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();">Koop bloemsilo</button>
-
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();">Koop bloemsilo</button>
+                </div>
             </div>
         </div>
         <div class="row rows" id="automation-row">
             <div class="container col-sm" id="farmland-automation">
-                <h2>Automatiseer:</h2>
-                <p>Farm robots verbruiken 15 energie en kunnen 10 velden bewerken.</p>
+                <h2>Farmrobots</h2>
                 <div id="ShowFarmRobot"></div>
                 <div id="FarmRobotPrice"></div>
-                <button type="button" class="btn btn-primary" onClick="objFarmRobot.add();">Koop robot</button>
-                <button type="button" class="btn btn-warning" onClick="objFarmRobot.sell();" id="SellFarmRobot">Verkoop robot</button>
-                <div id="RobotTimer"></div>
+                <p class="hint">Een robot bewerkt 10 velden en gebruikt 15 energie per run.</p>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objFarmRobot.add();">Koop robot</button>
+                    <button type="button" class="btn btn-warning" onClick="objFarmRobot.sell();" id="SellFarmRobot">Verkoop robot</button>
+                </div>
+                <div id="RobotTimer" class="timer"></div>
             </div>
             <div class="container col-sm" id="windmills-col">
                 <h2>Windmolens</h2>
-                <div id="WindmillCost"></div>
-                <button type="button" class="btn btn-primary" onClick="objWindmill.add(this)">Bouw windmolen</button>
                 <div id="Windmills"></div>
                 <div id="WindmillCap"></div>
-                <h2>Maal graan tot bloem</h2>
-                <button type="button" class="btn btn-success" onClick="objWindmill.grind()" id="GrindGrain">Vermaal graan!</button>
-                <div id="GrindTimer"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-success" onClick="objWindmill.grind()" id="GrindGrain">Maal graan</button>
+                </div>
+                <div id="GrindTimer" class="timer"></div>
+                <h3>Uitbreiden</h3>
+                <div id="WindmillCost"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objWindmill.add(this)">Bouw windmolen</button>
+                </div>
             </div>
             <div class="container col-sm" id="WindmillController">
-                <h2>Robotiseren windmolens:</h2>
+                <h2>Windmolencontrollers</h2>
                 <div id="WindmillControllerInfo"></div>
                 <div id="WindmillControllerCost"></div>
                 <div id="SellWindmillController"></div>
-                <button type="button" class="btn btn-primary" onClick="objWindmillController.add(this)">Bouw windmolencontroller</button>
-                <button type="button" class="btn btn-warning" onClick="objWindmillController.sell(this)">Verkoop windmolencontroller</button>
-                <div id="AutoGrindTimer"></div>
-
-
+                <p class="hint">Een controller laat één windmolen automatisch malen.</p>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objWindmillController.add(this)">Bouw windmolencontroller</button>
+                    <button type="button" class="btn btn-warning" onClick="objWindmillController.sell(this)">Verkoop windmolencontroller</button>
+                </div>
+                <div id="AutoGrindTimer" class="timer"></div>
             </div>
         </div>
         <div class="row rows" id="tier2-row">

@@ -1,7 +1,7 @@
 // Regressietests voor eerder opgeloste bugs en exploits.
 // Iedere test noemt de commit waarin het probleem is opgelost.
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, tick, game, shownMap, storage } = require("./helpers/game");
+const { startGame, reload, tick, game, shownMap, storage, stat } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 const atLevel = (level, extra = {}) => ({ PlayerLevel: level, NextLevel: threshold(level), ...extra });
@@ -188,7 +188,7 @@ test.describe("Bekende problemen opgelost", () => {
     expect(await game(page, () => objFarmland.cost)).toBe(10.5);
     await reload(page);
     expect(await game(page, () => objFarmland.cost)).toBe(10.5);
-    await expect(page.locator("#FarmlandPrice")).toHaveText("Kosten landbouwgrond: € 10,50");
+    await expect(stat(page, "#landbouw-col", "Prijs per veld")).toHaveText("€ 10,50");
   });
 
   test("#43 ieder id komt maar één keer voor in de pagina", async ({ page }) => {

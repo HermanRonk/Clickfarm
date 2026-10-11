@@ -51,9 +51,14 @@ async function startGame(page, { state = {}, seed = 42, errors = true } = {}) {
   return { pageErrors };
 }
 
-// Wacht tot window.onload klaar is (de level-tekst wordt dan gevuld)
+// Wacht tot window.onload klaar is (het level wordt dan getoond)
 async function waitForInit(page) {
-  await expect(page.locator("#currentlevel")).toHaveText(/Huidig level is: \d+/);
+  await expect(stat(page, "#currentlevel", "Level")).toHaveText(/^\d+$/);
+}
+
+// Het getoonde level als locator
+function levelText(page) {
+  return stat(page, "#currentlevel", "Level");
 }
 
 // Herlaad de pagina en wacht tot het spel weer geïnitialiseerd is
@@ -101,6 +106,16 @@ async function expectNoBrokenNumbers(page) {
   expect(bad, "regels met NaN/undefined/Infinity").toEqual([]);
 }
 
+// Waarde (dd) bij een label (dt) uit een renderStats-lijst binnen scope, als locator
+function stat(page, scope, label) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return page
+    .locator(scope)
+    .locator("dt")
+    .filter({ hasText: new RegExp(`^${escaped}$`) })
+    .locator("xpath=following-sibling::dd[1]");
+}
+
 function storage(page, key) {
   return page.evaluate((key) => localStorage.getItem(key), key);
 }
@@ -120,5 +135,7 @@ module.exports = {
   shownMap,
   expectNoBrokenNumbers,
   storage,
+  stat,
+  levelText,
   notifications,
 };

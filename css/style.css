@@ -442,3 +442,62 @@ kbd2 {
 .close-notification::after {
     transform: rotate(-45deg);
 }
+
+/* Waardes in kaarten (zie renderStats/renderHint in inc/base.js) */
+.stats-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.2rem 1rem;
+    margin: 0 0 0.2rem;
+}
+
+.stats-list dt {
+    color: var(--muted);
+    font-weight: 400;
+}
+
+.stats-list dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.hint {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.hint {
+    margin-top: 0.4rem;
+}
+
+.actions {
+    margin: 0.6rem 0 0.4rem;
+}
+
+.timer {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.rows > * > h3:first-child {
+    margin-top: 0;
+}
+
+.bar-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.bar-label span:last-child {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+.progress {
+    height: 0.6rem;
+}

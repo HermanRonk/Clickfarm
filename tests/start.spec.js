@@ -1,14 +1,15 @@
 // Een nieuwe speler: wat ziet hij bij de eerste keer openen?
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, tick, game, shownMap, expectNoBrokenNumbers, storage } = require("./helpers/game");
+const { startGame, reload, tick, game, shownMap, expectNoBrokenNumbers, storage, stat, levelText } = require("./helpers/game");
 const { START_MONEY, ALL_GATED, expectedShown, expectedHidden, threshold } = require("./levels.data");
 
 test.describe("Nieuw spel", () => {
   test("start op level 1 met startkapitaal en alleen landbouw zichtbaar", async ({ page }) => {
     const { pageErrors } = await startGame(page);
 
-    await expect(page.locator("#currentlevel")).toHaveText("Huidig level is: 1");
-    await expect(page.locator("#nextlevel")).toHaveText("Drempel voor volgend level: € 3.000,00");
+    await expect(levelText(page)).toHaveText("1");
+    await expect(stat(page, "#nextlevel", "Volgend level")).toHaveText("€ 3.000,00");
+    await expect(page.locator("#nextlevel .bar-label")).toHaveText("Voortgang66%");
     await expect(page.locator("#MoneyTop")).toContainText("€ 2.000,00");
     expect(await game(page, () => objMoney.amount)).toBe(START_MONEY);
     expect(await game(page, () => objPlayerInfo.nextlevel)).toBe(threshold(1));

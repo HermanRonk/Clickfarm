@@ -194,6 +194,45 @@ function FixNumber(InputNumber) {
   return InputNumber.toLocaleString("nl-NL");
 }
 
+// Hoeveelheid met eenheid, bijvoorbeeld FixUnit(1500, "kg") -> "1.500 kg"
+function FixUnit(InputNumber, unit) {
+  return FixNumber(InputNumber) + " " + unit;
+}
+
+// Compacte lijst met waardes: renderStats([["Voorraad", "1.500 kg"], ...]).
+// Lege regels (null/false) worden overgeslagen.
+function renderStats(rows) {
+  return (
+    '<dl class="stats-list">' +
+    rows
+      .filter(Boolean)
+      .map(function (row) {
+        return "<dt>" + row[0] + "</dt><dd>" + row[1] + "</dd>";
+      })
+      .join("") +
+    "</dl>"
+  );
+}
+
+// Voorraadbalk met label en waarde boven de balk (percentage wordt begrensd op 0-100)
+function renderBar(label, valueText, percentage) {
+  var width = Math.max(0, Math.min(100, +percentage || 0));
+  return (
+    '<div class="bar-label"><span>' +
+    label +
+    "</span><span>" +
+    valueText +
+    '</span></div><div class="progress"><div class="progress-bar" style="width:' +
+    width +
+    '%"></div></div>'
+  );
+}
+
+// Korte uitleg onder een lijst
+function renderHint(text) {
+  return '<p class="hint">' + text + "</p>";
+}
+
 // Functie van het goed weergeven van afgeronde gewichten
 function AfrondenGewicht(InputGewicht) {
   var afgerond = Math.round(+InputGewicht * 100) / 100;
@@ -206,10 +245,18 @@ var objPlayerInfo = {
   level_multiplier: [0, 5, 5, 5, 5, 4, 3, 4, 5, 5, 5, 5, 5, 5],
   nextlevel: localStorage.getItem("NextLevel") || 3000,
   show: function () {
-    document.getElementById("currentlevel").innerHTML =
-      "Huidig level is: " + objPlayerInfo.level;
+    document.getElementById("currentlevel").innerHTML = renderStats([
+      ["Level", objPlayerInfo.level],
+    ]);
     document.getElementById("nextlevel").innerHTML =
-      "Drempel voor volgend level: " + FixMoney(objPlayerInfo.nextlevel);
+      renderStats([["Volgend level", FixMoney(objPlayerInfo.nextlevel)]]) +
+      renderBar(
+        "Voortgang",
+        Math.floor(
+          Math.min(100, (+objMoney.amount / +objPlayerInfo.nextlevel) * 100)
+        ) + "%",
+        (+objMoney.amount / +objPlayerInfo.nextlevel) * 100
+      );
   },
   proceslevel: function (reason) {
     // Wanneer level hoger, bereken nieuw gelddoel voor next level
@@ -321,15 +368,16 @@ var objMoney = {
   },
   show: function () {
     MoneyRound = Math.round(+objMoney.amount * 100) / 100;
-    document.getElementById("MoneyAmount").innerHTML =
-      "<p>Beschikbaar vermogen: " + FixMoney(MoneyRound) + "</p>";
+    document.getElementById("MoneyAmount").innerHTML = renderStats([
+      ["Vermogen", FixMoney(MoneyRound)],
+    ]);
     document.getElementById("MoneyTop").innerHTML =
       "Vermogen: <kbd2>" + FixMoney(MoneyRound) + "</kbd2>";
     localStorage.setItem("Money", +MoneyRound);
   },
   showUpdate: function (description, moneyProfit) {
     profitRound = Math.round(+moneyProfit * 100) / 100;
-    showHistory(description + " " + FixMoney(profitRound));
+    showHistory(description, FixMoney(profitRound));
   },
   init: function () {
     objMoney.amount = parseFloat(localStorage.getItem("Money")) || 2000;
@@ -460,7 +508,7 @@ var objFarmRobot = {
   },
   timerCountdown: function () {
     document.getElementById("RobotTimer").innerHTML =
-      "De oogst is klaar over: " + objFarmRobot.robotTimer + " Seconden";
+      "Oogst klaar over " + objFarmRobot.robotTimer + " seconden";
   },
   work: function () {
     if (+objFarmRobot.robots === 0) return 0;
@@ -498,26 +546,31 @@ var objFarmRobot = {
     }
   },
   show: function () {
-    document.getElementById("ShowFarmRobot").innerHTML =
-      "<p>Op dit moment zijn er: " +
-      objFarmRobot.robots +
-      " Robots die " +
-      +objFarmRobot.robots * +objFarmRobot.robotCap +
-      " velden bewerken (voor " +
-      FixNumber(
-        AfrondenGewicht(
-          +objFarmland.harvest * (+objFarmRobot.robots * +objFarmRobot.robotCap)
-        )
-      ) +
-      "kg graan per run). Dit kost " +
-      +objFarmRobot.robots * +objFarmRobot.robotEnergy +
-      " Energie per run</p>";
-    document.getElementById("FarmRobotPrice").innerHTML =
-      "<p>Een FarmRobot kopen kost: " +
-      FixMoney(objFarmRobot.robotCost) +
-      ".<br>Een robot verkopen levert: " +
-      FixMoney(+objFarmRobot.robotCost * 0.75) +
-      " op.</p>";
+    document.getElementById("ShowFarmRobot").innerHTML = renderStats([
+      ["Robots", FixNumber(objFarmRobot.robots)],
+      [
+        "Velden bewerkt",
+        FixNumber(+objFarmRobot.robots * +objFarmRobot.robotCap),
+      ],
+      [
+        "Opbrengst per run",
+        FixUnit(
+          AfrondenGewicht(
+            +objFarmland.harvest *
+              (+objFarmRobot.robots * +objFarmRobot.robotCap)
+          ),
+          "kg"
+        ),
+      ],
+      [
+        "Energie per run",
+        FixNumber(+objFarmRobot.robots * +objFarmRobot.robotEnergy),
+      ],
+    ]);
+    document.getElementById("FarmRobotPrice").innerHTML = renderStats([
+      ["Prijs per robot", FixMoney(objFarmRobot.robotCost)],
+      ["Verkoopwaarde", FixMoney(+objFarmRobot.robotCost * 0.75)],
+    ]);
     objFarmland.manualFarm();
   },
   init: function () {
@@ -586,36 +639,30 @@ var objGrainSilo = {
       (+objGrainSilo.contents / (+objGrainSilo.amount * +objGrainSilo.cap)) *
       100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("Grainstock").innerHTML =
-      '<p>Graan:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objGrainSilo.contents) +
-      "kg (" +
-      percentageFilled +
-      "%)</div></div>";
+    document.getElementById("Grainstock").innerHTML = renderBar(
+      "Graan",
+      FixUnit(objGrainSilo.contents, "kg"),
+      percentageFilled
+    );
   },
   show: function () {
     objGrainSilo.contents = Math.round(+objGrainSilo.contents * 100) / 100;
     var TempCap =
       +objGrainSilo.amount * +objGrainSilo.cap - +objGrainSilo.contents;
     document.getElementById("GrainSilo").innerHTML =
-      "Er zijn " +
-      objGrainSilo.amount +
-      " silo's beschikbaar met nog " +
-      FixNumber(TempCap) +
-      "KG aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 80% onder de huidige marktprijs.";
-    document.getElementById("GrainAmount").innerHTML =
-      "<p>Hoeveelheid graan op voorraad: " +
-      FixNumber(objGrainSilo.contents) +
-      "kg</p>";
+      renderStats([
+        ["Silo's", FixNumber(objGrainSilo.amount)],
+        ["Vrije ruimte", FixUnit(TempCap, "kg")],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.");
+    document.getElementById("GrainAmount").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objGrainSilo.contents, "kg")],
+    ]);
     localStorage.setItem("GrainSiloContents", objGrainSilo.contents);
-    document.getElementById("GrainSiloPrice").innerHTML =
-      "<p>Een silo kost " +
-      FixMoney(objGrainSilo.price) +
-      " en kan " +
-      FixNumber(objGrainSilo.cap) +
-      "KG graan bevatten</p>";
+    document.getElementById("GrainSiloPrice").innerHTML = renderStats([
+      ["Prijs per silo", FixMoney(objGrainSilo.price)],
+      ["Capaciteit per silo", FixUnit(objGrainSilo.cap, "kg")],
+    ]);
     document.getElementById("GrainTop").innerHTML =
       "Graan: <kbd2>" +
       FixNumber(objGrainSilo.contents) +
@@ -675,35 +722,29 @@ var objFlourSilo = {
       (+objFlourSilo.contents / (+objFlourSilo.amount * +objFlourSilo.cap)) *
       100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("Flourstock").innerHTML =
-      '<p>Bloem:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objFlourSilo.contents) +
-      "kg (" +
-      percentageFilled +
-      "%)</div></div>";
+    document.getElementById("Flourstock").innerHTML = renderBar(
+      "Bloem",
+      FixUnit(objFlourSilo.contents, "kg"),
+      percentageFilled
+    );
   },
   show: function () {
-    document.getElementById("Flour").innerHTML =
-      "<p>Hoeveelheid bloem op voorraad: " +
-      FixNumber(objFlourSilo.contents) +
-      "kg</p>";
+    document.getElementById("Flour").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objFlourSilo.contents, "kg")],
+    ]);
     var TempCap =
       +objFlourSilo.amount * +objFlourSilo.cap - +objFlourSilo.contents;
     document.getElementById("FlourSilo").innerHTML =
-      "Er zijn " +
-      FixNumber(objFlourSilo.amount) +
-      " silo's beschikbaar met nog " +
-      FixNumber(TempCap) +
-      "KG aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
+      renderStats([
+        ["Silo's", FixNumber(objFlourSilo.amount)],
+        ["Vrije ruimte", FixUnit(TempCap, "kg")],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 80% van de marktprijs.");
     localStorage.setItem("FlourSiloContents", objFlourSilo.contents);
-    document.getElementById("FlourSiloPrice").innerHTML =
-      "<p>Een silo kost " +
-      FixMoney(objFlourSilo.price) +
-      " en kan " +
-      FixNumber(objFlourSilo.cap) +
-      "KG bloem bevatten</p>";
+    document.getElementById("FlourSiloPrice").innerHTML = renderStats([
+      ["Prijs per silo", FixMoney(objFlourSilo.price)],
+      ["Capaciteit per silo", FixUnit(objFlourSilo.cap, "kg")],
+    ]);
     document.getElementById("FlourTop").innerHTML =
       "Bloem: <kbd2>" +
       FixNumber(objFlourSilo.contents) +
@@ -964,16 +1005,18 @@ var objFarmland = {
   timerCountdown: function () {
     if (this.FarmTimer > 0) {
       document.getElementById("FarmlandTimer").innerHTML =
-        "De oogst is klaar over: " + this.FarmTimer + " Seconden";
+        "Oogst klaar over " + this.FarmTimer + " seconden";
     } else {
       document.getElementById("FarmlandTimer").innerHTML = "";
     }
   },
   showPrice: function () {
-    document.getElementById("FarmlandPrice").innerHTML =
-      "<p>Kosten landbouwgrond: " + FixMoney(objFarmland.cost) + "</p>";
-    document.getElementById("FarmHarvestPerField").innerHTML =
-      "<p>Opbrengst per veld: " + objFarmland.harvest + "kg</p>";
+    document.getElementById("FarmlandPrice").innerHTML = renderStats([
+      ["Prijs per veld", FixMoney(objFarmland.cost)],
+    ]);
+    document.getElementById("FarmHarvestPerField").innerHTML = renderStats([
+      ["Opbrengst per veld", FixUnit(objFarmland.harvest, "kg")],
+    ]);
     localStorage.setItem("FarmlandCost", objFarmland.cost);
     localStorage.setItem("Harvest", objFarmland.harvest);
   },
@@ -982,8 +1025,9 @@ var objFarmland = {
     objFarmland.cost = Math.round(objFarmland.cost * 100) / 100;
   },
   showFarms: function () {
-    document.getElementById("Farmland").innerHTML =
-      "<p>Hoeveelheid landbouwgrond: " + FixNumber(objFarmland.amount) + "</p>";
+    document.getElementById("Farmland").innerHTML = renderStats([
+      ["Velden", FixNumber(objFarmland.amount)],
+    ]);
     localStorage.setItem("Farmland", objFarmland.amount);
     objFarmland.manualFarm();
   },
@@ -1277,7 +1321,7 @@ var objWindmill = {
   grindTimerCountdown: function () {
     if (objWindmill.GrindTimer > 0) {
       document.getElementById("GrindTimer").innerHTML =
-        "De molen is klaar over: " + objWindmill.GrindTimer + " Seconden";
+        "Malen klaar over " + objWindmill.GrindTimer + " seconden";
     } else {
       document.getElementById("GrindTimer").innerHTML = "";
     }
@@ -1285,26 +1329,27 @@ var objWindmill = {
   autoGrindTimerCountdown: function () {
     if (objWindmill.autoGrindTimer > 0) {
       document.getElementById("AutoGrindTimer").innerHTML =
-        "De geautomatiseerde molens zijn klaar over: " +
+        "Automatisch malen klaar over " +
         objWindmill.autoGrindTimer +
-        " Seconden";
+        " seconden";
     } else {
       document.getElementById("AutoGrindTimer").innerHTML = "";
     }
   },
   show: function () {
-    document.getElementById("WindmillCost").innerHTML =
-      "<p>Een windmolen kost: " +
-      FixMoney(objWindmill.cost) +
-      "  en kan " +
-      FixNumber(objWindmill.cap) +
-      "kg per run vermalen</p>";
-    document.getElementById("Windmills").innerHTML =
-      "<p>Hoeveelheid windmolens: " + FixNumber(objWindmill.amount) + "</p>";
-    document.getElementById("WindmillCap").innerHTML =
-      "<p>Maalcapaciteit per run: " +
-      FixNumber(objWindmill.amount * objWindmill.cap) +
-      "kg</p>";
+    document.getElementById("Windmills").innerHTML = renderStats([
+      ["Windmolens", FixNumber(objWindmill.amount)],
+    ]);
+    document.getElementById("WindmillCap").innerHTML = renderStats([
+      [
+        "Maalcapaciteit per run",
+        FixUnit(objWindmill.amount * objWindmill.cap, "kg"),
+      ],
+    ]);
+    document.getElementById("WindmillCost").innerHTML = renderStats([
+      ["Prijs per windmolen", FixMoney(objWindmill.cost)],
+      ["Capaciteit per windmolen", FixUnit(objWindmill.cap, "kg")],
+    ]);
   },
   init: function () {
     objWindmill.amount = parseInt(localStorage.getItem("WindmillAmount")) || 1;
@@ -1359,22 +1404,21 @@ var objWindmillController = {
     }
   },
   show: function () {
-    document.getElementById("WindmillControllerInfo").innerHTML =
-      "<p>Een windmolencontroller kan " +
-      FixNumber(objWindmillController.cap) +
-      " windmolen(s) aansturen. </p><p>Er zijn op dit moment " +
-      FixNumber(objWindmillController.amount) +
-      " controllers actief die samen een energieverbruik hebben van: " +
-      FixNumber(
-        (objWindmillController.amount * objWindmillController.energy) / 10
-      ) +
-      " units per tick";
-    document.getElementById("WindmillControllerCost").innerHTML =
-      "Een windmolencontroller kost: " + FixMoney(objWindmillController.price);
-    document.getElementById("SellWindmillController").innerHTML =
-      "<p>Verkoop een controller voor: " +
-      FixMoney(objWindmillController.price * 0.75) +
-      "</p>";
+    document.getElementById("WindmillControllerInfo").innerHTML = renderStats([
+      ["Controllers", FixNumber(objWindmillController.amount)],
+      [
+        "Energie per tick",
+        FixNumber(
+          (objWindmillController.amount * objWindmillController.energy) / 10
+        ),
+      ],
+    ]);
+    document.getElementById("WindmillControllerCost").innerHTML = renderStats([
+      ["Prijs per controller", FixMoney(objWindmillController.price)],
+    ]);
+    document.getElementById("SellWindmillController").innerHTML = renderStats([
+      ["Verkoopwaarde", FixMoney(objWindmillController.price * 0.75)],
+    ]);
   },
   init: function () {
     objWindmillController.amount =
@@ -2702,16 +2746,15 @@ var objSalesComputer = {
 };
 
 function showPrice() {
-  document.getElementById("Oilprice").innerHTML =
-    "<p>De huidige olieprijs: " + FixMoney(objOil.price) + "</p>";
-  document.getElementById("GrainPrice").innerHTML =
-    "<p>De huidige graanprijs: " +
-    FixMoney(objGrain.price) +
-    " per 1.000kg</p>";
-  document.getElementById("FlourPrice").innerHTML =
-    "<p>De huidige bloemprijs: " +
-    FixMoney(objFlour.price) +
-    " per 1.000kg</p>";
+  document.getElementById("Oilprice").innerHTML = renderStats([
+    ["Prijs per vat", FixMoney(objOil.price)],
+  ]);
+  document.getElementById("GrainPrice").innerHTML = renderStats([
+    ["Prijs per 1.000 kg", FixMoney(objGrain.price)],
+  ]);
+  document.getElementById("FlourPrice").innerHTML = renderStats([
+    ["Prijs per 1.000 kg", FixMoney(objFlour.price)],
+  ]);
 }
 
 // research voor mijnbouw
@@ -4880,17 +4923,13 @@ function notificationOverlay(messageText, messageTitle, messageIcon) {
 
 // History functie voor inkomsten
 var messages = [];
-function showHistory(messageText) {
+function showHistory(description, amount) {
   if (messages.length > 4) {
     messages.pop();
   }
-  messageHistory = document.getElementById("HistoryMessages");
-  messageHistory.innerHTML = "Laatste stortingen: <br>";
-  messages.unshift(messageText);
-  messages.forEach(displayMessages);
-  function displayMessages(item, index) {
-    messageHistory.innerHTML = messageHistory.innerHTML + item + "<br>";
-  }
+  messages.unshift([description, amount]);
+  document.getElementById("HistoryMessages").innerHTML =
+    "<h3>Laatste inkomsten</h3>" + renderStats(messages);
 }
 
 //Gebruiken resources

@@ -9,6 +9,8 @@ const {
   expectNoBrokenNumbers,
   storage,
   notifications,
+  stat,
+  levelText,
 } = require("./helpers/game");
 const { LEVELS, ALL_GATED, RESEARCH_GATED, expectedShown, expectedHidden, threshold } = require("./levels.data");
 
@@ -35,7 +37,7 @@ test.describe("Level up", () => {
       await game(page, () => objMoney.add(1, "test"));
       await tick(page, 1);
       expect(await game(page, () => +objPlayerInfo.level)).toBe(level + 1);
-      await expect(page.locator("#currentlevel")).toHaveText(`Huidig level is: ${level + 1}`);
+      await expect(levelText(page)).toHaveText(String(level + 1));
       await expect(notifications(page).last()).toContainText(`Levelup! je bent nu level: ${level + 1}`);
       expect(+(await storage(page, "PlayerLevel"))).toBe(level + 1);
       expect(+(await storage(page, "NextLevel"))).toBe(threshold(level + 1));
@@ -64,7 +66,7 @@ test.describe("Level up", () => {
       expect(await game(page, () => +objPlayerInfo.level), `na drempel van level ${level}`).toBe(level + 1);
       await expectSections(page, level + 1);
     }
-    await expect(page.locator("#nextlevel")).toHaveText("Drempel voor volgend level: € 281.250.000.000,00");
+    await expect(stat(page, "#nextlevel", "Volgend level")).toHaveText("€ 281.250.000.000,00");
     expect(pageErrors).toEqual([]);
   });
 
