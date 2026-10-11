@@ -1,76 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 
 <head>
     <title>Clickfarm.nl</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
     <script src="./inc/base.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="./css/style.css">
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top px-3">
-        <a class="navbar-brand" href="#">Clickfarm.nl</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-            aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+    <!-- Iconen: Font Awesome Free 5.15.4 (https://fontawesome.com), licentie CC BY 4.0 (https://fontawesome.com/license/free) -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none">
+        <symbol id="i-euro-sign" viewBox="0 0 320 512"><path d="M310.706 413.765c-1.314-6.63-7.835-10.872-14.424-9.369-10.692 2.439-27.422 5.413-45.426 5.413-56.763 0-101.929-34.79-121.461-85.449h113.689a12 12 0 0 0 11.708-9.369l6.373-28.36c1.686-7.502-4.019-14.631-11.708-14.631H115.22c-1.21-14.328-1.414-28.287.137-42.245H261.95a12 12 0 0 0 11.723-9.434l6.512-29.755c1.638-7.484-4.061-14.566-11.723-14.566H130.184c20.633-44.991 62.69-75.03 117.619-75.03 14.486 0 28.564 2.25 37.851 4.145 6.216 1.268 12.347-2.498 14.002-8.623l11.991-44.368c1.822-6.741-2.465-13.616-9.326-14.917C290.217 34.912 270.71 32 249.635 32 152.451 32 74.03 92.252 45.075 176H12c-6.627 0-12 5.373-12 12v29.755c0 6.627 5.373 12 12 12h21.569c-1.009 13.607-1.181 29.287-.181 42.245H12c-6.627 0-12 5.373-12 12v28.36c0 6.627 5.373 12 12 12h30.114C67.139 414.692 145.264 480 249.635 480c26.301 0 48.562-4.544 61.101-7.788 6.167-1.595 10.027-7.708 8.788-13.957l-8.818-44.49z"/></symbol>
+        <symbol id="i-industry" viewBox="0 0 512 512"><path d="M475.115 163.781L336 252.309v-68.28c0-18.916-20.931-30.399-36.885-20.248L160 252.309V56c0-13.255-10.745-24-24-24H24C10.745 32 0 42.745 0 56v400c0 13.255 10.745 24 24 24h464c13.255 0 24-10.745 24-24V184.029c0-18.917-20.931-30.399-36.885-20.248z"/></symbol>
+        <symbol id="i-info" viewBox="0 0 192 512"><path d="M20 424.229h20V279.771H20c-11.046 0-20-8.954-20-20V212c0-11.046 8.954-20 20-20h112c11.046 0 20 8.954 20 20v212.229h20c11.046 0 20 8.954 20 20V492c0 11.046-8.954 20-20 20H20c-11.046 0-20-8.954-20-20v-47.771c0-11.046 8.954-20 20-20zM96 0C56.235 0 24 32.235 24 72s32.235 72 72 72 72-32.235 72-72S135.764 0 96 0z"/></symbol>
+        <symbol id="i-info-circle" viewBox="0 0 512 512"><path d="M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"/></symbol>
+        <symbol id="i-box" viewBox="0 0 512 512"><path d="M509.5 184.6L458.9 32.8C452.4 13.2 434.1 0 413.4 0H272v192h238.7c-.4-2.5-.4-5-1.2-7.4zM240 0H98.6c-20.7 0-39 13.2-45.5 32.8L2.5 184.6c-.8 2.4-.8 4.9-1.2 7.4H240V0zM0 224v240c0 26.5 21.5 48 48 48h416c26.5 0 48-21.5 48-48V224H0z"/></symbol>
+        <symbol id="i-tree" viewBox="0 0 384 512"><path d="M378.31 378.49L298.42 288h30.63c9.01 0 16.98-5 20.78-13.06 3.8-8.04 2.55-17.26-3.28-24.05L268.42 160h28.89c9.1 0 17.3-5.35 20.86-13.61 3.52-8.13 1.86-17.59-4.24-24.08L203.66 4.83c-6.03-6.45-17.28-6.45-23.32 0L70.06 122.31c-6.1 6.49-7.75 15.95-4.24 24.08C69.38 154.65 77.59 160 86.69 160h28.89l-78.14 90.91c-5.81 6.78-7.06 15.99-3.27 24.04C37.97 283 45.93 288 54.95 288h30.63L5.69 378.49c-6 6.79-7.36 16.09-3.56 24.26 3.75 8.05 12 13.25 21.01 13.25H160v24.45l-30.29 48.4c-5.32 10.64 2.42 23.16 14.31 23.16h95.96c11.89 0 19.63-12.52 14.31-23.16L224 440.45V416h136.86c9.01 0 17.26-5.2 21.01-13.25 3.8-8.17 2.44-17.47-3.56-24.26z"/></symbol>
+        <symbol id="i-upload" viewBox="0 0 512 512"><path d="M296 384h-80c-13.3 0-24-10.7-24-24V192h-87.7c-17.8 0-26.7-21.5-14.1-34.1L242.3 5.7c7.5-7.5 19.8-7.5 27.3 0l152.2 152.2c12.6 12.6 3.7 34.1-14.1 34.1H320v168c0 13.3-10.7 24-24 24zm216-8v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h136v8c0 30.9 25.1 56 56 56h80c30.9 0 56-25.1 56-56v-8h136c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"/></symbol>
+        <symbol id="i-download" viewBox="0 0 512 512"><path d="M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"/></symbol>
+        <symbol id="i-power-off" viewBox="0 0 512 512"><path d="M400 54.1c63 45 104 118.6 104 201.9 0 136.8-110.8 247.7-247.5 248C120 504.3 8.2 393 8 256.4 7.9 173.1 48.9 99.3 111.8 54.2c11.7-8.3 28-4.8 35 7.7L162.6 90c5.9 10.5 3.1 23.8-6.6 31-41.5 30.8-68 79.6-68 134.9-.1 92.3 74.5 168.1 168 168.1 91.6 0 168.6-74.2 168-169.1-.3-51.8-24.7-101.8-68.1-134-9.7-7.2-12.4-20.5-6.5-30.9l15.8-28.1c7-12.4 23.2-16.1 34.8-7.8zM296 264V24c0-13.3-10.7-24-24-24h-32c-13.3 0-24 10.7-24 24v240c0 13.3 10.7 24 24 24h32c13.3 0 24-10.7 24-24z"/></symbol>
+        <symbol id="i-pause" viewBox="0 0 448 512"><path d="M144 479H48c-26.5 0-48-21.5-48-48V79c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v352c0 26.5-21.5 48-48 48zm304-48V79c0-26.5-21.5-48-48-48h-96c-26.5 0-48 21.5-48 48v352c0 26.5 21.5 48 48 48h96c26.5 0 48-21.5 48-48z"/></symbol>
+        <symbol id="i-play" viewBox="0 0 448 512"><path d="M424.4 214.7L72.4 6.6C43.8-10.3 0 6.1 0 47.9V464c0 37.5 40.7 60.1 72.4 41.3l352-208c31.4-18.5 31.5-64.1 0-82.6z"/></symbol>
+        <symbol id="i-square" viewBox="0 0 448 512"><path d="M400 32H48C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V80c0-26.5-21.5-48-48-48zm-6 400H54c-3.3 0-6-2.7-6-6V86c0-3.3 2.7-6 6-6h340c3.3 0 6 2.7 6 6v340c0 3.3-2.7 6-6 6z"/></symbol>
+        <symbol id="i-check-square" viewBox="0 0 448 512"><path d="M400 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h352c26.51 0 48-21.49 48-48V80c0-26.51-21.49-48-48-48zm0 400H48V80h352v352zm-35.864-241.724L191.547 361.48c-4.705 4.667-12.303 4.637-16.97-.068l-90.781-91.516c-4.667-4.705-4.637-12.303.069-16.971l22.719-22.536c4.705-4.667 12.303-4.637 16.97.069l59.792 60.277 141.352-140.216c4.705-4.667 12.303-4.637 16.97.068l22.536 22.718c4.667 4.706 4.637 12.304-.068 16.971z"/></symbol>
+        <symbol id="i-exclamation-triangle" viewBox="0 0 576 512"><path d="M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"/></symbol>
+        <symbol id="i-arrow-circle-up" viewBox="0 0 512 512"><path d="M8 256C8 119 119 8 256 8s248 111 248 248-111 248-248 248S8 393 8 256zm143.6 28.9l72.4-75.5V392c0 13.3 10.7 24 24 24h16c13.3 0 24-10.7 24-24V209.4l72.4 75.5c9.3 9.7 24.8 9.9 34.3.4l10.9-11c9.4-9.4 9.4-24.6 0-33.9L273 107.7c-9.4-9.4-24.6-9.4-33.9 0L106.3 240.4c-9.4 9.4-9.4 24.6 0 33.9l10.9 11c9.6 9.5 25.1 9.3 34.4-.4z"/></symbol>
+        <symbol id="i-address-card" viewBox="0 0 576 512"><path d="M528 32H48C21.5 32 0 53.5 0 80v352c0 26.5 21.5 48 48 48h480c26.5 0 48-21.5 48-48V80c0-26.5-21.5-48-48-48zm-352 96c35.3 0 64 28.7 64 64s-28.7 64-64 64-64-28.7-64-64 28.7-64 64-64zm112 236.8c0 10.6-10 19.2-22.4 19.2H86.4C74 384 64 375.4 64 364.8v-19.2c0-31.8 30.1-57.6 67.2-57.6h5c12.3 5.1 25.7 8 39.8 8s27.6-2.9 39.8-8h5c37.1 0 67.2 25.8 67.2 57.6v19.2zM512 312c0 4.4-3.6 8-8 8H360c-4.4 0-8-3.6-8-8v-16c0-4.4 3.6-8 8-8h144c4.4 0 8 3.6 8 8v16zm0-64c0 4.4-3.6 8-8 8H360c-4.4 0-8-3.6-8-8v-16c0-4.4 3.6-8 8-8h144c4.4 0 8 3.6 8 8v16zm0-64c0 4.4-3.6 8-8 8H360c-4.4 0-8-3.6-8-8v-16c0-4.4 3.6-8 8-8h144c4.4 0 8 3.6 8 8v16z"/></symbol>
+        <symbol id="i-paypal" viewBox="0 0 384 512"><path d="M111.4 295.9c-3.5 19.2-17.4 108.7-21.5 134-.3 1.8-1 2.5-3 2.5H12.3c-7.6 0-13.1-6.6-12.1-13.9L58.8 46.6c1.5-9.6 10.1-16.9 20-16.9 152.3 0 165.1-3.7 204 11.4 60.1 23.3 65.6 79.5 44 140.3-21.5 62.6-72.5 89.5-140.1 90.3-43.4.7-69.5-7-75.3 24.2zM357.1 152c-1.8-1.3-2.5-1.8-3 1.3-2 11.4-5.1 22.5-8.8 33.6-39.9 113.8-150.5 103.9-204.5 103.9-6.1 0-10.1 3.3-10.9 9.4-22.6 140.4-27.1 169.7-27.1 169.7-1 7.1 3.5 12.9 10.6 12.9h63.5c8.6 0 15.7-6.3 17.4-14.9.7-5.4-1.1 6.1 14.4-91.3 4.6-22 14.3-19.7 29.3-19.7 71 0 126.4-28.8 142.9-112.3 6.5-34.8 4.6-71.4-23.8-92.6z"/></symbol>
+    </svg>
 
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Home
-                        <span class="visually-hidden">(current)</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="https://hermanronk.nl">hermanronk.nl</a>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarDonateDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true"
-                        aria-expanded="false">
-                        Donatie
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="navbarDonateDropdown">
-                        <a class="dropdown-item" target="_blank" href="https://paypal.me/clickfarmgame"><i class="fab fa-fw fa-paypal"></i> Donatie PayPal</a>
-                    </div>
-
-                </li>
-
-                <li class="nav-item dropdown">
-                    <button class="btn btn-link nav-link dropdown-toggle" id="navbarOptionDropdown" data-bs-toggle="dropdown" aria-haspopup="true"
-                        aria-expanded="false">
-                        Game opties
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="navbarOptionDropdown">
-                        <button onclick="resetGame()" class="dropdown-item"><i class="fas fa-fw fa-power-off"></i> Reset Game</button>
-                        <hr>
-                        <button id="pauseBTN" onclick="changeState()" class="dropdown-item"><i class="fas fa-fw fa-pause"></i> Pauzeer spel</button>
-                        <button id="verkooptabBTN" onclick="showQuickSell(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet verkooptab aan (lvl9)</button>
-                        <button id="autocloseBTN" onclick="turnAutoClose(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet auto-sluit berichten aan</button>
-                        <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><i class="far fa-fw fa-square"></i> Zet debug aan</button>
-                        <hr>
-                        <button onclick="saveFixed()" class="dropdown-item"><i class="fas fa-fw fa-upload"></i> Exporteer save-code</button>
-                        <button onclick="importFile()" class="dropdown-item"><i class="fas fa-fw fa-download"></i> Importeer save-code</button>
-                    </div>
-
-                </li>
-                <li class="nav-item statsbar" id="MoneyTop"> </li>
-                <li class="nav-item statsbar" id="GrainTop"> </li>
-                <li class="nav-item statsbar" id="FlourTop"> </li>
-                <li class="nav-item statsbar" id="OilTop"> </li>
-                <li class="nav-item statsbar" id="EnergyStats"></li>
-            </ul>
-
+    <header class="topbar">
+        <a class="brand" href="#">Clickfarm.nl</a>
+        <ul class="stats" aria-label="Voorraden">
+            <li class="statsbar" id="MoneyTop"></li>
+            <li class="statsbar" id="GrainTop"></li>
+            <li class="statsbar" id="FlourTop"></li>
+            <li class="statsbar" id="OilTop"></li>
+            <li class="statsbar" id="EnergyStats"></li>
+        </ul>
+        <div class="dropdown">
+            <button type="button" class="dropdown-toggle" id="navbarOptionDropdown" aria-haspopup="true" aria-expanded="false" aria-controls="optionsMenu">Game opties</button>
+            <div class="dropdown-menu" id="optionsMenu" aria-labelledby="navbarOptionDropdown">
+                <button id="pauseBTN" onclick="changeState()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-pause"></use></svg> Pauzeer spel</button>
+                <button id="verkooptabBTN" onclick="showQuickSell(1)" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Zet verkooptab aan (lvl9)</button>
+                <button id="autocloseBTN" onclick="turnAutoClose(1)" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Zet auto-sluit berichten aan</button>
+                <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Zet debug aan</button>
+                <hr>
+                <button onclick="saveFixed()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg> Exporteer save-code</button>
+                <button onclick="importFile()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Importeer save-code</button>
+                <hr>
+                <button onclick="resetGame()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-power-off"></use></svg> Reset Game</button>
+                <hr>
+                <a class="dropdown-item" target="_blank" rel="noopener" href="https://paypal.me/clickfarmgame"><svg class="icon" aria-hidden="true"><use href="#i-paypal"></use></svg> Doneer via PayPal</a>
+                <a class="dropdown-item" href="https://hermanronk.nl"><svg class="icon" aria-hidden="true"><use href="#i-info-circle"></use></svg> hermanronk.nl</a>
+            </div>
         </div>
-    </nav>
-
+    </header>
 
     <div class="container-fluid" id="FirstTab">
-        <div class="row border border-success rows" id="stats-row">
+        <div class="row rows" id="stats-row">
             <div class="container col-sm" id="geld-col">
                 <div id="debug"></div>
                 <h2>Financiën:</h2>
@@ -97,7 +88,7 @@
             </div>
         </div>
 
-        <div class="row border border-warning rows" id="sellMenu">
+        <div class="row rows" id="sellMenu">
             <div class="container col-sm">
                 <div id="quickGrain"></div>
                 <div id="quickGrainBTN"></div>
@@ -128,7 +119,7 @@
             </div>
         </div>
 
-        <div class="row border border-warning rows" id="tier1-row">
+        <div class="row rows" id="tier1-row">
             <div class="container col-sm" id="landbouw-col">
                 <h2>Landbouw:</h2>
                 <div id="Farmland"></div>
@@ -165,7 +156,7 @@
 
             </div>
         </div>
-        <div class="row border border-warning rows" id="automation-row">
+        <div class="row rows" id="automation-row">
             <div class="container col-sm" id="farmland-automation">
                 <h2>Automatiseer:</h2>
                 <p>Farm robots verbruiken 15 energie en kunnen 10 velden bewerken.</p>
@@ -197,7 +188,7 @@
 
             </div>
         </div>
-        <div class="row border border-dark rows" id="tier2-row">
+        <div class="row rows" id="tier2-row">
             <div class="container col-sm" id="olie-col">
                 <h2>Olie:</h2>
                 <button type="button" class="btn btn-dark" onClick="objOilTank.fill(1)">Pomp olie!</button>
@@ -262,7 +253,7 @@
                 <div id="CoalSellPowerPlant"></div>
             </div>
         </div>
-        <div class="row border border-dark rows" id="productie-row">
+        <div class="row rows" id="productie-row">
             <div class="container col-sm" id="chicken-col">
                 <h2>Eieren:</h2>
                 <h3>Kippenboerderij:</h3>
@@ -298,7 +289,7 @@
                 <button type="button" class="btn btn-danger" onClick="objPasta.sell('Reguliere verkoop Pasta')">Verkoop Pasta!</button>
             </div>
         </div>
-        <div class="row border border-dark rows" id="onderzoek-row">
+        <div class="row rows" id="onderzoek-row">
             <div class="container col-sm" id="graanopbrengst-col">
                 <h2>Onderzoek:</h2>
                 <h3>Veredeling graan:</h3>
@@ -342,7 +333,7 @@
 
             </div>
         </div>
-        <div class="row border border-dark rows" id="plastic-row">
+        <div class="row rows" id="plastic-row">
             <div class="container col-sm" id="platicFactory-col">
                 <div id="pFactory1"></div>
                 <div>
@@ -364,7 +355,7 @@
                     id="fireWorker">Ontsla</button>
             </div>
         </div>
-        <div class="row border border-dark rows" id="mijnbouw-row">
+        <div class="row rows" id="mijnbouw-row">
             <div class="container col-sm" id="Prospecting-col">
                 <h2>Prospecting:</h2>
                 <div id="Prospecting"></div>
@@ -377,7 +368,7 @@
                 <div id="minesites"></div>
             </div>
         </div>
-        <div class="row border border-dark rows" id="mijnen-row">
+        <div class="row rows" id="mijnen-row">
             <div id="Coal-col" class="container col-sm">
                 <div id="coal-mines"></div>
                 <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(2);" id="coalMineButton">Bouw steenkoolmijn</button> -->
@@ -389,17 +380,17 @@
                 <div id="IronMine"></div>
             </div>
 
-            <div id="Gold-col">
+            <div id="Gold-col" class="container col-sm">
                 <div id="gold-mines"></div>
                 <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(5);" id="goldMineButton">Bouw goudmijn</button> -->
             </div>
-            <div id="Diamond-col">
+            <div id="Diamond-col" class="container col-sm">
                 <div id="diamond-mines"></div>
                 <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(6);" id="diamondMineButton">Bouw diamantmijn</button> -->
             </div>
         </div>
 
-        <div class="row border border-dark rows" id="production2-row">
+        <div class="row rows" id="production2-row">
             <div id="SteelProduction-col" class="container col-sm">
                 <div id="steelProduction"></div>
                 <div id="steelProductionStats"></div>
@@ -412,8 +403,8 @@
             </div>
 
         </div>
-        <div class="row border border-dark rows" id="mijnen-row2">
-            <div id="Uranium-col">
+        <div class="row rows" id="mijnen-row2">
+            <div id="Uranium-col" class="container col-sm">
                 <div id="uranium-mines"></div>
                 <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(3);" id="uraniumMineButton">Bouw uraniummijn</button> -->
                 <div id="UraniumMine1"></div>
@@ -425,12 +416,12 @@
                     <button type='button' class='btn btn-primary' onClick='objUraniumOre.addSilo();' id='uraniumOreSiloButton'>Bouw uranium-silo</button>
                 </div>
             </div>
-            <div id="Copper-col">
+            <div id="Copper-col" class="container col-sm">
                 <div id="copper-mines"></div>
                 <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(4);" id="copperMineButton">Bouw kopermijn</button> -->
             </div>
         </div>
-        <div class="row border border-dark rows" id="nuclearFuel-row">
+        <div class="row rows" id="nuclearFuel-row">
             <div class="container col-sm" id="fuelRodFactory">
                 <div id="fuelRod"></div>
                 <div>
@@ -460,7 +451,7 @@
 
             </div>
         </div>
-        <div class="row border border-dark rows" id="market-row">
+        <div class="row rows" id="market-row">
             <div class="container col-sm" id="marketEggs">
                 <h2>Eieren</h2>
                 <div id="buyEggs"></div>
@@ -481,10 +472,6 @@
     </div>
     <div class="notification-container" id="notif">
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-
-    <script defer src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/js/all.min.js" integrity="sha384-rOA1PnstxnOBLzCLMcre8ybwbTmemjzdNlILg8O7z1lUkLXozs4DHonlDtnE7fpc" crossorigin="anonymous"></script>
-
 </body>
 
 </html>

@@ -1,143 +1,444 @@
-body{
-    padding-top: 100px;
+/* Clickfarm: eigen opmaak (geen Bootstrap meer).
+   De classnamen (row, col-sm, btn btn-*, progress, dropdown-*) zijn gelijk gebleven,
+   zodat de HTML die inc/base.js opbouwt niet hoeft te veranderen. */
+
+:root {
+    color-scheme: light dark;
+    --bg: #f3f5f1;
+    --surface: #ffffff;
+    --surface-2: #eef1ec;
+    --text: #1d2420;
+    --muted: #5d6a62;
+    --border: #dce2da;
+    --accent: #2e7d4f;
+    --accent-hover: #256a42;
+    --accent-soft: #e2f1e7;
+    --accent-soft-text: #1f5c39;
+    --on-accent: #ffffff;
+    --danger: #b3261e;
+    --danger-soft: #fbe9e7;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.05);
+    --radius: 10px;
+    --gap: 12px;
 }
 
-.statsbar{
-    padding: 0.5rem 1rem;
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #131714;
+        --surface: #1c221e;
+        --surface-2: #252d27;
+        --text: #e4eae5;
+        --muted: #9aa79f;
+        --border: #2f3932;
+        --accent: #4aa873;
+        --accent-hover: #5bbb84;
+        --accent-soft: #213a2b;
+        --accent-soft-text: #a6dcbb;
+        --on-accent: #0f1a13;
+        --danger: #f08a80;
+        --danger-soft: #3a2220;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
 }
 
-.rows{
-    padding: 0.5rem;
-    margin: 0.25rem;
+/* Basis */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
 }
 
-.slider {
-    float: right;
-    margin-left: 20px;
-    margin-right: 20px;
-    width: 75%!important;
-    height: 20px;
-}
-
-.navbar
-{
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.10);
-}
-
-.nav-link{
-    white-space:nowrap;
-}
-.navbar-nav {
-    -ms-align-items: center;
-    align-items: center;
-}
-.navbar-nav button, .navbar-nav a
-{
-    cursor: pointer;
-}
-.navbar-nav svg
-{
-    color: rgba(0,0,0,.5);
-}
-.navbar hr
-{
-    margin-top: 0.3rem;
-    margin-bottom: 0.3rem;
-}
-.dropdown-menu
-{
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.24), 0 2px 10px 0 rgba(0,0,0,0.12);
-}
-.notification-container{
-    position: fixed;
-    top: 86px;
-    right: 30px;
-    z-index: 9999;
-}
-
-.notification{
-    overflow: hidden;
-    opacity: 1;
-    -webkit-transition: opacity 2s, height 2s; /* Safari */
-    transition: opacity 2s, height 2s;
-}
-.notification-tooltip{
-    margin-bottom: 20px;
-    width: 300px;
-    padding: 15px 25px;
-    background-color: rgba(0,0,0,0.6);
-    color: #fff;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    position: relative;
-    cursor: pointer;
-}
-
-.notification-tooltip .icon{
-   padding-right: 20px;
-   font-size: 20px;
-}
-
-.notification-tooltip p{
-    margin-bottom: 0;
-    font-size: 13px;
-    font-weight: 300;
-}
-
-.notification-tooltip h5{
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", Ubuntu, sans-serif;
     font-size: 15px;
-    margin-bottom: 5px;
+    line-height: 1.45;
 }
 
-.close-notification{
-    position: absolute;
-    right: 20px;
-    top: 15px;
-    width: 20px;
-    height: 20px;
-    opacity: 0.3;
-    cursor: pointer;
+h2,
+h3,
+h5 {
+    margin: 0 0 0.5rem;
+    line-height: 1.25;
+    font-weight: 600;
 }
 
-.notification-tooltip:hover .close-notification{
-    opacity: 1;
+h2 {
+    font-size: 1.15rem;
 }
 
-.close-notification:after, .close-notification:before{
-    position: absolute;
-    left: 10px;
-    content: ' ';
-    height: 20px;
-    width: 2px;
-    background-color: #fff;
+h3 {
+    font-size: 1rem;
+    margin-top: 0.75rem;
 }
 
-.close-notification:after{
-    transform: rotate(-45deg);
-
+p {
+    margin: 0 0 0.5rem;
 }
 
-.close-notification:before{
-transform: rotate(45deg);
+a {
+    color: var(--accent);
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid var(--border);
+    margin: 0.35rem 0;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+input[type="checkbox"],
+input[type="range"] {
+    accent-color: var(--accent);
+}
+
+.form-range {
+    display: block;
+    width: 100%;
+    margin: 0.25rem 0 0.75rem;
+}
+
+.icon {
+    width: 1.1em;
+    height: 1.1em;
+    fill: currentColor;
+    flex: none;
+}
+
+/* Header met statusbalk en menu */
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1.25rem;
+    padding: 0.6rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.brand {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.stats {
+    display: flex;
+    gap: 0.25rem 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.statsbar {
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 0.85rem;
 }
 
 kbd2 {
-    font-family: monospace;
-    padding: 0.2rem 0.4rem;
-    font-size: 87.5%;
-    color: #fff;
-    background-color: #212529;
-    border-radius: 0.2rem;
-  }
-
-/* verberg tabs initieel */
-#flour-col, #windmills-col, #Flourstock, #graanopbrengst-col, #olie-col, #Oilstock, #pomp-col, #energieproductie-col, #energy-col, #farmland-automation, #WindmillController,
-#chicken-col, #plastic-row, #pasta-col, #AutoSell-col, #MiningResearch-col, #mijnbouw-row, #mijnen-row, #mijnen-row2, #Uranium-col, #nuclearFuel-row {
-    /*display: none;*/
+    margin-left: 0.25rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
 }
 
-/* rijen zonder zichtbare inhoud (zie Display.updateRows) */
-.row-empty {
+.topbar .dropdown {
+    margin-left: auto;
+}
+
+@media (max-width: 760px) {
+    .stats {
+        order: 3;
+        flex-basis: 100%;
+        flex-wrap: wrap;
+        gap: 0.3rem 0.9rem;
+    }
+
+    .statsbar {
+        font-size: 0.8rem;
+    }
+}
+
+/* Dropdownmenu */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.dropdown-toggle::after {
+    content: "";
+    border: 0.3em solid transparent;
+    border-top-color: currentColor;
+    border-bottom: 0;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 1100;
+    min-width: 260px;
+    padding: 0.35rem 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.dropdown.open .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.45rem 1rem;
+    border: 0;
+    background: none;
+    color: var(--text);
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.dropdown-item:hover:not(:disabled),
+.dropdown-item:focus-visible {
+    background: var(--surface-2);
+}
+
+.dropdown-item:disabled,
+.dropdown-item.disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.dropdown-item .icon {
+    color: var(--muted);
+}
+
+/* Inhoud: rijen als grid van kaarten */
+.container-fluid {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: var(--gap);
+}
+
+.rows {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: var(--gap);
+    margin-bottom: var(--gap);
+}
+
+.rows > * {
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* rijen en kolommen zonder zichtbare inhoud (zie Display.updateRows) */
+.row-empty,
+.col-empty {
     display: none !important;
+}
+
+/* Knoppen: kopen/bouwen, verkopen en actie */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0 0.3rem 0.4rem 0;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn-primary {
+    background: var(--accent-soft);
+    color: var(--accent-soft-text);
+    border-color: color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.btn-primary:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.btn-success,
+.btn-dark,
+.btn-outline-success {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.btn-success:hover:not(:disabled),
+.btn-dark:hover:not(:disabled),
+.btn-outline-success:hover:not(:disabled) {
+    background: var(--accent-hover);
+}
+
+.btn-danger,
+.btn-warning,
+.btn-outline-danger {
+    background: transparent;
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.btn-danger:hover:not(:disabled),
+.btn-warning:hover:not(:disabled),
+.btn-outline-danger:hover:not(:disabled) {
+    background: var(--danger-soft);
+}
+
+.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Voortgangsbalken (voorraden) */
+.progress {
+    height: 1.1rem;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    background: var(--surface-2);
+    border-radius: 999px;
+}
+
+.progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    max-width: 100%;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
+/* Meldingen rechtsonder */
+.notification-container {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 320px;
+}
+
+@media (max-width: 600px) {
+    .notification-container {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        width: auto;
+    }
+}
+
+.notification {
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity 2s, height 2s;
+}
+
+.notification-tooltip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 2.5rem 0.7rem 1rem;
+    background: rgba(24, 30, 26, 0.92);
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+}
+
+.notification-icon {
+    padding-right: 0.8rem;
+    font-size: 1.1rem;
+    display: flex;
+}
+
+.notification-tooltip h5 {
+    margin-bottom: 0.15rem;
+    font-size: 0.9rem;
+}
+
+.notification-tooltip p {
+    margin: 0;
+    font-size: 0.82rem;
+    opacity: 0.9;
+}
+
+.close-notification {
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    margin-top: -7px;
+    opacity: 0.4;
+}
+
+.notification-tooltip:hover .close-notification {
+    opacity: 1;
+}
+
+.close-notification::before,
+.close-notification::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    width: 2px;
+    height: 14px;
+    background: #fff;
+}
+
+.close-notification::before {
+    transform: rotate(45deg);
+}
+
+.close-notification::after {
+    transform: rotate(-45deg);
 }

@@ -44,8 +44,13 @@ test.describe("Container", () => {
     });
     await page.goto("/");
     await expect(page.locator("#currentlevel")).toHaveText("Huidig level is: 1");
-    // Font Awesome (CDN) moet iconen kunnen renderen
-    await expect(page.locator("svg.svg-inline--fa").first()).toBeAttached();
+    // Iconen komen uit de sprite in de pagina zelf
+    await expect(page.locator("#i-pause")).toBeAttached();
     expect(violations).toEqual([]);
+  });
+
+  test("CSP staat geen externe bronnen meer toe", async ({ request }) => {
+    const csp = (await request.get("/")).headers()["content-security-policy"];
+    expect(csp).not.toContain("http");
   });
 });
