@@ -464,31 +464,32 @@
         <div class="row rows" id="nuclearFuel-row">
             <div class="container col-sm" id="fuelRodFactory">
                 <div id="fuelRod"></div>
-                <div>
+                <div class="actions">
                     <button type='button' class='btn btn-primary' onClick='objFuelCellFactory.addFactory(1);' id='fcfBuildButton'>Bouw fabriek</button>
                     <button type='button' class='btn btn-danger' onClick='objFuelCellFactory.addFactory(0);' id='fcfSellButton'>Verkoop fabriek</button>
-                    <br>
                 </div>
                 <div id="fuelRod2"></div>
-                <div id="fuelRodCounter"></div>
+                <div id="fuelRodCounter" class="timer"></div>
             </div>
             <div class="container col-sm" id="fuelRodStorage">
                 <div id="fuelStorage"></div>
                 <div id="fuelStoragePlant"></div>
                 <div id="fuelWaste"></div>
                 <div id="sellWaste"></div>
-                <div id="sellWasteButton">
-                    <button type='button' class='btn btn-danger' onClick='objFuelRod.sellWaste();' id='fcSellWasteButton'>Verkoop afval splijtstofstaven</button>
+                <div class="actions" id="sellWasteButton">
+                    <button type='button' class='btn btn-danger' onClick='objFuelRod.sellWaste();' id='fcSellWasteButton'>Laat afval opruimen</button>
                 </div>
-
             </div>
             <div class="container col-sm" id="nuclearPower">
                 <div id="npp"></div>
-                <button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.buildPlant();' id='nppBuild'>Bouw kerncentrale</button>
+                <div class="actions">
+                    <button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.buildPlant();' id='nppBuild'>Bouw kerncentrale</button>
+                </div>
                 <div id="nppr"></div>
-                <button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.buildReactor();' id='npprBuild'>Bouw kernreactor</button>
+                <div class="actions">
+                    <button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.buildReactor();' id='npprBuild'>Bouw kernreactor</button>
+                </div>
                 <div id="nppsum"></div>
-
             </div>
         </div>
         <div class="row rows" id="market-row">

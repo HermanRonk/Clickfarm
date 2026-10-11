@@ -4307,46 +4307,52 @@ var objFuelCellFactory = {
       objFuelCellFactory.counter = 0;
     }
     localStorage.setItem("fcfCounter", +objFuelCellFactory.counter);
-    if (+objFuelCellFactory.activeFactories > 1) {
-      document.getElementById("fuelRodCounter").innerHTML =
-        "<p>Aantal ticks te gaan voor de splijtstofstaven voltooid zijn: " +
-        FixNumber(100 - +objFuelCellFactory.counter) +
-        "</p>";
-    } else {
-      document.getElementById("fuelRodCounter").innerHTML =
-        "<p>Aantal ticks te gaan voor de splijtstofstaaf voltooid is: " +
-        FixNumber(100 - +objFuelCellFactory.counter) +
-        "</p>";
-    }
+    document.getElementById("fuelRodCounter").innerHTML =
+      "Productie klaar over " +
+      FixNumber(100 - +objFuelCellFactory.counter) +
+      " ticks";
   },
   show: function () {
     document.getElementById("fuelRod").innerHTML =
-      "<h2>Splijtstofstavenproductie</h2><p>Uranium kan worden omgezet in brandstof voor kencentrales. Dit omzetten kost je de volgende resources (per fabriek): <br>" +
-      "Energie: " +
-      FixNumber(objFuelCellFactory.energy) +
-      " <br>Staal: " +
-      FixNumber(objFuelCellFactory.steelNeeded) +
-      "<br>Uranium: " +
-      FixNumber(objFuelCellFactory.urianiumOreNeeded) +
-      "<br>Tijd: " +
-      FixNumber(objFuelCellFactory.timeNeeded) +
-      " ticks</p>" +
-      "<p>Deze fabrieken kunnen niet stilgelegd worden, dus alle resources die benodigd zijn worden in 1x opgenomen bij de start van een run! Iedere fabriek produceert 1 staaf per keer</p>" +
-      "<p>Je hebt momenteel " +
-      FixNumber(objFuelCellFactory.amount) +
-      " fabrieken waar splijtstofstaven kunnen produceren. Een extra fabriek kost: " +
-      FixMoney(objFuelCellFactory.cost) +
-      "<br>Je kan een fabriek ook weer verkopen voor 75% van de waarde.</p>";
+      "<h2>Splijtstofstaven</h2>" +
+      renderStats([
+        ["Fabrieken", FixNumber(objFuelCellFactory.amount)],
+        ["Prijs per fabriek", FixMoney(objFuelCellFactory.cost)],
+        ["Verkoopwaarde", FixMoney(objFuelCellFactory.cost * 0.75)],
+      ]) +
+      "<h3>Per fabriek per run</h3>" +
+      renderStats([
+        ["Uranium", FixUnit(objFuelCellFactory.urianiumOreNeeded, "ton")],
+        ["Staal", FixUnit(objFuelCellFactory.steelNeeded, "ton")],
+        ["Energie", FixNumber(objFuelCellFactory.energy)],
+        ["Duur", FixNumber(objFuelCellFactory.timeNeeded) + " ticks"],
+        ["Opbrengst", "1 staaf"],
+      ]) +
+      renderHint(
+        "Fabrieken draaien altijd door; alle grondstoffen worden aan het begin van een run afgeschreven."
+      );
     document.getElementById("fuelRod2").innerHTML =
-      "<p>Het huidige (maximale) verbruik per batch:<br>Energie: " +
-      FixNumber(objFuelCellFactory.amount * +objFuelCellFactory.energy) +
-      "<br>Staal: " +
-      FixNumber(objFuelCellFactory.amount * +objFuelCellFactory.steelNeeded) +
-      "<br>Uranium: " +
-      FixNumber(
-        objFuelCellFactory.amount * +objFuelCellFactory.urianiumOreNeeded
-      ) +
-      "</p>";
+      "<h3>Totaal per run</h3>" +
+      renderStats([
+        [
+          "Uranium",
+          FixUnit(
+            objFuelCellFactory.amount * +objFuelCellFactory.urianiumOreNeeded,
+            "ton"
+          ),
+        ],
+        [
+          "Staal",
+          FixUnit(
+            objFuelCellFactory.amount * +objFuelCellFactory.steelNeeded,
+            "ton"
+          ),
+        ],
+        [
+          "Energie",
+          FixNumber(objFuelCellFactory.amount * +objFuelCellFactory.energy),
+        ],
+      ]);
     if (+objFuelCellFactory.amount == 0) {
       document.getElementById("fcfSellButton").disabled = true;
     } else {
@@ -4374,10 +4380,9 @@ var objFuelRod = {
   wastePrice: 0,
   calculateWastePrice: function (max, min) {
     objFuelRod.wastePrice = Math.random() * (max - min) + min;
-    document.getElementById("sellWaste").innerHTML =
-      "<p>Je kan je afval door een ander op laten ruimen voor: " +
-      FixMoney(objFuelRod.wastePrice) +
-      "  per splijtstofstaaf</p>";
+    document.getElementById("sellWaste").innerHTML = renderStats([
+      ["Laten opruimen per staaf", FixMoney(objFuelRod.wastePrice)],
+    ]);
     if (objFuelRod.waste == 0) {
       document.getElementById("fcSellWasteButton").disabled = true;
     } else {
@@ -4436,33 +4441,37 @@ var objFuelRod = {
     objMoney.use(+objFuelRod.waste * +objFuelRod.wasteCost);
   },
   show: function () {
+    var factoryStorage =
+      +objFuelCellFactory.amount * +objFuelRod.storageFactor;
     document.getElementById("fuelStorage").innerHTML =
-      "<h2>Splijtstofstavenopslag</h2><p>De splijtstofstaven die gemaakt worden kunnen alleen in een centrale of in de " +
-      "fabriek worden opgeslagen. Iedere fabriek heeft plek voor " +
-      FixNumber(objFuelRod.storageFactor) +
-      " staven. De totaalcapaciteit in de fabrieken is op dit moment: " +
-      FixNumber(+objFuelCellFactory.amount * +objFuelRod.storageFactor) +
-      " staven</p><p>Restcapaciteit in de fabrieken (opslag): " +
-      FixNumber(
-        +objFuelCellFactory.amount * +objFuelRod.storageFactor -
-          +objFuelRod.amount
-      ) +
-      "<br>Totaalvoorraad splijstofstaven: " +
-      FixNumber(objFuelRod.amount) +
-      "</p>";
-    document.getElementById("fuelStoragePlant").innerHTML =
-      "<p>De opslag in de kerncentrales wordt direct gevuld vanuit de fabrieken.</p>";
+      "<h2>Opslag splijtstofstaven</h2>" +
+      renderStats([
+        ["Voorraad", FixNumber(objFuelRod.amount) + " staven"],
+        [
+          "Vrije ruimte",
+          FixNumber(factoryStorage - +objFuelRod.amount) + " staven",
+        ],
+        [
+          "Opslag per fabriek",
+          FixNumber(objFuelRod.storageFactor) + " staven",
+        ],
+      ]);
+    document.getElementById("fuelStoragePlant").innerHTML = renderHint(
+      "Staven gaan uit de fabrieken direct naar de kerncentrales."
+    );
     document.getElementById("fuelWaste").innerHTML =
-      "<h3>Afvalopslag</h3><p>Verbruikte splijtstofstaven moeten opgeslagen worden, dit kost geld. Verwerking is op dit moment " +
-      "nog niet mogelijk. Ook wanneer je een fabriek of centrale sluit zullen de staven die daar liggen (ook de nieuwe!) naar de afval opslag gebracht worden, deze staven kunnen " +
-      "(nog) niet hergebruikt worden!</p><p>Er is onbeperkt ruimte voor de opslag van deze staven. De opslag kost " +
-      FixMoney(objFuelRod.wasteCost) +
-      " per staaf per 60 ticks</p>" +
-      "<p>Aantal waste staven in opslag: " +
-      FixNumber(objFuelRod.waste) +
-      "<br>Kosten per 60 ticks: " +
-      FixMoney(+objFuelRod.waste * +objFuelRod.wasteCost) +
-      "</p>";
+      "<h3>Afval</h3>" +
+      renderStats([
+        ["Afvalstaven", FixNumber(objFuelRod.waste)],
+        ["Opslagkosten per staaf", FixMoney(objFuelRod.wasteCost) + " per 60 ticks"],
+        [
+          "Totaal per 60 ticks",
+          FixMoney(+objFuelRod.waste * +objFuelRod.wasteCost),
+        ],
+      ]) +
+      renderHint(
+        "Verbruikte staven, en staven uit een gesloten fabriek of centrale, gaan naar het afval en kunnen niet hergebruikt worden."
+      );
   },
   init: function () {
     objFuelRod.waste = localStorage.getItem("frWaste") || 0;
@@ -4618,13 +4627,18 @@ var objNuclearPowerPlant = {
   },
   show: function () {
     document.getElementById("npp").innerHTML =
-      "<h2>Kernenergie</h2><p>Een kerncentrale bestaat uit twee elementen, de centrale zelf en de reactoren. Iedere centrale bied plek aan " +
-      FixNumber(objNuclearPowerPlant.plantReactorCap) +
-      " reactoren.</p><p>Het bouwen van een kerncentrale kost: <br>Staal: " +
-      FixNumber(objNuclearPowerPlant.plantSteelNeeded) +
-      " <br>Financiën: " +
-      FixMoney(objNuclearPowerPlant.plantCost) +
-      "</p>";
+      "<h2>Kerncentrales</h2>" +
+      renderStats([
+        ["Prijs per centrale", FixMoney(objNuclearPowerPlant.plantCost)],
+        [
+          "Staal per centrale",
+          FixUnit(objNuclearPowerPlant.plantSteelNeeded, "ton"),
+        ],
+        [
+          "Reactoren per centrale",
+          FixNumber(objNuclearPowerPlant.plantReactorCap),
+        ],
+      ]);
     if (
       +objNuclearPowerPlant.amount < 1 ||
       +objNuclearPowerPlant.reactors ==
@@ -4635,44 +4649,60 @@ var objNuclearPowerPlant = {
       document.getElementById("npprBuild").disabled = false;
     }
     document.getElementById("nppr").innerHTML =
-      "<h3>Reactoren</h3><p>Iedere reactor die je bouwt, levert energie (als er brandstof is). Reactoren kunnen niet verkocht worden" +
-      " en staan aan of uit, eventueel teveel geproduceerde stroom gaat verloren!</p><p>De kosten van de bouw: <br>Staal: " +
-      FixNumber(objNuclearPowerPlant.reactorSteelNeeded) +
-      "<br>Financiën: " +
-      FixMoney(objNuclearPowerPlant.reactorCost) +
-      "</p><p>Een reactor verbruikt: " +
-      FixNumber(objNuclearPowerPlant.reactorFuelUsage) +
-      " uranium pellets per tick " +
-      "(er zitten 1000 pellets in een splijtstofstaaf). Verbruikte pellets worden opnieuw verpakt in staven (per 1000) gaan automatisch naar de waste opslag</p>";
+      "<h3>Reactoren</h3>" +
+      renderStats([
+        ["Prijs per reactor", FixMoney(objNuclearPowerPlant.reactorCost)],
+        [
+          "Staal per reactor",
+          FixUnit(objNuclearPowerPlant.reactorSteelNeeded, "ton"),
+        ],
+        [
+          "Verbruik per reactor",
+          FixNumber(objNuclearPowerPlant.reactorFuelUsage) +
+            (+objNuclearPowerPlant.reactorFuelUsage == 1 ? " pellet" : " pellets") +
+            " per tick",
+        ],
+      ]) +
+      renderHint(
+        "Een staaf bevat 1.000 pellets. Reactoren kunnen niet verkocht worden; stroom die niet past gaat verloren."
+      );
   },
   showUsage: function () {
     document.getElementById("nppsum").innerHTML =
-      "<p>Je hebt op dit moment:<br>Kerncentrales: " +
-      FixNumber(objNuclearPowerPlant.amount) +
-      "<br> Kernreactoren (actief/totaal): " +
-      FixNumber(objNuclearPowerPlant.activeReactors) +
-      "/" +
-      FixNumber(objNuclearPowerPlant.reactors) +
-      " <br>Splijtstofstaven (aanwezig/max): " +
-      FixNumber(objNuclearPowerPlant.fuelRods) +
-      "/" +
-      FixNumber(
-        +objNuclearPowerPlant.reactors * +objNuclearPowerPlant.reactorFuelCap
-      ) +
-      "<br>Waste pellets: " +
-      FixNumber(objNuclearPowerPlant.pelletsUsed) +
-      " <br></p>" +
-      "<p>Energieproductie: " +
-      FixNumber(
-        +objNuclearPowerPlant.activeReactors *
-          +objNuclearPowerPlant.reactorProduction
-      ) +
-      " <br>Pelletverbruik (per tick): " +
-      FixNumber(
-        +objNuclearPowerPlant.activeReactors *
-          +objNuclearPowerPlant.reactorFuelUsage
-      ) +
-      "</p>";
+      "<h3>Overzicht</h3>" +
+      renderStats([
+        ["Kerncentrales", FixNumber(objNuclearPowerPlant.amount)],
+        [
+          "Reactoren actief",
+          FixNumber(objNuclearPowerPlant.activeReactors) +
+            " van " +
+            FixNumber(objNuclearPowerPlant.reactors),
+        ],
+        [
+          "Staven in centrales",
+          FixNumber(objNuclearPowerPlant.fuelRods) +
+            " van " +
+            FixNumber(
+              +objNuclearPowerPlant.reactors *
+                +objNuclearPowerPlant.reactorFuelCap
+            ),
+        ],
+        [
+          "Energie per tick",
+          FixNumber(
+            +objNuclearPowerPlant.activeReactors *
+              +objNuclearPowerPlant.reactorProduction
+          ),
+        ],
+        [
+          "Pellets per tick",
+          FixNumber(
+            +objNuclearPowerPlant.activeReactors *
+              +objNuclearPowerPlant.reactorFuelUsage
+          ),
+        ],
+        ["Verbruikte pellets", FixNumber(objNuclearPowerPlant.pelletsUsed)],
+      ]);
   },
   init: function () {
     objNuclearPowerPlant.fuelRods = localStorage.getItem("ppFuelRods") || 0;
