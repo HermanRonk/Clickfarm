@@ -145,3 +145,28 @@ test.describe("Mobiel (390 px)", () => {
     await expect(page.locator("#MoneyTop")).toBeInViewport();
   });
 });
+
+for (const width of [1440, 1920]) {
+  test.describe(`Breed scherm (${width} px)`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test("losse kaarten rekken niet uit en labels staan dicht bij hun waarde", async ({ page }) => {
+      // Level 4: in de rij met windmolens is alleen de windmolenkaart zichtbaar
+      await startGame(page, { state: { PlayerLevel: 4, NextLevel: threshold(4), Money: 300000 } });
+      const card = await page.locator("#windmills-col").boundingBox();
+      const row = await page.locator("#automation-row").boundingBox();
+      expect(card.width).toBeLessThan(row.width / 2);
+
+      const far = await page.evaluate(() =>
+        [...document.querySelectorAll(".stats-list dt")]
+          .filter((dt) => dt.checkVisibility())
+          .map((dt) => {
+            const dd = dt.nextElementSibling;
+            return [dt.textContent, dd.getBoundingClientRect().right - dt.getBoundingClientRect().left];
+          })
+          .filter(([, distance]) => distance > 560)
+      );
+      expect(far).toEqual([]);
+    });
+  });
+}
