@@ -197,7 +197,7 @@ test.describe("Bekende problemen opgelost", () => {
       state: atLevel(12, { Rlevel: 4, ironAmountProspected: 1, ironSmelters: 1, coalAmountProspected: 1 }),
     });
     await expect(page.getByRole("button", { name: "Maak staal" })).toBeAttached();
-    await expect(page.getByRole("button", { name: "Ontsla een pastahelper!" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Ontsla pastahelper" })).toBeAttached();
     await expect(page.getByRole("button", { name: "Bouw steenkoolsilo" })).toBeAttached();
     const duplicates = await page.evaluate(() => {
       const counts = {};

@@ -283,38 +283,48 @@
         </div>
         <div class="row rows" id="productie-row">
             <div class="container col-sm" id="chicken-col">
-                <h2>Eieren:</h2>
-                <h3>Kippenboerderij:</h3>
-                <div id="ChickenFarm"></div>
-                <button type="button" class="btn btn-primary" onclick="objChickenFarm.add();" id="purchaseChickenFarm">Bouw een kippenboerderij</button>
-                <button type="button" class="btn btn-primary" onclick="objEgg.addStorageUnit();" id="purchaseEggStorage">Bouw een eieropslag</button>
-                <h3>Kippen:</h3>
-                <div id="Chickens"></div>
-                <button type="button" class="btn btn-primary" id="CickenAnd1" onclick="objChicken.add(1);">+1</button>
-                <button type="button" class="btn btn-primary" id="CickenAnd10" onclick="objChicken.add(10);">+10</button>
-                <button type="button" class="btn btn-primary" id="CickenAnd100" onclick="objChicken.add(100);">+100</button>
-                <button type="button" class="btn btn-primary" id="CickenAnd1000" onclick="objChicken.add(1000);">+1.000</button>
-                <button type="button" class="btn btn-primary" id="CickenAnd10000" onclick="objChicken.add(10000);">+10.000</button>
-                <button type="button" class="btn btn-primary" id="CickenAnd100000" onclick="objChicken.add(100000);">+100.000</button>
-                <h3>Verkopen:</h3>
-                <div id="eggs"></div>
+                <h2>Eieren</h2>
                 <div id="eggStock"></div>
-                <button type="button" class="btn btn-danger" onClick="objEgg.sell('Alles','-')">Verkoop alle eieren</button>
+                <div id="eggs"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onClick="objEgg.sell('Alles','-')">Verkoop alle eieren</button>
+                </div>
+                <h3>Kippen</h3>
+                <div id="Chickens"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" id="CickenAnd1" onclick="objChicken.add(1);">+1</button>
+                    <button type="button" class="btn btn-primary" id="CickenAnd10" onclick="objChicken.add(10);">+10</button>
+                    <button type="button" class="btn btn-primary" id="CickenAnd100" onclick="objChicken.add(100);">+100</button>
+                    <button type="button" class="btn btn-primary" id="CickenAnd1000" onclick="objChicken.add(1000);">+1.000</button>
+                    <button type="button" class="btn btn-primary" id="CickenAnd10000" onclick="objChicken.add(10000);">+10.000</button>
+                    <button type="button" class="btn btn-primary" id="CickenAnd100000" onclick="objChicken.add(100000);">+100.000</button>
+                </div>
+                <h3>Kippenboerderijen</h3>
+                <div id="ChickenFarm"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onclick="objChickenFarm.add();" id="purchaseChickenFarm">Bouw kippenboerderij</button>
+                    <button type="button" class="btn btn-primary" onclick="objEgg.addStorageUnit();" id="purchaseEggStorage">Bouw eieropslag</button>
+                </div>
             </div>
             <div class="container col-sm" id="pasta-col">
-                <h2>Pasta:</h2>
-                <div id="PastaFactory"></div>
-                <button type="button" class="btn btn-primary" onClick="objPastaFactory.add();">Bouw pastafabriek</button>
-                <button type="button" class="btn btn-warning" onClick="objPastaFactory.sell();">Verkoop pastafabriek</button>
-                <h3>Maak pasta:</h3>
-                <div id="PastaInstruction"></div>
-                <button type="button" class="btn btn-dark" onClick="objPastaFactory.produce('manual');">Maak pasta</button>
-                <div id="pastaHelperDiv"></div>
-                <h2>Voorraden:</h2>
+                <h2>Pasta</h2>
                 <div id="StorehousePasta"></div>
-                <h2>Verkopen:</h2>
                 <div id="SellPasta"></div>
-                <button type="button" class="btn btn-danger" onClick="objPasta.sell('Reguliere verkoop Pasta')">Verkoop Pasta!</button>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onClick="objPasta.sell('Reguliere verkoop Pasta')">Verkoop pasta</button>
+                </div>
+                <h3>Pasta maken</h3>
+                <div id="PastaInstruction"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-success" onClick="objPastaFactory.produce('manual');">Maak pasta</button>
+                </div>
+                <h3>Pastafabrieken</h3>
+                <div id="PastaFactory"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objPastaFactory.add();">Bouw pastafabriek</button>
+                    <button type="button" class="btn btn-warning" onClick="objPastaFactory.sell();">Verkoop pastafabriek</button>
+                </div>
+                <div id="pastaHelperDiv"></div>
             </div>
         </div>
         <div class="row rows" id="onderzoek-row">

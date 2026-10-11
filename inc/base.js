@@ -1760,16 +1760,18 @@ var objChicken = {
     }
   },
   show: function () {
-    document.getElementById("Chickens").innerHTML =
-      "<p>Je hebt op dit moment " +
-      FixNumber(objChicken.amount) +
-      " kippen rondlopen. Deze kippen leggen: " +
-      FixNumber(+objChicken.eggProduction * +objChicken.amount) +
-      " eieren per 5 ticks. In deze periode eten ze " +
-      FixNumber(+objChicken.foodIntake * +objChicken.amount) +
-      "kg graan</p><p>Een kip kost: " +
-      FixMoney(objChicken.cost) +
-      "</p> <h3>Koop kippen</h3>";
+    document.getElementById("Chickens").innerHTML = renderStats([
+      ["Kippen", FixNumber(objChicken.amount)],
+      [
+        "Eieren per 5 ticks",
+        FixNumber(+objChicken.eggProduction * +objChicken.amount),
+      ],
+      [
+        "Voer per 5 ticks",
+        FixUnit(+objChicken.foodIntake * +objChicken.amount, "kg"),
+      ],
+      ["Prijs per kip", FixMoney(objChicken.cost)],
+    ]);
   },
   init: function () {
     objChicken.amount = Math.round(localStorage.getItem("Chickens")) || 0;
@@ -1830,24 +1832,32 @@ var objChickenFarm = {
   },
   show: function () {
     document.getElementById("ChickenFarm").innerHTML =
-      "<p>Je hebt op dit moment " +
-      objChickenFarm.amount +
-      " kippenboerderijen met nog plek voor " +
-      (+objChickenFarm.amount * +objChickenFarm.cap - +objChicken.amount) +
-      " kippen. Een extra kippenboerderij kost: " +
-      FixMoney(objChickenFarm.cost) +
-      "</p><p>" +
-      "Er is opslag voor " +
-      FixNumber(+objEgg.storageCap * +objEgg.storageUnits) +
-      " eieren. Extra opslag bied plaats voor " +
-      FixNumber(objEgg.storageCap) +
-      " eieren en kost: " +
-      FixMoney(objEgg.storageUnitCost) +
-      "</p><p>Iedere farm heeft opslag voor " +
-      FixNumber(objChickenFarm.grainSiloCap) +
-      "kg voer. Er is nog " +
-      FixNumber(objChickenFarm.grainReserve) +
-      "kg voer voor de kippen beschikbaar";
+      renderStats([
+        ["Kippenboerderijen", FixNumber(objChickenFarm.amount)],
+        [
+          "Plek voor kippen",
+          FixNumber(
+            +objChickenFarm.amount * +objChickenFarm.cap - +objChicken.amount
+          ),
+        ],
+        ["Voer in voorraad", FixUnit(objChickenFarm.grainReserve, "kg")],
+        [
+          "Voeropslag per boerderij",
+          FixUnit(objChickenFarm.grainSiloCap, "kg"),
+        ],
+        ["Prijs per boerderij", FixMoney(objChickenFarm.cost)],
+        [
+          "Eieropslag",
+          FixNumber(+objEgg.storageCap * +objEgg.storageUnits) + " eieren",
+        ],
+        [
+          "Prijs extra eieropslag",
+          FixMoney(objEgg.storageUnitCost) +
+            " (" +
+            FixNumber(objEgg.storageCap) +
+            " eieren)",
+        ],
+      ]) + renderHint("Het voer wordt uit je graansilo's aangevuld.");
     // Eventueel de knoppen voor het kopen van kippen uitschakelen als er geen plek meer is.
     ChickenSpace =
       +objChickenFarm.amount * +objChickenFarm.cap - +objChicken.amount;
@@ -1949,22 +1959,22 @@ var objEgg = {
     var percentageFilled =
       (+objEgg.amount / (+objEgg.storageUnits * +objEgg.storageCap)) * 100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("eggStock").innerHTML =
-      '<p>Eieren:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objEgg.amount) +
-      "stk (" +
-      percentageFilled +
-      "%)</div></div><br>";
+    document.getElementById("eggStock").innerHTML = renderBar(
+      "Voorraad",
+      FixNumber(objEgg.amount) + " eieren",
+      percentageFilled
+    );
   },
   show: function () {
     document.getElementById("eggs").innerHTML =
-      "<p> Je hebt op dit moment nog plek voor: " +
-      FixNumber(+objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount) +
-      " eieren. Eventueel overschot wordt direct verkocht voor de helft van de huidge prijs. De huidige prijs is: " +
-      FixMoney(+objEgg.price) +
-      "</p>";
+      renderStats([
+        [
+          "Vrije ruimte",
+          FixNumber(+objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount) +
+            " eieren",
+        ],
+        ["Prijs per ei", FixMoney(+objEgg.price)],
+      ]) + renderHint("Wat niet past wordt direct verkocht.");
     objEgg.visual();
   },
   init: function () {
@@ -2112,33 +2122,34 @@ var objPastaFactory = {
     }
   },
   show: function () {
-    document.getElementById("PastaFactory").innerHTML =
-      "<p>Aantal pastafabrieken: " +
-      FixNumber(objPastaFactory.amount) +
-      "<br>" +
-      "Een pastafabriek kost: " +
-      FixMoney(objPastaFactory.cost) +
-      "<br>" +
-      "Een pastafabriek kan verkocht worden voor: " +
-      FixMoney(objPastaFactory.cost * 0.75) +
-      "<br>";
+    document.getElementById("PastaFactory").innerHTML = renderStats([
+      ["Pastafabrieken", FixNumber(objPastaFactory.amount)],
+      ["Prijs per fabriek", FixMoney(objPastaFactory.cost)],
+      ["Verkoopwaarde", FixMoney(objPastaFactory.cost * 0.75)],
+    ]);
 
     var flour = objPastaFactory.amount * objPastaFactory.cap;
     var eggs = flour * (objPasta.recipeEggs / objPasta.recipe);
     document.getElementById("PastaInstruction").innerHTML =
-      "<p>Op dit moment kunnen we per run " +
-      FixNumber(flour) +
-      "kg bloem en " +
-      FixNumber(eggs) +
-      " eieren verwerken tot pasta. Iedere run verbruikt " +
-      FixNumber(objPastaFactory.amount * objPastaFactory.energy) +
-      " energie. Dit levert " +
-      FixNumber(Math.floor(flour / objPasta.recipe)) +
-      " dozen pasta op.</p>Recept: " +
-      FixNumber(objPasta.recipe) +
-      "kg bloem gemixt met " +
-      FixNumber(objPasta.recipeEggs) +
-      " eieren levert één doos pasta op.</p>";
+      renderStats([
+        ["Bloem per run", FixUnit(flour, "kg")],
+        ["Eieren per run", FixNumber(eggs)],
+        [
+          "Energie per run",
+          FixNumber(objPastaFactory.amount * objPastaFactory.energy),
+        ],
+        [
+          "Opbrengst per run",
+          FixNumber(Math.floor(flour / objPasta.recipe)) + " dozen",
+        ],
+      ]) +
+      renderHint(
+        "Recept: " +
+          FixUnit(objPasta.recipe, "kg") +
+          " bloem en " +
+          FixNumber(objPasta.recipeEggs) +
+          " eieren maken één doos pasta."
+      );
     objStorehouse.show();
   },
   init: function () {
@@ -2169,8 +2180,9 @@ var objPasta = {
     objMoney.add(ProfitPasta, reason, 8, amount);
   },
   show: function () {
-    document.getElementById("SellPasta").innerHTML =
-      "<p>Verkoop de pasta voor " + FixMoney(objPasta.price()) + " per doos";
+    document.getElementById("SellPasta").innerHTML = renderStats([
+      ["Prijs per doos", FixMoney(objPasta.price())],
+    ]);
   },
   init: function () {
     objPasta.show();
@@ -2233,16 +2245,18 @@ var objPastaHelper = {
   show: function () {
     if (objPlayerInfo.level > 6) {
       document.getElementById("pastaHelperDiv").innerHTML =
-        "<p>Je kan iemand in dienst nemen om een pastafabriek voor je te bedienen. Hij/Zij drukt iedere 15 seconden op de knop om pasta voor je te maken.</p>" +
-        "<p>Iedere pastahelper pakt 5% van de pasta mee naar huis om zijn familie te laten eten. Het aannemen van een pastahelper kost je: " +
-        FixMoney(objPastaHelper.cost) +
-        ", " +
-        "je kan hem ook weer ontslaan, je krijgt hier geen geld voor terug! Iedere pastahelper kan 1 fabriek aansturen</p>" +
-        "<p>Je hebt op dit moment " +
-        FixNumber(objPastaHelper.amount) +
-        " pastahelper(s) in dienst</p>" +
-        "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem een pastahelper aan!</button> " +
-        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla een pastahelper!</button> ";
+        "<h3>Pastahelpers</h3>" +
+        renderStats([
+          ["Pastahelpers", FixNumber(objPastaHelper.amount)],
+          ["Prijs per helper", FixMoney(objPastaHelper.cost)],
+        ]) +
+        renderHint(
+          "Een helper bedient één fabriek en maakt elke 15 seconden pasta. Hij neemt 5% mee naar huis; ontslaan levert niets op."
+        ) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem pastahelper aan</button> " +
+        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla pastahelper</button>" +
+        "</div>";
     }
   },
   init: function () {
@@ -2267,10 +2281,9 @@ var objStorehouse = {
     localStorage.setItem("Pasta", objStorehouse.pasta);
   },
   show: function () {
-    document.getElementById("StorehousePasta").innerHTML =
-      "<p>Aantal dozen pasta op voorraad: " +
-      FixNumber(objStorehouse.pasta) +
-      "</p>";
+    document.getElementById("StorehousePasta").innerHTML = renderStats([
+      ["Voorraad", FixNumber(objStorehouse.pasta) + " dozen"],
+    ]);
   },
   init: function () {
     objStorehouse.amount = localStorage.getItem("Storehouses") || 0;
