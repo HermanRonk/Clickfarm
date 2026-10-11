@@ -103,7 +103,7 @@ test.describe("Mijnbouwonderzoek (level 8+)", () => {
     // De tweede mijnenrij bevat op level 8 alleen nog verborgen uranium en blijft dus weg (#46).
     expect(await shownNow()).toEqual({ "Prospecting-col": true, "mijnen-row": true, "mijnen-row2": false });
     await expect(research).toBeDisabled();
-    await expect(page.locator("#ResDesc")).toContainText("helemaal klaar met de research");
+    await expect(page.locator("#ResDesc")).toContainText("Onderzoek afgerond");
 
     // Uranium pas vanaf level 10
     expect((await shownMap(page, [RESEARCH_GATED.uranium]))[RESEARCH_GATED.uranium]).toBe(false);

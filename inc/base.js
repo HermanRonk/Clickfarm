@@ -228,6 +228,20 @@ function renderBar(label, valueText, percentage) {
   );
 }
 
+// Instellingen van automatisch verkopen voor één product
+function renderAutoSell(product, active, minimumPrice, currentPrice) {
+  return (
+    "<h3>" +
+    product +
+    "</h3>" +
+    renderStats([
+      ["Status", active ? "Aan" : "Uit"],
+      ["Verkopen vanaf", FixMoney(+minimumPrice)],
+      ["Huidige prijs", currentPrice],
+    ])
+  );
+}
+
 // Korte uitleg onder een lijst
 function renderHint(text) {
   return '<p class="hint">' + text + "</p>";
@@ -1037,9 +1051,7 @@ var objFarmland = {
       objFarmland.GrainResearchTimer
     );
     document.getElementById("GrainResearchTimer").innerHTML =
-      "<p>Het onderzoek is klaar over: " +
-      objFarmland.GrainResearchTimer +
-      " Seconden</p>";
+      "Onderzoek klaar over " + objFarmland.GrainResearchTimer + " seconden";
     if (objFarmland.GrainResearchTimer < 1) {
       objFarmland.harvest =
         Math.round(
@@ -1081,16 +1093,15 @@ var objFarmland = {
     }
   },
   showResearch: function () {
-    document.getElementById("GrainResearchCost").innerHTML =
-      "<p>Het onderzoek zal: " +
-      objFarmland.GrainResearchDuration +
-      " seconden duren en kost: " +
-      FixMoney(objFarmland.GrainResearchCostVar) +
-      "</p><p>Opbrengstverbetering: " +
-      objFarmland.GrainResearchProfit +
-      "% (voor deze upgrade)</p><p>Je bent nu op research level: " +
-      objFarmland.GrainResearchLevel +
-      "</p>";
+    document.getElementById("GrainResearchCost").innerHTML = renderStats([
+      ["Onderzoekslevel", FixNumber(objFarmland.GrainResearchLevel)],
+      [
+        "Volgende stap",
+        "+" + FixNumber(objFarmland.GrainResearchProfit) + "% opbrengst",
+      ],
+      ["Kosten", FixMoney(objFarmland.GrainResearchCostVar)],
+      ["Duur", FixNumber(objFarmland.GrainResearchDuration) + " seconden"],
+    ]);
   },
   init: function () {
     objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
@@ -1112,9 +1123,7 @@ var objFarmland = {
     if (objFarmland.GrainResearchTimer > 0) {
       document.getElementById("GRButton").disabled = true;
       document.getElementById("GrainResearchTimer").innerHTML =
-        "<p>Het onderzoek is klaar over: " +
-        objFarmland.GrainResearchTimer +
-        " Seconden</p>";
+        "Onderzoek klaar over " + objFarmland.GrainResearchTimer + " seconden";
     }
     objFarmland.showFarms();
     objFarmland.showPrice();
@@ -2490,29 +2499,17 @@ var objSalesComputer = {
     }
   },
   show: function () {
-    if (objSalesComputer.cpu == 1) {
-      var cpus = " CPU ";
-    } else {
-      var cpus = " CPU's ";
-    }
-    if (objSalesComputer.cpu <= 3) {
-      document.getElementById("autoSellIntro").innerHTML =
-        "<p>Je salescomputer heeft CPU's nodig om te werken. Voor iedere CPU komt het volgende item beschikbaar. Je hebt op dit moment " +
-        +objSalesComputer.cpu +
-        cpus +
-        ". Koop een extra CPU voor: " +
-        FixMoney(objSalesComputer.cpuCost) +
-        ". Je kan een CPU ook weer verkopen voor: " +
-        FixMoney(objSalesComputer.cpuCost * 0.75) +
-        "</p>";
-      document.getElementById("addCPU").disabled = false;
-    } else {
-      document.getElementById("autoSellIntro").innerHTML =
-        "<p>Je hebt het maximale niveau bereikt! (" +
-        objSalesComputer.cpu +
-        " stuks) </p>";
-      document.getElementById("addCPU").disabled = true;
-    }
+    var maxCpu = +objSalesComputer.cpu > 3;
+    document.getElementById("autoSellIntro").innerHTML =
+      renderStats([
+        ["CPU's", FixNumber(objSalesComputer.cpu) + " van 4"],
+        !maxCpu && ["Prijs per CPU", FixMoney(objSalesComputer.cpuCost)],
+        ["Verkoopwaarde", FixMoney(objSalesComputer.cpuCost * 0.75)],
+      ]) +
+      renderHint(
+        "Iedere CPU zet het volgende product vrij: olie, bloem, pasta en kunststof."
+      );
+    document.getElementById("addCPU").disabled = maxCpu;
     switch (+objSalesComputer.cpu) {
       case 0:
         document.getElementById("autoOilCheck").disabled = true;
@@ -2557,66 +2554,42 @@ var objSalesComputer = {
   showOil: function (inputwaarde) {
     localStorage.setItem("autoOil", inputwaarde);
     objSalesComputer.oilValue = inputwaarde;
-    var autoSellOilOn = " niet ";
-    if (objSalesComputer.autoSellOil == true) {
-      var autoSellOilOn = " ";
-    }
-    document.getElementById("autoSellOil").innerHTML =
-      "<h3>Automatisch verkopen olie</h3><p>Olie wordt op dit moment" +
-      autoSellOilOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objOil.price) +
-      "</p>";
+    document.getElementById("autoSellOil").innerHTML = renderAutoSell(
+      "Olie",
+      objSalesComputer.autoSellOil == true,
+      inputwaarde,
+      FixMoney(objOil.price)
+    );
   },
   showFlour: function (inputwaarde) {
     localStorage.setItem("autoFlour", inputwaarde);
     objSalesComputer.flourValue = inputwaarde;
-    var autoSellFlourOn = " niet ";
-    if (objSalesComputer.autoSellFlour == true) {
-      var autoSellFlourOn = " ";
-    }
-    document.getElementById("autoSellFlour").innerHTML =
-      "<h3>Automatisch verkopen bloem</h3><p>Bloem wordt op dit moment" +
-      autoSellFlourOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objFlour.price) +
-      "</p>";
+    document.getElementById("autoSellFlour").innerHTML = renderAutoSell(
+      "Bloem",
+      objSalesComputer.autoSellFlour == true,
+      inputwaarde,
+      FixMoney(objFlour.price)
+    );
   },
   showPasta: function (inputwaarde) {
     localStorage.setItem("autoPasta", inputwaarde);
     objSalesComputer.pastaValue = inputwaarde;
-    var autoSellPastaOn = " niet ";
-    if (objSalesComputer.autoSellPasta == true) {
-      var autoSellPastaOn = " ";
-    }
-    document.getElementById("autoSellPasta").innerHTML =
-      "<h3>Automatisch verkopen pasta</h3><p>Pasta wordt op dit moment" +
-      autoSellPastaOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objPasta.price()) +
-      "</p>";
+    document.getElementById("autoSellPasta").innerHTML = renderAutoSell(
+      "Pasta",
+      objSalesComputer.autoSellPasta == true,
+      inputwaarde,
+      FixMoney(objPasta.price())
+    );
   },
   showKunststof: function (inputwaarde) {
     localStorage.setItem("autoKunststof", inputwaarde);
     objSalesComputer.kunststofValue = inputwaarde;
-    var autoSellKunststofOn = " niet ";
-    if (objSalesComputer.autoSellKunststof == true) {
-      var autoSellKunststofOn = " ";
-    }
-    document.getElementById("autoSellKunststof").innerHTML =
-      "<h3>Automatisch verkopen kunststof</h3><p>Kunststof wordt op dit moment" +
-      autoSellKunststofOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objPlastic.price) +
-      "</p>";
+    document.getElementById("autoSellKunststof").innerHTML = renderAutoSell(
+      "Kunststof",
+      objSalesComputer.autoSellKunststof == true,
+      inputwaarde,
+      FixMoney(objPlastic.price)
+    );
   },
   checkOil: function (checkState) {
     localStorage.setItem("autoOilCheck", checkState);
@@ -2806,7 +2779,7 @@ var objResearch = {
     objResearch.timer--;
     localStorage.setItem("rTimer", objResearch.timer);
     document.getElementById("ResearchTimer").innerHTML =
-      "<p>Het onderzoek is klaar over: " + objResearch.timer + " Seconden</p>";
+      "Onderzoek klaar over " + objResearch.timer + " seconden";
     if (objResearch.timer < 1 && objResearch.running === 1) {
       objResearch.level++;
       localStorage.setItem("Rlevel", objResearch.level);
@@ -2820,31 +2793,32 @@ var objResearch = {
   },
   show: function () {
     if (objResearch.level <= objResearch.research_tree.length) {
+      var phase = objResearch.research_tree[objResearch.level - 1];
       document.getElementById("ResDesc").innerHTML =
-        "<p>De " +
-        objResearch.research_tree[objResearch.level - 1].phase +
-        " fase in het onderzoek naar mijnbouw kost: " +
-        FixMoney(objResearch.research_tree[objResearch.level - 1].cost) +
-        " en zal " +
-        FixNumber(objResearch.research_tree[objResearch.level - 1].time) +
-        " seconden duren. " +
-        objResearch.research_tree[objResearch.level - 1].description +
-        "</p>";
+        renderStats([
+          [
+            "Fase",
+            objResearch.level + " van " + objResearch.research_tree.length,
+          ],
+          ["Kosten", FixMoney(phase.cost)],
+          ["Duur", FixNumber(phase.time) + " seconden"],
+        ]) + renderHint(phase.description);
     } else {
-      document.getElementById("ResDesc").innerHTML =
-        "<p>Je bent helemaal klaar met de research; succes met het vinden van een goed mijngebied! " +
-        "Je hebt al onderzocht: Mijnbouw algemeen, prospecting en het daadwerkelijk openen van een mijn.</p>";
+      document.getElementById("ResDesc").innerHTML = renderHint(
+        "Onderzoek afgerond: je kunt nu naar mijnlocaties zoeken en mijnen openen."
+      );
       document.getElementById("MiningResearch").disabled = true;
+      document.getElementById("MiningResearch").style.display = "none";
       document.getElementById("ResearchTimer").style.display = "none";
     }
 
     if (+objPlayerInfo.level < 8) {
-      document.getElementById("MiningLevel").innerHTML =
-        "<p> Vanaf level 8 mag je dit onderzoek starten!</p>";
-
+      document.getElementById("MiningLevel").innerHTML = renderHint(
+        "Beschikbaar vanaf level 8."
+      );
       document.getElementById("MiningResearch").disabled = true;
     } else {
-      // document.getElementById("MiningLevel").style.display = "none";
+      document.getElementById("MiningLevel").innerHTML = "";
       if (objResearch.running === 0) {
         document.getElementById("MiningResearch").disabled = false;
       }
@@ -2862,9 +2836,7 @@ var objResearch = {
         objResearch.timer = parseInt(localStorage.getItem("rTimer"));
         showMessage("Research timer", objResearch.timer);
         document.getElementById("ResearchTimer").innerHTML =
-          "<p>Het onderzoek is klaar over: " +
-          objResearch.timer +
-          " Seconden</p>";
+          "Onderzoek klaar over " + objResearch.timer + " seconden";
         document.getElementById("MiningResearch").disabled = true;
       }
       if (objResearch.level > 3) {
