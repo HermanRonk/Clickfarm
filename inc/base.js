@@ -1016,7 +1016,7 @@ var objFarmland = {
   },
   init: function () {
     objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
-    objFarmland.cost = parseInt(localStorage.getItem("FarmlandCost")) || 10;
+    objFarmland.cost = parseFloat(localStorage.getItem("FarmlandCost")) || 10;
     objFarmland.harvest = parseFloat(localStorage.getItem("Harvest")) || 100;
     objFarmland.GrainResearchCostVar =
       parseInt(localStorage.getItem("GrainResearchCostVar")) || 5000;

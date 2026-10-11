@@ -180,3 +180,14 @@ test.describe("Opslaan en laden (740c603)", () => {
     expect(+(await storage(page, "GrainReserve"))).toBe(reserve);
   });
 });
+
+test.describe("Bekende problemen opgelost", () => {
+  test("#44 prijs van landbouwgrond behoudt decimalen na herladen", async ({ page }) => {
+    await startGame(page);
+    await page.getByRole("button", { name: "Koop landbouwgrond" }).click();
+    expect(await game(page, () => objFarmland.cost)).toBe(10.5);
+    await reload(page);
+    expect(await game(page, () => objFarmland.cost)).toBe(10.5);
+    await expect(page.locator("#FarmlandPrice")).toHaveText("Kosten landbouwgrond: € 10,50");
+  });
+});

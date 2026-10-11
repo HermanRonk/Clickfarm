@@ -20,15 +20,6 @@ test.describe("Bekende problemen", () => {
     expect(duplicates).toEqual([]);
   });
 
-  test("prijs van landbouwgrond behoudt decimalen na herladen", async ({ page }) => {
-    test.fail(true, "objFarmland.init leest FarmlandCost met parseInt: € 10,50 wordt € 10,00");
-    await startGame(page);
-    await page.getByRole("button", { name: "Koop landbouwgrond" }).click();
-    expect(await game(page, () => objFarmland.cost)).toBe(10.5);
-    await reload(page);
-    expect(await game(page, () => objFarmland.cost)).toBe(10.5);
-  });
-
   test("statusbalk toont alleen voorraden die al vrijgespeeld zijn", async ({ page }) => {
     test.fail(true, "Bloem, olie en energie staan al op level 1 in de navigatiebalk");
     await startGame(page);
