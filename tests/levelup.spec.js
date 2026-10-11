@@ -97,8 +97,9 @@ test.describe("Mijnbouwonderzoek (level 8+)", () => {
       expect(await game(page, () => objResearch.level)).toBe(i + 2);
     }
 
-    // Na drie fasen: prospecting en mijnen zichtbaar, onderzoek afgerond
-    expect(await shownNow()).toEqual({ "Prospecting-col": true, "mijnen-row": true, "mijnen-row2": true });
+    // Na drie fasen: prospecting en mijnen zichtbaar, onderzoek afgerond.
+    // De tweede mijnenrij bevat op level 8 alleen nog verborgen uranium en blijft dus weg (#46).
+    expect(await shownNow()).toEqual({ "Prospecting-col": true, "mijnen-row": true, "mijnen-row2": false });
     await expect(research).toBeDisabled();
     await expect(page.locator("#ResDesc")).toContainText("helemaal klaar met de research");
 
@@ -109,6 +110,7 @@ test.describe("Mijnbouwonderzoek (level 8+)", () => {
   test("uranium is zichtbaar op level 10 na het onderzoek", async ({ page }) => {
     await startGame(page, { state: { PlayerLevel: 10, NextLevel: threshold(10), Rlevel: 4 } });
     expect((await shownMap(page, [RESEARCH_GATED.uranium]))[RESEARCH_GATED.uranium]).toBe(true);
+    expect((await shownMap(page, ["mijnen-row2"]))["mijnen-row2"]).toBe(true);
   });
 
   test("onderzoek kan niet gestart worden onder level 8", async ({ page }) => {

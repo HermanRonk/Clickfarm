@@ -116,9 +116,21 @@ var Display = {
       if ((el = document.getElementById(aIdentifier[i])))
         el.style.display = cDisplay;
       else console.error("Could not find element " + aIdentifier[i]);
+    this.updateRows();
   },
   hide: function (cIdentifier) {
     this.show(cIdentifier, false);
+  },
+  // Rijen zonder zichtbare inhoud verbergen, los van de weergave per level/onderzoek
+  updateRows: function () {
+    document.querySelectorAll(".rows").forEach(function (row) {
+      var filled = Array.from(row.children).some(function (child) {
+        return (
+          child.style.display !== "none" && child.textContent.trim() !== ""
+        );
+      });
+      row.classList.toggle("row-empty", !filled);
+    });
   },
 };
 
@@ -3137,6 +3149,7 @@ var objMines = {
     //var mineTypes = ["iron","coal","uranium","copper","gold","diamond"];
     var mineTypes = ["iron", "coal", "uranium"];
     updateMineButtons(mineTypes);
+    Display.updateRows();
   },
   init: function () {
     objMines.ironAmountProspected =
@@ -5104,6 +5117,7 @@ function showQuickSell(inputQS) {
     localStorage.setItem("QS", quickSell);
     quickSellMenu();
     quickSellButtons();
+    Display.updateRows();
   } else {
     document.getElementById("sellMenu").style.display = "none";
     elverkooptabBTN.innerHTML =
@@ -5260,6 +5274,7 @@ var timerCounter = 0;
 var paused = 0;
 var NaNMarket = 0;
 var loopsProduction = setInterval(function () {
+  Display.updateRows();
   if (paused === 0) {
     if (objFarmland.FarmTimer > 0) objFarmland.working_loop();
     if (objFarmland.GrainResearchTimer > 0) objFarmland.research_loop();

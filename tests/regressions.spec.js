@@ -245,6 +245,33 @@ test.describe("Bekende problemen opgelost", () => {
     expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(false);
   });
 
+  test("#46 geen lege rijen zichtbaar, ook niet na levelen", async ({ page }) => {
+    const emptyVisibleRows = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll(".rows")]
+          .filter((row) => row.checkVisibility() && row.innerText.trim() === "")
+          .map((row) => row.id)
+      );
+    await startGame(page);
+    expect(await emptyVisibleRows()).toEqual([]);
+    for (let level = 1; level < 13; level++) {
+      await game(page, (target) => objMoney.add(target - objMoney.amount, "test"), threshold(level));
+      await tick(page, 1);
+      expect(await emptyVisibleRows(), `level ${level + 1}`).toEqual([]);
+    }
+  });
+
+  test("#46 staalrij verschijnt zodra er ijzer gevonden is", async ({ page }) => {
+    await startGame(page, { state: miningUnlocked() });
+    expect((await shownMap(page, ["production2-row"]))["production2-row"]).toBe(false);
+    await game(page, () => {
+      objMines.ironAmountProspected = 1;
+      objIronMelter.show();
+    });
+    await tick(page, 1);
+    expect((await shownMap(page, ["production2-row"]))["production2-row"]).toBe(true);
+  });
+
   test("#43 knop steenkoolmijn wordt uit- en aangezet, niet de siloknop", async ({ page }) => {
     await startGame(page, { state: atLevel(8, { Rlevel: 4, Money: 1000000000, coalAmountProspected: 1 }) });
     await expect(page.locator("#coalMineButton")).toHaveText("Bouw steenkoolmijn");

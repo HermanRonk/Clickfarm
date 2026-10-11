@@ -136,3 +136,8 @@ kbd2 {
 #chicken-col, #plastic-row, #pasta-col, #AutoSell-col, #MiningResearch-col, #mijnbouw-row, #mijnen-row, #mijnen-row2, #Uranium-col, #nuclearFuel-row {
     /*display: none;*/
 }
+
+/* rijen zonder zichtbare inhoud (zie Display.updateRows) */
+.row-empty {
+    display: none !important;
+}

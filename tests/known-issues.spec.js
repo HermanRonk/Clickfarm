@@ -5,23 +5,12 @@
 // "expected to fail, but passed" — haal dan de test.fail()-regel weg zodat de test
 // voortaan als gewone regressietest meedraait.
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, game, shownMap } = require("./helpers/game");
+const { startGame } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 test.describe("Bekende problemen", () => {
-  test("geen lege rijen zichtbaar op level 1", async ({ page }) => {
-    test.fail(true, "Rijen zonder zichtbare inhoud worden als lege kaders getoond");
-    await startGame(page);
-    const emptyRows = await page.evaluate(() =>
-      [...document.querySelectorAll(".rows")]
-        .filter((row) => row.checkVisibility() && row.innerText.trim() === "")
-        .map((row) => row.id)
-    );
-    expect(emptyRows).toEqual([]);
-  });
-
   test("koper-, goud- en diamantmijnen kunnen gebouwd worden", async ({ page }) => {
-    test.fail(true, "README: resterende mijnen implementeren (knoppen staan uitgecommentarieerd)");
+    test.fail(true, "#48: resterende mijnen implementeren (knoppen staan uitgecommentarieerd)");
     await startGame(page, { state: { PlayerLevel: 12, NextLevel: threshold(12), Rlevel: 4 } });
     for (const name of ["Bouw kopermijn", "Bouw goudmijn", "Bouw diamantmijn"]) {
       await expect(page.getByRole("button", { name }), name).toBeVisible({ timeout: 1000 });
