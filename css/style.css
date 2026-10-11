@@ -259,8 +259,9 @@ kbd2 {
     display: grid;
     /* Vast kolomraster: een rij met maar één of twee kaarten rekt niet uit over de hele breedte */
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
-    gap: var(--gap);
-    margin-bottom: var(--gap);
+    column-gap: var(--col-gap, var(--gap));
+    row-gap: var(--row-gap, var(--gap));
+    margin-bottom: var(--row-gap, var(--gap));
 }
 
 .rows > * {
@@ -714,4 +715,206 @@ kbd2 {
 
 .collapsed-title .hint {
     margin: 0;
+}
+
+/* Productieketen (zie objFlows in inc/base.js) */
+:root {
+    --flow-graan: #d4a017;
+    --flow-bloem: #c2a27a;
+    --flow-eieren: #e59a5c;
+    --flow-pasta: #d2691e;
+    --flow-olie: #6f52a8;
+    --flow-kunststof: #1fa4b4;
+    --flow-steenkool: #4b525c;
+    --flow-ijzererts: #a8532c;
+    --flow-staal: #5d86ad;
+    --flow-uranium: #5cb83c;
+    --flow-splijtstof: #18a88a;
+    --flow-afval: #8b8f94;
+    --flow-energie: #3b82f6;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --flow-graan: #f2c23a;
+        --flow-bloem: #e0c9a3;
+        --flow-eieren: #f4b07a;
+        --flow-pasta: #f08a3e;
+        --flow-olie: #a68bea;
+        --flow-kunststof: #3cc8d8;
+        --flow-steenkool: #a3abb6;
+        --flow-ijzererts: #d77a4f;
+        --flow-staal: #8db2d6;
+        --flow-uranium: #84dc5f;
+        --flow-splijtstof: #3fd1ae;
+        --flow-afval: #a7abb0;
+        --flow-energie: #6aa6ff;
+    }
+}
+
+#FirstTab {
+    position: relative;
+}
+
+.rows > * {
+    z-index: 1;
+}
+
+.flow-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+/* Meer ruimte tussen de kaarten voor de lijnen: vooral verticaal; horizontaal zo dat er 4 kaarten blijven passen */
+body.flows-on {
+    --row-gap: 44px;
+    --col-gap: 24px;
+}
+
+.flow {
+    color: var(--flow-graan);
+    transition: opacity 0.25s;
+}
+
+.flow-graan { color: var(--flow-graan); }
+.flow-bloem { color: var(--flow-bloem); }
+.flow-eieren { color: var(--flow-eieren); }
+.flow-pasta { color: var(--flow-pasta); }
+.flow-olie { color: var(--flow-olie); }
+.flow-kunststof { color: var(--flow-kunststof); }
+.flow-steenkool { color: var(--flow-steenkool); }
+.flow-ijzererts { color: var(--flow-ijzererts); }
+.flow-staal { color: var(--flow-staal); }
+.flow-uranium { color: var(--flow-uranium); }
+.flow-splijtstof { color: var(--flow-splijtstof); }
+.flow-afval { color: var(--flow-afval); }
+.flow-energie { color: var(--flow-energie); }
+
+.flow-base,
+.flow-run {
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+}
+
+.flow-base {
+    stroke-width: 3;
+    opacity: 0.3;
+}
+
+.flow-run {
+    stroke-width: 3;
+    stroke-dasharray: 2 18;
+    opacity: 0;
+}
+
+.flow-port {
+    fill: currentColor;
+    opacity: 0.7;
+}
+
+/* Looplicht alleen als de stroom actief is */
+.flow.active .flow-run {
+    opacity: 0.85;
+    animation: flow-run 1.6s linear infinite;
+}
+
+@keyframes flow-run {
+    to {
+        stroke-dashoffset: -20;
+    }
+}
+
+/* Kaart aanwijzen: haar stromen fel, de rest vervaagt */
+.flow-layer.has-focus .flow {
+    opacity: 0.08;
+}
+
+.flow-layer.has-focus .flow.focus {
+    opacity: 1;
+}
+
+.flow.focus .flow-base {
+    opacity: 0.7;
+}
+
+.flow.focus .flow-run {
+    opacity: 1;
+    animation: flow-run 1.2s linear infinite;
+}
+
+/* Tijdens slepen in Indeling bewerken geen lijnen */
+body:has(.rows > .dragging) .flow-layer {
+    opacity: 0;
+}
+
+/* Bliksempoortje op energieverbruikers */
+.energy-port {
+    display: none;
+}
+
+.flows-on .energy-port {
+    position: absolute;
+    top: -0.7rem;
+    left: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-left: -0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.7rem;
+}
+
+.flows-on .energy-port.active {
+    color: var(--flow-energie);
+    border-color: var(--flow-energie);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--flow-energie) 20%, transparent);
+}
+
+.flows-on .energy-port.shortage {
+    color: var(--danger);
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flow.active .flow-run,
+    .flow.focus .flow-run {
+        animation: none;
+    }
+}
+
+/* Legenda van de productieketen (info.html) */
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 1rem;
+    margin-top: 0.4rem;
+    padding: 0;
+    list-style: none;
+}
+
+.legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+    font-size: 0.88rem;
+}
+
+.swatch {
+    display: inline-block;
+    width: 1.4rem;
+    height: 0.3rem;
+    border-radius: 2px;
+    background: currentColor;
 }

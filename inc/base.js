@@ -57,6 +57,7 @@ window.onload = function () {
   cleanupLegacyKeys();
   initHelp();
   objLayout.init();
+  objFlows.init();
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
   objMoney.init();
@@ -124,6 +125,13 @@ var Display = {
   },
   // Rijen en kolommen zonder zichtbare inhoud verbergen, los van de weergave per level/onderzoek
   updateRows: function () {
+    var changed = false;
+    var toggle = function (el, name, on) {
+      if (el.classList.contains(name) !== on) {
+        el.classList.toggle(name, on);
+        changed = true;
+      }
+    };
     document.querySelectorAll(".rows").forEach(function (row) {
       var filled = false;
       Array.from(row.children).forEach(function (child) {
@@ -132,11 +140,14 @@ var Display = {
           text = text.replace(help.textContent, "");
         });
         var hasContent = text.trim() !== "";
-        child.classList.toggle("col-empty", !hasContent);
+        toggle(child, "col-empty", !hasContent);
         if (hasContent && child.style.display !== "none") filled = true;
       });
-      row.classList.toggle("row-empty", !filled);
+      toggle(row, "row-empty", !filled);
     });
+    // Productieketen alleen opnieuw tekenen als er een kaart of rij verschijnt of verdwijnt;
+    // groottewijzigingen vangt de ResizeObserver in objFlows al op
+    if (changed && typeof objFlows !== "undefined") objFlows.schedule();
   },
 };
 
@@ -200,7 +211,7 @@ var helpTexts = {
   ],
   "energy-col": [
     "Energie",
-    "Centrales maken iedere seconde (tick) energie; die wordt opgeslagen tot de opslag vol is. Pompen, robots, controllers, mijnen en fabrieken gebruiken energie. Is er te weinig, dan draaien ze maar gedeeltelijk.",
+    "Centrales maken iedere seconde (tick) energie; die wordt opgeslagen tot de opslag vol is. Pompen, robots, controllers, mijnen en fabrieken gebruiken energie. Is er te weinig, dan draaien ze maar gedeeltelijk. Met de productieketen aan hebben verbruikers een ⚡-poortje: blauw als ze energie gebruiken, rood als er te weinig is.",
   ],
   "landbouw-col": [
     "Landbouw",
@@ -417,6 +428,7 @@ var objLayout = {
       "layout",
       JSON.stringify({ order: order, collapsed: objLayout.collapsed })
     );
+    objFlows.schedule();
   },
   setCollapsed: function (card, collapsed) {
     card.classList.toggle("card-collapsed", collapsed);
@@ -595,6 +607,684 @@ var objLayout = {
     };
     media.addEventListener("change", updateMenu);
     updateMenu();
+  },
+};
+
+// Productieketen: gekleurde lijnen tussen de kaarten die laten zien waar grondstoffen heen gaan.
+// Alleen op desktop. Lijnen lopen achter de kaarten; het looplicht beweegt alleen als een stroom actief is.
+var objFlows = {
+  enabled: true,
+  pulses: {},
+  groups: {},
+  pending: false,
+  // [van, naar, grondstof, actief]; handmatige acties gebruiken daarnaast pulse()
+  edges: [
+    // Landbouw
+    [
+      "landbouw-col",
+      "grain-col",
+      "graan",
+      function () {
+        return objFarmland.FarmTimer > 0;
+      },
+    ],
+    [
+      "farmland-automation",
+      "grain-col",
+      "graan",
+      function () {
+        return objFarmRobot.robotTimer > 0;
+      },
+    ],
+    [
+      "grain-col",
+      "windmills-col",
+      "graan",
+      function () {
+        return objWindmill.GrindTimer > 0;
+      },
+    ],
+    [
+      "grain-col",
+      "WindmillController",
+      "graan",
+      function () {
+        return objWindmill.autoGrindTimer > 0;
+      },
+    ],
+    [
+      "grain-col",
+      "chicken-col",
+      "graan",
+      function () {
+        return +objChicken.amount > 0;
+      },
+    ],
+    [
+      "windmills-col",
+      "flour-col",
+      "bloem",
+      function () {
+        return objWindmill.GrindTimer > 0;
+      },
+    ],
+    [
+      "WindmillController",
+      "flour-col",
+      "bloem",
+      function () {
+        return objWindmill.autoGrindTimer > 0;
+      },
+    ],
+    [
+      "flour-col",
+      "pasta-col",
+      "bloem",
+      function () {
+        return +objPastaHelper.amount > 0 && +objPastaFactory.amount > 0;
+      },
+    ],
+    [
+      "chicken-col",
+      "pasta-col",
+      "eieren",
+      function () {
+        return +objPastaHelper.amount > 0 && +objPastaFactory.amount > 0;
+      },
+    ],
+    [
+      "pasta-col",
+      "platicFactory-col",
+      "pasta",
+      function () {
+        return +objPlasticFactory.workers > 0;
+      },
+    ],
+    [
+      "pasta-col",
+      "Uranium-col",
+      "pasta",
+      function () {
+        return +objMines.uraniumAmountActive > 0;
+      },
+    ],
+    // Olie en kunststof
+    [
+      "pomp-col",
+      "olie-col",
+      "olie",
+      function () {
+        return (
+          (+objOilPump.amount > 0 || +objOilPumpAdv.amount > 0) &&
+          +objEnergy.available > 0
+        );
+      },
+    ],
+    [
+      "olie-col",
+      "energieproductie-col",
+      "olie",
+      function () {
+        return +objPowerPlant.amount > 0 && +objOilTank.contents > 0;
+      },
+    ],
+    [
+      "olie-col",
+      "platicFactory-col",
+      "olie",
+      function () {
+        return +objPlasticFactory.workers > 0 && +objPlasticFactory.amount > 0;
+      },
+    ],
+    [
+      "platicFactory-col",
+      "plasticStorage-col",
+      "kunststof",
+      function () {
+        return +objPlasticFactory.workers > 0 && +objPlasticFactory.amount > 0;
+      },
+    ],
+    // Mijnbouw en staal
+    [
+      "Coal-col",
+      "coalPower",
+      "steenkool",
+      function () {
+        return +objCoalPowerPlant.amount > 0 && +objCoal.amount > 0;
+      },
+    ],
+    [
+      "Coal-col",
+      "SteelProduction-col",
+      "steenkool",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "Iron-col",
+      "SteelProduction-col",
+      "ijzererts",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelProduction-col",
+      "SteelInfo-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "pomp-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "fuelRodFactory",
+      "staal",
+      function () {
+        return +objFuelCellFactory.activeFactories > 0;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "nuclearPower",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    // Kernenergie
+    [
+      "Uranium-col",
+      "fuelRodFactory",
+      "uranium",
+      function () {
+        return +objFuelCellFactory.activeFactories > 0;
+      },
+    ],
+    [
+      "fuelRodFactory",
+      "fuelRodStorage",
+      "splijtstof",
+      function () {
+        return +objFuelCellFactory.activeFactories > 0;
+      },
+    ],
+    [
+      "fuelRodStorage",
+      "nuclearPower",
+      "splijtstof",
+      function () {
+        return +objNuclearPowerPlant.activeReactors > 0;
+      },
+    ],
+    [
+      "nuclearPower",
+      "fuelRodStorage",
+      "afval",
+      function () {
+        return +objNuclearPowerPlant.activeReactors > 0;
+      },
+    ],
+    // Energie naar de Energie-kaart
+    [
+      "energieproductie-col",
+      "energy-col",
+      "energie",
+      function () {
+        return +objPowerPlant.amount > 0 && +objOilTank.contents > 0;
+      },
+    ],
+    [
+      "coalPower",
+      "energy-col",
+      "energie",
+      function () {
+        return +objCoalPowerPlant.amount > 0 && +objCoal.amount > 0;
+      },
+    ],
+    [
+      "nuclearPower",
+      "energy-col",
+      "energie",
+      function () {
+        return +objNuclearPowerPlant.activeReactors > 0;
+      },
+    ],
+    // Markt
+    [
+      "marketEggs",
+      "chicken-col",
+      "eieren",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "marketSteel",
+      "SteelInfo-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "marketWasteFuel",
+      "fuelRodStorage",
+      "afval",
+      function () {
+        return false;
+      },
+    ],
+  ],
+  // Energieverbruikers: benodigde energie per tick/run (0 = staat stil)
+  energyUsers: {
+    "pomp-col": function () {
+      return +objOilPump.amount + +objOilPumpAdv.amount * +objOilPumpAdv.energy;
+    },
+    "farmland-automation": function () {
+      return +objFarmRobot.robots * +objFarmRobot.robotEnergy;
+    },
+    WindmillController: function () {
+      return (
+        (+objWindmillController.amount * objWindmillController.energy) / 10
+      );
+    },
+    "pasta-col": function () {
+      return +objPastaFactory.amount * +objPastaFactory.energy;
+    },
+    "platicFactory-col": function () {
+      return +objPlasticFactory.amount * +objPlasticFactory.energy;
+    },
+    "Coal-col": function () {
+      return +objMines.coalAmountActive * +objCoalMine.energy;
+    },
+    "Iron-col": function () {
+      return +objMines.ironAmountActive * +objIronMine.energy;
+    },
+    "Uranium-col": function () {
+      return +objMines.uraniumAmountActive * +objUraniumMine.energy;
+    },
+    "SteelProduction-col": function () {
+      return +objIronMelter.amount * +objIronMelter.energy;
+    },
+    fuelRodFactory: function () {
+      return +objFuelCellFactory.amount * +objFuelCellFactory.energy;
+    },
+  },
+  key: function (edge) {
+    return edge[0] + ">" + edge[1];
+  },
+  canShow: function () {
+    return window.matchMedia("(min-width: 1024px) and (pointer: fine)").matches;
+  },
+  isOn: function () {
+    return objFlows.enabled && objFlows.canShow();
+  },
+  // Een eenmalige actie (bijvoorbeeld handmatig pasta maken) laat de stroom 3 seconden lopen
+  pulse: function (from, to) {
+    objFlows.pulses[from + ">" + to] = Date.now() + 3000;
+    objFlows.updateActivity();
+  },
+  // Pad door de gegeven punten met afgeronde hoeken
+  roundedPath: function (points, radius) {
+    var d = "M" + points[0][0] + "," + points[0][1];
+    for (var i = 1; i < points.length - 1; i++) {
+      var prev = points[i - 1];
+      var corner = points[i];
+      var next = points[i + 1];
+      var r = Math.min(
+        radius,
+        Math.hypot(corner[0] - prev[0], corner[1] - prev[1]) / 2,
+        Math.hypot(next[0] - corner[0], next[1] - corner[1]) / 2
+      );
+      var towards = function (from, to) {
+        var len = Math.hypot(to[0] - from[0], to[1] - from[1]) || 1;
+        return [
+          from[0] + ((to[0] - from[0]) / len) * r,
+          from[1] + ((to[1] - from[1]) / len) * r,
+        ];
+      };
+      var a = towards(corner, prev);
+      var b = towards(corner, next);
+      d +=
+        " L" +
+        a[0] +
+        "," +
+        a[1] +
+        " Q" +
+        corner[0] +
+        "," +
+        corner[1] +
+        " " +
+        b[0] +
+        "," +
+        b[1];
+    }
+    var last = points[points.length - 1];
+    return d + " L" + last[0] + "," + last[1];
+  },
+  pulseAll: function (pairs) {
+    pairs.forEach(function (pair) {
+      objFlows.pulses[pair[0] + ">" + pair[1]] = Date.now() + 3000;
+    });
+    objFlows.updateActivity();
+  },
+  // Tekenen bundelen tot één keer per frame
+  schedule: function () {
+    if (objFlows.pending) return;
+    objFlows.pending = true;
+    requestAnimationFrame(function () {
+      objFlows.pending = false;
+      objFlows.draw();
+    });
+  },
+  svg: function (tag, attributes) {
+    var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.keys(attributes || {}).forEach(function (name) {
+      el.setAttribute(name, attributes[name]);
+    });
+    return el;
+  },
+  group: function (edge) {
+    var key = objFlows.key(edge);
+    if (!objFlows.groups[key]) {
+      var g = objFlows.svg("g", {
+        class: "flow flow-" + edge[2],
+        "data-from": edge[0],
+        "data-to": edge[1],
+      });
+      var title = objFlows.svg("title");
+      title.textContent = helpTexts[edge[0]][0] + " → " + helpTexts[edge[1]][0];
+      g.appendChild(title);
+      g.appendChild(objFlows.svg("path", { class: "flow-base" }));
+      g.appendChild(objFlows.svg("path", { class: "flow-run" }));
+      g.appendChild(objFlows.svg("circle", { class: "flow-port", r: 4 }));
+      g.appendChild(objFlows.svg("circle", { class: "flow-port", r: 4 }));
+      document.getElementById("flowLayer").appendChild(g);
+      objFlows.groups[key] = g;
+    }
+    return objFlows.groups[key];
+  },
+  draw: function () {
+    var layer = document.getElementById("flowLayer");
+    var on = objFlows.isOn();
+    document.body.classList.toggle("flows-on", on);
+    if (!on) {
+      layer.style.display = "none";
+      return;
+    }
+    layer.style.display = "";
+    var container = document.getElementById("FirstTab");
+    var origin = container.getBoundingClientRect();
+    layer.setAttribute("width", container.scrollWidth);
+    layer.setAttribute("height", container.scrollHeight);
+    var rowStyle = getComputedStyle(document.querySelector(".rows"));
+    var rowGap = parseFloat(rowStyle.rowGap) || 12;
+    var colGap = parseFloat(rowStyle.columnGap) || 12;
+    var rect = function (el) {
+      var r = el.getBoundingClientRect();
+      return {
+        left: r.left - origin.left,
+        right: r.right - origin.left,
+        top: r.top - origin.top,
+        bottom: r.bottom - origin.top,
+        cx: (r.left + r.right) / 2 - origin.left,
+        cy: (r.top + r.bottom) / 2 - origin.top,
+      };
+    };
+
+    // Welke stromen zijn zichtbaar en via welke zijden lopen ze
+    var routes = [];
+    objFlows.edges.forEach(function (edge) {
+      var from = document.getElementById(edge[0]);
+      var to = document.getElementById(edge[1]);
+      var g = objFlows.group(edge);
+      if (!from || !to || !from.checkVisibility() || !to.checkVisibility()) {
+        g.style.display = "none";
+        return;
+      }
+      g.style.display = "";
+      var a = rect(from);
+      var b = rect(to);
+      var route = { edge: edge, g: g, a: a, b: b };
+      if (Math.abs(a.top - b.top) < 4) {
+        route.kind = "side";
+        route.fromSide = b.cx > a.cx ? "right" : "left";
+        route.toSide = b.cx > a.cx ? "left" : "right";
+      } else {
+        route.kind = b.top >= a.bottom ? "down" : "up";
+        route.fromSide = "bottom";
+        route.toSide = "top";
+      }
+      routes.push(route);
+    });
+
+    // Poorten per kaartzijde verdelen, gesorteerd op de positie van de andere kaart
+    var ports = {};
+    var addPort = function (cardId, side, route, end, other) {
+      var id = cardId + ":" + side;
+      (ports[id] = ports[id] || []).push({
+        route: route,
+        end: end,
+        other: other,
+      });
+    };
+    routes.forEach(function (route) {
+      addPort(route.edge[0], route.fromSide, route, "from", route.b);
+      addPort(route.edge[1], route.toSide, route, "to", route.a);
+    });
+    Object.keys(ports).forEach(function (id) {
+      var side = id.split(":")[1];
+      var list = ports[id];
+      var horizontal = side === "top" || side === "bottom";
+      list.sort(function (p, q) {
+        return horizontal ? p.other.cx - q.other.cx : p.other.cy - q.other.cy;
+      });
+      list.forEach(function (port, i) {
+        var r = port.end === "from" ? port.route.a : port.route.b;
+        var f = list.length === 1 ? 0.5 : 0.25 + (0.5 * i) / (list.length - 1);
+        var point = horizontal
+          ? {
+              x: r.left + (r.right - r.left) * f,
+              y: side === "top" ? r.top : r.bottom,
+            }
+          : {
+              x: side === "left" ? r.left : r.right,
+              y: r.top + 24 + (Math.min(r.bottom - r.top, 160) - 48) * f,
+            };
+        port.route[port.end] = point;
+      });
+    });
+
+    // Lanes: lijnen die dezelfde goot of tussenruimte delen schuiven iets uit elkaar
+    var lanes = {};
+    var lane = function (axis, value) {
+      var id = axis + Math.round(value);
+      lanes[id] = (lanes[id] || 0) + 1;
+      var n = lanes[id] - 1;
+      return value + (n % 2 ? -1 : 1) * Math.ceil(n / 2) * 5;
+    };
+    routes.forEach(function (route) {
+      var p = route.from;
+      var q = route.to;
+      var d;
+      if (route.kind === "side") {
+        var k = Math.max(20, Math.abs(q.x - p.x) / 2);
+        var dir = q.x > p.x ? 1 : -1;
+        d =
+          "M" +
+          p.x +
+          "," +
+          p.y +
+          " C" +
+          (p.x + dir * k) +
+          "," +
+          p.y +
+          " " +
+          (q.x - dir * k) +
+          "," +
+          q.y +
+          " " +
+          q.x +
+          "," +
+          q.y;
+      } else if (route.kind === "down" && q.y - p.y <= rowGap + 2) {
+        // Direct de volgende rij in: een vloeiende S-boog
+        var kd = Math.max(12, (q.y - p.y) / 2);
+        d =
+          "M" +
+          p.x +
+          "," +
+          p.y +
+          " C" +
+          p.x +
+          "," +
+          (p.y + kd) +
+          " " +
+          q.x +
+          "," +
+          (q.y - kd) +
+          " " +
+          q.x +
+          "," +
+          q.y;
+      } else {
+        // Verder weg (of omhoog): als metrolijn door de tussenruimtes en een goot tussen de kolommen
+        var y1 = lane("y", p.y + rowGap / 2);
+        var y2 = lane("y", q.y - rowGap / 2);
+        var gx = lane(
+          "x",
+          route.b.cx > route.a.cx
+            ? route.a.right + colGap / 2
+            : route.a.left - colGap / 2
+        );
+        d = objFlows.roundedPath(
+          [
+            [p.x, p.y],
+            [p.x, y1],
+            [gx, y1],
+            [gx, y2],
+            [q.x, y2],
+            [q.x, q.y],
+          ],
+          12
+        );
+      }
+      var paths = route.g.querySelectorAll("path");
+      paths[0].setAttribute("d", d);
+      paths[1].setAttribute("d", d);
+      var circles = route.g.querySelectorAll("circle");
+      circles[0].setAttribute("cx", p.x);
+      circles[0].setAttribute("cy", p.y);
+      circles[1].setAttribute("cx", q.x);
+      circles[1].setAttribute("cy", q.y);
+    });
+    objFlows.updateActivity();
+  },
+  updateActivity: function () {
+    var now = Date.now();
+    objFlows.edges.forEach(function (edge) {
+      var g = objFlows.groups[objFlows.key(edge)];
+      if (!g) return;
+      var active = false;
+      try {
+        active = edge[3]() || (objFlows.pulses[objFlows.key(edge)] || 0) > now;
+      } catch (error) {
+        active = false;
+      }
+      g.classList.toggle("active", active);
+    });
+    Object.keys(objFlows.energyUsers).forEach(function (cardId) {
+      var port = document.querySelector("#" + cardId + " > .energy-port");
+      if (!port) return;
+      var need = +objFlows.energyUsers[cardId]() || 0;
+      port.classList.toggle("active", need > 0);
+      port.classList.toggle(
+        "shortage",
+        need > 0 && +objEnergy.available < need
+      );
+      port.title =
+        need > 0
+          ? +objEnergy.available < need
+            ? "Te weinig energie"
+            : "Gebruikt energie"
+          : "Gebruikt energie (staat stil)";
+    });
+  },
+  setFocus: function (cardId) {
+    var layer = document.getElementById("flowLayer");
+    layer.classList.toggle("has-focus", !!cardId);
+    Object.keys(objFlows.groups).forEach(function (key) {
+      var g = objFlows.groups[key];
+      g.classList.toggle(
+        "focus",
+        !!cardId && (g.dataset.from === cardId || g.dataset.to === cardId)
+      );
+    });
+  },
+  toggle: function () {
+    objFlows.enabled = !objFlows.enabled;
+    localStorage.setItem("showFlows", objFlows.enabled ? 1 : 0);
+    objFlows.showMenu();
+    objFlows.schedule();
+  },
+  showMenu: function () {
+    var button = document.getElementById("flowsBTN");
+    button.innerHTML =
+      icon(objFlows.enabled ? "check-square" : "square") +
+      " Productieketen tonen";
+    button.style.display = objFlows.canShow() ? "" : "none";
+  },
+  init: function () {
+    objFlows.enabled = localStorage.getItem("showFlows") !== "0";
+    // Bliksempoortjes op energieverbruikers
+    Object.keys(objFlows.energyUsers).forEach(function (cardId) {
+      var card = document.getElementById(cardId);
+      if (!card) return;
+      var port = document.createElement("span");
+      port.className = "energy-port card-ui";
+      port.innerHTML = icon("bolt");
+      card.prepend(port);
+    });
+    // Aanwijzen of focus op een kaart licht haar stromen op
+    var cardOf = function (el) {
+      return el.closest && el.closest(".rows > [id]");
+    };
+    var container = document.getElementById("FirstTab");
+    ["mouseover", "focusin"].forEach(function (type) {
+      container.addEventListener(type, function (event) {
+        var card = cardOf(event.target);
+        objFlows.setFocus(card ? card.id : null);
+      });
+    });
+    ["mouseleave", "focusout"].forEach(function (type) {
+      container.addEventListener(type, function () {
+        objFlows.setFocus(null);
+      });
+    });
+    // Opnieuw tekenen als kaarten van grootte of plek veranderen
+    var observer = new ResizeObserver(objFlows.schedule);
+    observer.observe(container);
+    document.querySelectorAll(".rows > [id]").forEach(function (card) {
+      observer.observe(card);
+    });
+    window
+      .matchMedia("(min-width: 1024px) and (pointer: fine)")
+      .addEventListener("change", function () {
+        objFlows.showMenu();
+        objFlows.schedule();
+      });
+    objFlows.showMenu();
+    objFlows.schedule();
   },
 };
 
@@ -2141,19 +2831,20 @@ var objEnergy = {
       ],
     ]);
     document.getElementById("CurrentEnergyUsage").innerHTML = renderStats([
-      [
-        "Piekvraag per tick",
-        FixNumber(
-          +objOilPump.amount +
-            +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy +
-            (objWindmillController.amount * objWindmillController.energy) / 10 +
-            +objMines.coalAmountActive * +objCoalMine.energy +
-            +objMines.uraniumAmountActive * +objUraniumMine.energy +
-            +objOilPumpAdv.amount * +objOilPumpAdv.energy +
-            +objMines.ironAmountActive * +objIronMine.energy
-        ),
-      ],
+      ["Piekvraag per tick", FixNumber(objEnergy.demand())],
     ]);
+  },
+  // Piekvraag: wat alle verbruikers samen per tick kunnen vragen
+  demand: function () {
+    return (
+      +objOilPump.amount +
+      +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy +
+      (objWindmillController.amount * objWindmillController.energy) / 10 +
+      +objMines.coalAmountActive * +objCoalMine.energy +
+      +objMines.uraniumAmountActive * +objUraniumMine.energy +
+      +objOilPumpAdv.amount * +objOilPumpAdv.energy +
+      +objMines.ironAmountActive * +objIronMine.energy
+    );
   },
   init: function () {
     objEnergy.available = localStorage.getItem("EnergyAvailable") || 0;
@@ -2307,13 +2998,8 @@ var objChickenFarm = {
           "Eieropslag",
           FixNumber(+objEgg.storageCap * +objEgg.storageUnits) + " eieren",
         ],
-        [
-          "Prijs extra eieropslag",
-          FixMoney(objEgg.storageUnitCost) +
-            " (" +
-            FixNumber(objEgg.storageCap) +
-            " eieren)",
-        ],
+        ["Prijs extra eieropslag", FixMoney(objEgg.storageUnitCost)],
+        ["Extra eieropslag", FixNumber(objEgg.storageCap) + " eieren"],
       ]) + renderHint("Het voer wordt uit je graansilo's aangevuld.");
     // Eventueel de knoppen voor het kopen van kippen uitschakelen als er geen plek meer is.
     ChickenSpace =
@@ -2577,6 +3263,10 @@ var objPastaFactory = {
         pasta = +pasta * (1 - +objPastaHelper.cut);
       }
       objStorehouse.addPasta(pasta);
+      objFlows.pulseAll([
+        ["flour-col", "pasta-col"],
+        ["chicken-col", "pasta-col"],
+      ]);
     }
   },
   show: function () {
@@ -4025,6 +4715,11 @@ var objIronMelter = {
     objIronOre.use(+ironOreNeededT);
     objEnergy.use(+energyNeededT, "Staalproductie");
     objSteel.add(+objIronMelter.activeSmelters * +objIronMelter.production);
+    objFlows.pulseAll([
+      ["Coal-col", "SteelProduction-col"],
+      ["Iron-col", "SteelProduction-col"],
+      ["SteelProduction-col", "SteelInfo-col"],
+    ]);
     objSteel.show();
   },
   show: function () {
@@ -4316,6 +5011,10 @@ var objPlasticFactory = {
       );
     }
     objPlastic.add(+factoriesActive * +objPlasticFactory.production);
+    objFlows.pulseAll([
+      ["olie-col", "platicFactory-col"],
+      ["platicFactory-col", "plasticStorage-col"],
+    ]);
   },
   show: function () {
     document.getElementById("pFactory1").innerHTML =
@@ -4954,6 +5653,7 @@ var objNuclearPowerPlant = {
     }
     objMoney.use(objNuclearPowerPlant.plantCost);
     objSteel.use(objNuclearPowerPlant.plantSteelNeeded);
+    objFlows.pulse("SteelInfo-col", "nuclearPower");
     objNuclearPowerPlant.amount++;
     localStorage.setItem("nppAmount", objNuclearPowerPlant.amount);
     objNuclearPowerPlant.show();
@@ -4987,6 +5687,7 @@ var objNuclearPowerPlant = {
 
     objMoney.use(objNuclearPowerPlant.reactorCost);
     objSteel.use(objNuclearPowerPlant.reactorSteelNeeded);
+    objFlows.pulse("SteelInfo-col", "nuclearPower");
     objNuclearPowerPlant.reactors++;
     localStorage.setItem("nrAmount", objNuclearPowerPlant.reactors);
     objNuclearPowerPlant.show();
@@ -5210,6 +5911,7 @@ var objOilPumpAdv = {
     } else {
       objMoney.use(+objOilPumpAdv.price * +amount);
       objSteel.use(+objOilPumpAdv.steelNeeded * +amount);
+      objFlows.pulse("SteelInfo-col", "pomp-col");
       objOilPumpAdv.amount = +objOilPumpAdv.amount + +amount;
     }
     localStorage.setItem("oilPumpAmount", objOilPumpAdv.amount);
@@ -5500,6 +6202,7 @@ var objMarket = {
       } else {
         objMoney.use(+cost * amount);
         objEgg.add(+amount);
+        objFlows.pulse("marketEggs", "chicken-col");
         objMarket.take("eggs", amount);
       }
     }
@@ -5511,6 +6214,7 @@ var objMarket = {
       } else {
         objMoney.use(+cost * amount);
         objSteel.add(+amount);
+        objFlows.pulse("marketSteel", "SteelInfo-col");
         objMarket.take("steel", amount);
       }
     }
@@ -5522,6 +6226,7 @@ var objMarket = {
       } else {
         objMoney.use(+cost * amount);
         objFuelRod.wasteFunction(+amount);
+        objFlows.pulse("marketWasteFuel", "fuelRodStorage");
         objMarket.take("used_fuelrod", amount);
       }
     }
@@ -5804,6 +6509,7 @@ var paused = 0;
 var NaNMarket = 0;
 var loopsProduction = setInterval(function () {
   Display.updateRows();
+  objFlows.updateActivity();
   if (paused === 0) {
     if (objFarmland.FarmTimer > 0) objFarmland.working_loop();
     if (objFarmland.GrainResearchTimer > 0) objFarmland.research_loop();
