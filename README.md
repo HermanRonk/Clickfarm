@@ -11,9 +11,8 @@ Een aantal zaken zoals bepaalde vormen van research hebben nu nog een eigen loop
 
 - bugfixing
 - documentatie
-- resterende mijnen implementeren
+- resterende mijnen implementeren (#48)
 - Olie start voorraad capaciteit is te groot
-- Pasta fabriek komt niet beschikbaar
 
 # Hoe werkt het
 Clickfarm draait volledig in de browser, er is geen backend of database (meer) nodig:

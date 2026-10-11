@@ -51,6 +51,9 @@ window.onload = function () {
     "Uranium-col",
     "nuclearFuel-row",
     "market-row",
+    "FlourTop",
+    "OilTop",
+    "EnergyStats",
   ]);
   cleanupLegacyKeys();
   document.getElementById("sellMenu").style.display = "none";
@@ -113,9 +116,21 @@ var Display = {
       if ((el = document.getElementById(aIdentifier[i])))
         el.style.display = cDisplay;
       else console.error("Could not find element " + aIdentifier[i]);
+    this.updateRows();
   },
   hide: function (cIdentifier) {
     this.show(cIdentifier, false);
+  },
+  // Rijen zonder zichtbare inhoud verbergen, los van de weergave per level/onderzoek
+  updateRows: function () {
+    document.querySelectorAll(".rows").forEach(function (row) {
+      var filled = Array.from(row.children).some(function (child) {
+        return (
+          child.style.display !== "none" && child.textContent.trim() !== ""
+        );
+      });
+      row.classList.toggle("row-empty", !filled);
+    });
   },
 };
 
@@ -162,6 +177,11 @@ var objPlayerInfo = {
       localStorage.setItem("NextLevel", objPlayerInfo.nextlevel);
     }
 
+    // Verkooptab is pas vanaf level 9 beschikbaar
+    var elverkooptabBTN = document.getElementById("verkooptabBTN");
+    elverkooptabBTN.disabled = +objPlayerInfo.level < 9;
+    elverkooptabBTN.classList.toggle("disabled", +objPlayerInfo.level < 9);
+
     // Maak tabs zichtbaar op basis van level (gebruikmakende van Switch' fallthrough)
     switch (+objPlayerInfo.level) {
       default: // Hoger dan level 12
@@ -175,8 +195,8 @@ var objPlayerInfo = {
       case 10: // Level 10 behaald
         Display.show("Uranium-col");
 
-      case 9: // Level 10 behaald
-      // Geen nieuwe functionaliteiten?
+      case 9: // Level 9 behaald
+      // Verkooptab beschikbaar (zie hierboven)
 
       case 8: // Level 8 behaald
         Display.show([
@@ -197,14 +217,18 @@ var objPlayerInfo = {
         Display.show("farmland-automation");
 
       case 4: // Level 4 behaald
-        Display.show(["pomp-col", "energieproductie-col", "energy-col"]);
-        document.getElementById("EnergyStats").style.disabled = false;
+        Display.show([
+          "pomp-col",
+          "energieproductie-col",
+          "energy-col",
+          "EnergyStats",
+        ]);
 
       case 3: // Level 3 behaald
-        Display.show(["graanopbrengst-col", "olie-col", "Oilstock"]);
+        Display.show(["graanopbrengst-col", "olie-col", "Oilstock", "OilTop"]);
 
       case 2: // Level 2 behaald
-        Display.show(["flour-col", "windmills-col", "Flourstock"]);
+        Display.show(["flour-col", "windmills-col", "Flourstock", "FlourTop"]);
 
       case 1: // Level 1 behaald
         Display.show(["landbouw-col", "grain-col"]);
@@ -1016,7 +1040,7 @@ var objFarmland = {
   },
   init: function () {
     objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
-    objFarmland.cost = parseInt(localStorage.getItem("FarmlandCost")) || 10;
+    objFarmland.cost = parseFloat(localStorage.getItem("FarmlandCost")) || 10;
     objFarmland.harvest = parseFloat(localStorage.getItem("Harvest")) || 100;
     objFarmland.GrainResearchCostVar =
       parseInt(localStorage.getItem("GrainResearchCostVar")) || 5000;
@@ -2148,7 +2172,7 @@ var objPastaHelper = {
         FixNumber(objPastaHelper.amount) +
         " pastahelper(s) in dienst</p>" +
         "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem een pastahelper aan!</button> " +
-        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='addPastaHelper'>Ontsla een pastahelper!</button> ";
+        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla een pastahelper!</button> ";
     }
   },
   init: function () {
@@ -3125,6 +3149,7 @@ var objMines = {
     //var mineTypes = ["iron","coal","uranium","copper","gold","diamond"];
     var mineTypes = ["iron", "coal", "uranium"];
     updateMineButtons(mineTypes);
+    Display.updateRows();
   },
   init: function () {
     objMines.ironAmountProspected =
@@ -3562,7 +3587,7 @@ var objIronMelter = {
         "<br> Energie: " +
         FixNumber(objIronMelter.amount * objIronMelter.energy) +
         "</p><p>" +
-        "<button type='button' class='btn btn-primary' onClick='objIronMelter.produce();' id='ironOreSiloButton'>Maak staal</button></p>";
+        "<button type='button' class='btn btn-primary' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button></p>";
     }
   },
   init: function () {
@@ -3633,7 +3658,7 @@ var objSteel = {
       "<br>Beschikbare ruimte: " +
       FixNumber(+objSteel.storage * +objSteel.storageCap - +objSteel.amount);
     document.getElementById("steelStorage").innerHTML =
-      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='steelStorage'>Koop staalopslag</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button> " +
       "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
   },
   showPrice: function () {
@@ -5072,6 +5097,17 @@ var quickSell = parseInt(localStorage.getItem("QS")) || 0;
 
 function showQuickSell(inputQS) {
   var elverkooptabBTN = document.getElementById("verkooptabBTN");
+  if (+objPlayerInfo.level < 9) {
+    document.getElementById("sellMenu").style.display = "none";
+    if (inputQS === 1) {
+      notificationOverlay(
+        "De verkooptab is beschikbaar vanaf level 9",
+        "Verkooptab",
+        "fa-info"
+      );
+    }
+    return;
+  }
   if (inputQS === 1) quickSell = 1 - quickSell;
 
   if (quickSell === 1) {
@@ -5081,6 +5117,7 @@ function showQuickSell(inputQS) {
     localStorage.setItem("QS", quickSell);
     quickSellMenu();
     quickSellButtons();
+    Display.updateRows();
   } else {
     document.getElementById("sellMenu").style.display = "none";
     elverkooptabBTN.innerHTML =
@@ -5237,6 +5274,7 @@ var timerCounter = 0;
 var paused = 0;
 var NaNMarket = 0;
 var loopsProduction = setInterval(function () {
+  Display.updateRows();
   if (paused === 0) {
     if (objFarmland.FarmTimer > 0) objFarmland.working_loop();
     if (objFarmland.GrainResearchTimer > 0) objFarmland.research_loop();

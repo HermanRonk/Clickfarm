@@ -1,7 +1,7 @@
 // Regressietests voor eerder opgeloste bugs en exploits.
 // Iedere test noemt de commit waarin het probleem is opgelost.
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, tick, game, storage } = require("./helpers/game");
+const { startGame, reload, tick, game, shownMap, storage } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 const atLevel = (level, extra = {}) => ({ PlayerLevel: level, NextLevel: threshold(level), ...extra });
@@ -178,5 +178,105 @@ test.describe("Opslaan en laden (740c603)", () => {
     const reserve = await game(page, () => +objChickenFarm.grainReserve);
     expect(reserve).toBeLessThan(1000);
     expect(+(await storage(page, "GrainReserve"))).toBe(reserve);
+  });
+});
+
+test.describe("Bekende problemen opgelost", () => {
+  test("#44 prijs van landbouwgrond behoudt decimalen na herladen", async ({ page }) => {
+    await startGame(page);
+    await page.getByRole("button", { name: "Koop landbouwgrond" }).click();
+    expect(await game(page, () => objFarmland.cost)).toBe(10.5);
+    await reload(page);
+    expect(await game(page, () => objFarmland.cost)).toBe(10.5);
+    await expect(page.locator("#FarmlandPrice")).toHaveText("Kosten landbouwgrond: € 10,50");
+  });
+
+  test("#43 ieder id komt maar één keer voor in de pagina", async ({ page }) => {
+    // Level 12 met afgerond onderzoek, ijzer/hoogoven en pastahelpers: alle gegenereerde knoppen staan erop
+    await startGame(page, {
+      state: atLevel(12, { Rlevel: 4, ironAmountProspected: 1, ironSmelters: 1, coalAmountProspected: 1 }),
+    });
+    await expect(page.getByRole("button", { name: "Maak staal" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Ontsla een pastahelper!" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Bouw steenkoolsilo" })).toBeAttached();
+    const duplicates = await page.evaluate(() => {
+      const counts = {};
+      document.querySelectorAll("[id]").forEach((el) => (counts[el.id] = (counts[el.id] || 0) + 1));
+      return Object.keys(counts).filter((id) => counts[id] > 1);
+    });
+    expect(duplicates).toEqual([]);
+  });
+
+  test("#45 bovenbalk toont alleen voorraden die al vrijgespeeld zijn", async ({ page }) => {
+    await startGame(page);
+    const topBar = ["MoneyTop", "GrainTop", "FlourTop", "OilTop", "EnergyStats"];
+    expect(await shownMap(page, topBar)).toEqual({
+      MoneyTop: true,
+      GrainTop: true,
+      FlourTop: false,
+      OilTop: false,
+      EnergyStats: false,
+    });
+    // Na een level up naar 2 verschijnt bloem direct
+    await game(page, () => objMoney.add(1000, "test"));
+    await tick(page, 1);
+    expect((await shownMap(page, ["FlourTop"])).FlourTop).toBe(true);
+  });
+
+  test("#47 verkooptab kan pas vanaf level 9 aangezet worden", async ({ page }) => {
+    await startGame(page, { state: atLevel(8) });
+    await page.locator("#navbarOptionDropdown").click();
+    await expect(page.locator("#verkooptabBTN")).toBeDisabled();
+    // Ook direct aanroepen toont de balk niet, maar geeft een melding
+    await game(page, () => showQuickSell(1));
+    await expect(page.locator("#notif")).toContainText("De verkooptab is beschikbaar vanaf level 9");
+    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(false);
+
+    // Bij level 9 komt de optie beschikbaar
+    await game(page, (target) => objMoney.add(target - objMoney.amount, "test"), threshold(8));
+    await tick(page, 1);
+    await expect(page.locator("#verkooptabBTN")).toBeEnabled();
+    await page.locator("#verkooptabBTN").click();
+    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(true);
+  });
+
+  test("#47 oude save met verkooptab aan onder level 9 toont geen lege balk", async ({ page }) => {
+    await startGame(page, { state: atLevel(3, { QS: 1 }) });
+    expect((await shownMap(page, ["sellMenu"])).sellMenu).toBe(false);
+  });
+
+  test("#46 geen lege rijen zichtbaar, ook niet na levelen", async ({ page }) => {
+    const emptyVisibleRows = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll(".rows")]
+          .filter((row) => row.checkVisibility() && row.innerText.trim() === "")
+          .map((row) => row.id)
+      );
+    await startGame(page);
+    expect(await emptyVisibleRows()).toEqual([]);
+    for (let level = 1; level < 13; level++) {
+      await game(page, (target) => objMoney.add(target - objMoney.amount, "test"), threshold(level));
+      await tick(page, 1);
+      expect(await emptyVisibleRows(), `level ${level + 1}`).toEqual([]);
+    }
+  });
+
+  test("#46 staalrij verschijnt zodra er ijzer gevonden is", async ({ page }) => {
+    await startGame(page, { state: miningUnlocked() });
+    expect((await shownMap(page, ["production2-row"]))["production2-row"]).toBe(false);
+    await game(page, () => {
+      objMines.ironAmountProspected = 1;
+      objIronMelter.show();
+    });
+    await tick(page, 1);
+    expect((await shownMap(page, ["production2-row"]))["production2-row"]).toBe(true);
+  });
+
+  test("#43 knop steenkoolmijn wordt uit- en aangezet, niet de siloknop", async ({ page }) => {
+    await startGame(page, { state: atLevel(8, { Rlevel: 4, Money: 1000000000, coalAmountProspected: 1 }) });
+    await expect(page.locator("#coalMineButton")).toHaveText("Bouw steenkoolmijn");
+    await page.locator("#coalMineButton").click();
+    await expect(page.locator("#coalMineButton")).toBeDisabled();
+    await expect(page.locator("#coalSiloButton")).toBeEnabled();
   });
 });
