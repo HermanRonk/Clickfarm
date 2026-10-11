@@ -32,6 +32,9 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 | `gameplay.spec.js` | Spelen: land bewerken, graan verkopen, level 2 halen door te spelen, malen, olie, energie, pasta, kippen, pauzeren, verkooptab |
 | `persistence.spec.js` | Herladen, exporteren/importeren van de save-code, resetten, instellingen |
 | `regressions.spec.js` | Eén test per opgeloste bug of exploit, met de commit erbij |
+| `layout.spec.js` | Opmaak en bediening: menu, meldingen, mobiel, donker thema, kaartbreedte, geen externe requests |
+| `help.spec.js` | ?-knoppen met uitleg per kaart |
+| `info.spec.js` | Informatiepagina: ingeklapte levels zonder spoilers, drempels gelijk aan het spel |
 | `known-issues.spec.js` | Bekende, nog niet opgeloste problemen (zie hieronder) |
 | `container.spec.js` | Alleen tegen de container: health check, beveiligingsheaders, CSP, en dat testbestanden niet worden meegeleverd |
 
