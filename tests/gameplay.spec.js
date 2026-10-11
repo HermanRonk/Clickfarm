@@ -204,7 +204,7 @@ test.describe("Spelopties", () => {
     await page.locator("#navbarOptionDropdown").click();
     await page.locator("#verkooptabBTN").click();
     await expect(page.locator("#sellMenu")).toBeVisible();
-    await expect(page.locator("#quickGrain")).toContainText("Voorraad: 5.000");
+    await expect(stat(page, "#quickGrain", "Voorraad")).toHaveText("5.000 kg");
 
     await page.locator("#quickGrainBTN button").click();
     expect(await game(page, () => +objGrainSilo.contents)).toBe(0);

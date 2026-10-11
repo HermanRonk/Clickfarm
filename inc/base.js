@@ -5093,30 +5093,32 @@ var objMarket = {
   },
   show: function () {
     document.getElementById("buyEggs").innerHTML =
-      "<p>Koop nu eieren voor " +
-      FixMoney(+objEgg.price * 1.5) +
-      " per stuk</p>" +
-      "<p>Er zijn momenteel " +
-      FixNumber(objSalesInfo.eggs) +
-      " eieren te koop op de markt. Je hebt nog ruimte voor: " +
-      FixNumber(+objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount) +
-      " eieren. Eventueel overschot wordt direct weer verkocht</p>";
+      renderStats([
+        ["Prijs per ei", FixMoney(+objEgg.price * 1.5)],
+        ["Te koop", FixNumber(objSalesInfo.eggs) + " eieren"],
+        [
+          "Jouw vrije ruimte",
+          FixNumber(+objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount) +
+            " eieren",
+        ],
+      ]) + renderHint("Wat niet past wordt direct weer verkocht.");
     document.getElementById("buySteel").innerHTML =
-      "<p>Koop nu staal voor " +
-      FixMoney(+objSteel.price * 1.25) +
-      " per ton</p>" +
-      "<p>Er is momenteel " +
-      FixNumber(objSalesInfo.steel) +
-      " ton staal te koop op de mark. Je hebt nog ruimte voor: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap - +objSteel.amount) +
-      " ton staal. Eventueel overschot wordt direct weer verkocht</p>";
+      renderStats([
+        ["Prijs per ton", FixMoney(+objSteel.price * 1.25)],
+        ["Te koop", FixUnit(objSalesInfo.steel, "ton")],
+        [
+          "Jouw vrije ruimte",
+          FixUnit(
+            +objSteel.storage * +objSteel.storageCap - +objSteel.amount,
+            "ton"
+          ),
+        ],
+      ]) + renderHint("Wat niet past wordt direct weer verkocht.");
     document.getElementById("buyWasteFuell").innerHTML =
-      "<p>Koop nu afval splijtstofstaven voor " +
-      FixMoney(+objFuelRod.wastePrice * 0.5) +
-      " per staaf</p>" +
-      "<p>Er zijn momenteel " +
-      FixNumber(objSalesInfo.used_fuelrod) +
-      " afval splijtstofstaven te koop op de markt. Je hebt onbeperkt ruimte voor afval.</p>";
+      renderStats([
+        ["Prijs per staaf", FixMoney(+objFuelRod.wastePrice * 0.5)],
+        ["Te koop", FixNumber(objSalesInfo.used_fuelrod) + " staven"],
+      ]) + renderHint("Voor afval heb je onbeperkt ruimte.");
     objMarket.showButtonState();
   },
   showButtons: function () {
@@ -5139,23 +5141,21 @@ var objMarket = {
     }
   },
   generateBuyButtons: function (resType, buttonName) {
-    var i = 100;
-    document.getElementById(buttonName).innerHTML = "<p>";
-    do {
-      var scale = i;
-      i = i * 10;
-      var buttonAction = '"' + resType + '"' + ", " + parseInt(scale);
-      document.getElementById(buttonName).innerHTML +=
-        "<button type='button' class='btn btn-danger' onClick='objMarket.buy(" +
-        buttonAction +
+    var html = "<div class='actions'>";
+    for (var scale = 100; scale <= 1000000; scale *= 10) {
+      html +=
+        "<button type='button' class='btn btn-primary' onClick='objMarket.buy(\"" +
+        resType +
+        "\", " +
+        scale +
         ")' id='BB" +
         resType +
         scale +
-        "'>" +
-        scale +
-        "x</button> ";
-    } while (i < 1000001);
-    document.getElementById(buttonName).innerHTML += "</p>";
+        "'>+" +
+        FixNumber(scale) +
+        "</button> ";
+    }
+    document.getElementById(buttonName).innerHTML = html + "</div>";
   },
   buttonState: function (resType, amountMarket) {
     var i = 100;
@@ -5230,48 +5230,25 @@ function quickSellMenu() {
   if (objPlayerInfo.level < 9) {
     return 0;
   }
-  document.getElementById("quickGrain").innerHTML =
-    "<h2>Graan</h2><p>Voorraad: " +
-    FixNumber(objGrainSilo.contents) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objGrain.price) +
-    "</p>";
-  document.getElementById("quickFlour").innerHTML =
-    "<h2>Bloem</h2><p>Voorraad: " +
-    FixNumber(objFlourSilo.contents) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objFlour.price) +
-    "</p>";
-  document.getElementById("quickPasta").innerHTML =
-    "<h2>Pasta</h2><p>Voorraad: " +
-    FixNumber(objStorehouse.pasta) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objPasta.price()) +
-    "</p>";
-  document.getElementById("quickOil").innerHTML =
-    "<h2>Olie</h2><p>Voorraad: " +
-    FixNumber(objOilTank.contents) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objOil.price) +
-    "</p>";
-  document.getElementById("quickCoal").innerHTML =
-    "<h2>Steenkool</h2><p>Voorraad: " +
-    FixNumber(objCoal.amount) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objCoal.price) +
-    "</p>";
-  document.getElementById("quickIronOre").innerHTML =
-    "<h2>IJzererts</h2><p>Voorraad: " +
-    FixNumber(objIronOre.amount) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objIronOre.price) +
-    "</p>";
-  document.getElementById("quickSteel").innerHTML =
-    "<h2>Staal</h2><p>Voorraad: " +
-    FixNumber(objSteel.amount) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objSteel.price) +
-    "</p>";
+  var items = [
+    ["quickGrain", "Graan", FixUnit(objGrainSilo.contents, "kg"), FixMoney(objGrain.price) + " / 1.000 kg"],
+    ["quickFlour", "Bloem", FixUnit(objFlourSilo.contents, "kg"), FixMoney(objFlour.price) + " / 1.000 kg"],
+    ["quickPasta", "Pasta", FixNumber(objStorehouse.pasta) + " dozen", FixMoney(objPasta.price()) + " / doos"],
+    ["quickOil", "Olie", FixUnit(objOilTank.contents, "vaten"), FixMoney(objOil.price) + " / vat"],
+    ["quickCoal", "Steenkool", FixUnit(objCoal.amount, "ton"), FixMoney(objCoal.price) + " / ton"],
+    ["quickIronOre", "IJzererts", FixUnit(objIronOre.amount, "ton"), FixMoney(objIronOre.price) + " / ton"],
+    ["quickSteel", "Staal", FixUnit(objSteel.amount, "ton"), FixMoney(objSteel.price) + " / ton"],
+  ];
+  items.forEach(function (item) {
+    document.getElementById(item[0]).innerHTML =
+      "<h2>" +
+      item[1] +
+      "</h2>" +
+      renderStats([
+        ["Voorraad", item[2]],
+        ["Prijs", item[3]],
+      ]);
+  });
 }
 
 function quickSellButtons() {
@@ -5313,10 +5290,11 @@ function quickSellButtons() {
       window[object][action](...(params || []))
     );
 
-    let paragraph = document.createElement("p");
-    paragraph.appendChild(button);
+    let actions = document.createElement("div");
+    actions.className = "actions";
+    actions.appendChild(button);
 
-    document.getElementById(elementId).replaceChildren(paragraph);
+    document.getElementById(elementId).replaceChildren(actions);
   });
 }
 
