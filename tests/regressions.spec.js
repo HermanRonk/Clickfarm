@@ -1,7 +1,7 @@
 // Regressietests voor eerder opgeloste bugs en exploits.
 // Iedere test noemt de commit waarin het probleem is opgelost.
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, tick, game, shownMap, storage } = require("./helpers/game");
+const { startGame, reload, tick, game, shownMap, storage, stat } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 const atLevel = (level, extra = {}) => ({ PlayerLevel: level, NextLevel: threshold(level), ...extra });
@@ -12,14 +12,14 @@ test.describe("Exploits (2b48be9)", () => {
   test("steenkool kopen kost de prijs per ton, niet per 1.000 ton", async ({ page }) => {
     await startGame(page, { state: miningUnlocked({ Money: 10000000, coalAmount: 0 }) });
     const price = await game(page, () => +objCoal.price);
-    await page.getByRole("button", { name: "Koop 50k steenkool" }).click();
+    await page.getByRole("button", { name: "Koop 50.000 ton steenkool" }).click();
     expect(await game(page, () => +objCoal.amount)).toBe(50000);
     expect(await game(page, () => objMoney.amount)).toBe(10000000 - 50000 * price * 1.5);
   });
 
   test("steenkool kopen kan niet zonder genoeg geld", async ({ page }) => {
     await startGame(page, { state: miningUnlocked({ Money: 100000, coalAmount: 0 }) });
-    await page.getByRole("button", { name: "Koop 50k steenkool" }).click();
+    await page.getByRole("button", { name: "Koop 50.000 ton steenkool" }).click();
     await expect(page.locator("#notif")).toContainText("Niet genoeg doekoe!");
     expect(await game(page, () => +objCoal.amount)).toBe(0);
     expect(await game(page, () => objMoney.amount)).toBe(100000);
@@ -29,7 +29,7 @@ test.describe("Exploits (2b48be9)", () => {
     await startGame(page, {
       state: miningUnlocked({ Money: 100, coalAmount: 500, CoalPowerPlants: 1 }),
     });
-    await page.getByRole("button", { name: "Verkoop steenkool!" }).click();
+    await page.getByRole("button", { name: "Verkoop steenkool", exact: true }).click();
     expect(await game(page, () => +objCoal.amount)).toBe(500);
     expect(await game(page, () => objMoney.amount)).toBe(100);
   });
@@ -39,14 +39,14 @@ test.describe("Exploits (2b48be9)", () => {
       state: miningUnlocked({ Money: 100, coalAmount: 5000, CoalPowerPlants: 1 }),
     });
     const price = await game(page, () => +objCoal.price);
-    await page.getByRole("button", { name: "Verkoop steenkool!" }).click();
+    await page.getByRole("button", { name: "Verkoop steenkool", exact: true }).click();
     expect(await game(page, () => +objCoal.amount)).toBe(1000);
     expect(await game(page, () => objMoney.amount)).toBe(100 + 4000 * price);
   });
 
   test("olie verkopen met minder olie dan de centrales nodig hebben geeft geen negatieve verkoop", async ({ page }) => {
     await startGame(page, { state: atLevel(4, { Money: 1000, Oil: 20, PowerPlants: 10 }) });
-    await page.getByRole("button", { name: "Verkoop olie!" }).click();
+    await page.getByRole("button", { name: "Verkoop olie", exact: true }).click();
     expect(await game(page, () => objMoney.amount)).toBe(1000);
     expect(await game(page, () => +objOilTank.contents)).toBe(20);
   });
@@ -106,7 +106,7 @@ test.describe("Productieberekeningen (c96de1e)", () => {
 test.describe("Knoppen en weergave (6dc6102)", () => {
   test("olieverbruik wordt opgeteld, niet als tekst aan elkaar geplakt", async ({ page }) => {
     await startGame(page, { state: atLevel(4, { PowerPlants: 2 }) });
-    await expect(page.locator("#OilUsage")).toHaveText("Olieverbruik: 2");
+    await expect(stat(page, "#OilUsage", "Olieverbruik per tick")).toHaveText("2 vaten");
   });
 
   test("kunststofopslag controleert het saldo tegen de eigen prijs", async ({ page }) => {
@@ -188,7 +188,7 @@ test.describe("Bekende problemen opgelost", () => {
     expect(await game(page, () => objFarmland.cost)).toBe(10.5);
     await reload(page);
     expect(await game(page, () => objFarmland.cost)).toBe(10.5);
-    await expect(page.locator("#FarmlandPrice")).toHaveText("Kosten landbouwgrond: € 10,50");
+    await expect(stat(page, "#landbouw-col", "Prijs per veld")).toHaveText("€ 10,50");
   });
 
   test("#43 ieder id komt maar één keer voor in de pagina", async ({ page }) => {
@@ -197,7 +197,7 @@ test.describe("Bekende problemen opgelost", () => {
       state: atLevel(12, { Rlevel: 4, ironAmountProspected: 1, ironSmelters: 1, coalAmountProspected: 1 }),
     });
     await expect(page.getByRole("button", { name: "Maak staal" })).toBeAttached();
-    await expect(page.getByRole("button", { name: "Ontsla een pastahelper!" })).toBeAttached();
+    await expect(page.getByRole("button", { name: "Ontsla pastahelper" })).toBeAttached();
     await expect(page.getByRole("button", { name: "Bouw steenkoolsilo" })).toBeAttached();
     const duplicates = await page.evaluate(() => {
       const counts = {};

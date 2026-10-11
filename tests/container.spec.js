@@ -43,7 +43,7 @@ test.describe("Container", () => {
       if (/Content Security Policy|Refused to/i.test(msg.text())) violations.push(msg.text());
     });
     await page.goto("/");
-    await expect(page.locator("#currentlevel")).toHaveText("Huidig level is: 1");
+    await expect(page.locator("#currentlevel dd")).toHaveText("1");
     // Iconen komen uit de sprite in de pagina zelf
     await expect(page.locator("#i-pause")).toBeAttached();
     expect(violations).toEqual([]);

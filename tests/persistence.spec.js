@@ -1,6 +1,6 @@
 // Voortgang bewaren: herladen, exporteren/importeren en resetten.
 const { test, expect } = require("@playwright/test");
-const { startGame, reload, tick, game, storage } = require("./helpers/game");
+const { startGame, reload, tick, game, storage, levelText } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 async function openOptions(page) {
@@ -61,7 +61,7 @@ test.describe("Voortgang", () => {
     page.once("dialog", (dialog) => dialog.accept());
     await openOptions(page);
     await page.getByRole("button", { name: "Reset Game" }).click();
-    await expect(page.locator("#currentlevel")).toHaveText("Huidig level is: 1");
+    await expect(levelText(page)).toHaveText("1");
     expect(await game(page, () => +objPlayerInfo.level)).toBe(1);
     expect(await game(page, () => objMoney.amount)).toBe(2000);
 
@@ -69,7 +69,7 @@ test.describe("Voortgang", () => {
     page.once("dialog", (dialog) => dialog.accept(code));
     await openOptions(page);
     await page.getByRole("button", { name: "Importeer save-code" }).click();
-    await expect(page.locator("#currentlevel")).toHaveText("Huidig level is: 5");
+    await expect(levelText(page)).toHaveText("5");
     expect(await game(page, () => objMoney.amount)).toBe(1234567.89);
     expect(await game(page, () => objFarmland.amount)).toBe(42);
   });

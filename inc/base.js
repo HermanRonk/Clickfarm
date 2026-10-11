@@ -11,8 +11,7 @@ function turnDebug(inputDB) {
 
   localStorage.setItem("debug", debug);
   if (debug === 1) {
-    eldebugBTN.innerHTML =
-      icon("check-square") + " Zet debug uit";
+    eldebugBTN.innerHTML = icon("check-square") + " Zet debug uit";
   } else {
     eldebugBTN.innerHTML = icon("square") + " Zet debug aan";
   }
@@ -194,6 +193,80 @@ function FixNumber(InputNumber) {
   return InputNumber.toLocaleString("nl-NL");
 }
 
+// Hoeveelheid met eenheid, bijvoorbeeld FixUnit(1500, "kg") -> "1.500 kg"
+function FixUnit(InputNumber, unit) {
+  return FixNumber(InputNumber) + " " + unit;
+}
+
+// Compacte lijst met waardes: renderStats([["Voorraad", "1.500 kg"], ...]).
+// Lege regels (null/false) worden overgeslagen.
+function renderStats(rows) {
+  return (
+    '<dl class="stats-list">' +
+    rows
+      .filter(Boolean)
+      .map(function (row) {
+        return "<dt>" + row[0] + "</dt><dd>" + row[1] + "</dd>";
+      })
+      .join("") +
+    "</dl>"
+  );
+}
+
+// Voorraadbalk met label en waarde boven de balk (percentage wordt begrensd op 0-100)
+function renderBar(label, valueText, percentage) {
+  var width = Math.max(0, Math.min(100, +percentage || 0));
+  return (
+    '<div class="bar-label"><span>' +
+    label +
+    "</span><span>" +
+    valueText +
+    '</span></div><div class="progress"><div class="progress-bar" style="width:' +
+    width +
+    '%"></div></div>'
+  );
+}
+
+// Instellingen van automatisch verkopen voor één product
+function renderAutoSell(product, active, minimumPrice, currentPrice) {
+  return (
+    "<h3>" +
+    product +
+    "</h3>" +
+    renderStats([
+      ["Status", active ? "Aan" : "Uit"],
+      ["Verkopen vanaf", FixMoney(+minimumPrice)],
+      ["Huidige prijs", currentPrice],
+    ])
+  );
+}
+
+// Voorraad, productie en opslag van een grondstof uit mijnen (steenkool, ijzererts, uranium)
+function renderResource(o) {
+  var capacity = +o.silos * +o.siloCap;
+  return (
+    renderBar(
+      "Voorraad",
+      FixUnit(o.amount, "ton"),
+      (+o.amount / capacity) * 100
+    ) +
+    renderStats([
+      ["Productie", FixUnit(o.production, "ton per " + o.period)],
+      ["Energie", FixNumber(o.energy) + " per " + o.period],
+      o.extra,
+      ["Prijs per ton", FixMoney(o.price)],
+      ["Silo's", FixNumber(o.silos) + " (" + FixUnit(capacity, "ton") + ")"],
+      ["Prijs extra silo", FixMoney(o.siloPrice)],
+    ]) +
+    renderHint(o.hint)
+  );
+}
+
+// Korte uitleg onder een lijst
+function renderHint(text) {
+  return '<p class="hint">' + text + "</p>";
+}
+
 // Functie van het goed weergeven van afgeronde gewichten
 function AfrondenGewicht(InputGewicht) {
   var afgerond = Math.round(+InputGewicht * 100) / 100;
@@ -206,10 +279,18 @@ var objPlayerInfo = {
   level_multiplier: [0, 5, 5, 5, 5, 4, 3, 4, 5, 5, 5, 5, 5, 5],
   nextlevel: localStorage.getItem("NextLevel") || 3000,
   show: function () {
-    document.getElementById("currentlevel").innerHTML =
-      "Huidig level is: " + objPlayerInfo.level;
+    document.getElementById("currentlevel").innerHTML = renderStats([
+      ["Level", objPlayerInfo.level],
+    ]);
     document.getElementById("nextlevel").innerHTML =
-      "Drempel voor volgend level: " + FixMoney(objPlayerInfo.nextlevel);
+      renderStats([["Volgend level", FixMoney(objPlayerInfo.nextlevel)]]) +
+      renderBar(
+        "Voortgang",
+        Math.floor(
+          Math.min(100, (+objMoney.amount / +objPlayerInfo.nextlevel) * 100)
+        ) + "%",
+        (+objMoney.amount / +objPlayerInfo.nextlevel) * 100
+      );
   },
   proceslevel: function (reason) {
     // Wanneer level hoger, bereken nieuw gelddoel voor next level
@@ -321,15 +402,16 @@ var objMoney = {
   },
   show: function () {
     MoneyRound = Math.round(+objMoney.amount * 100) / 100;
-    document.getElementById("MoneyAmount").innerHTML =
-      "<p>Beschikbaar vermogen: " + FixMoney(MoneyRound) + "</p>";
+    document.getElementById("MoneyAmount").innerHTML = renderStats([
+      ["Vermogen", FixMoney(MoneyRound)],
+    ]);
     document.getElementById("MoneyTop").innerHTML =
       "Vermogen: <kbd2>" + FixMoney(MoneyRound) + "</kbd2>";
     localStorage.setItem("Money", +MoneyRound);
   },
   showUpdate: function (description, moneyProfit) {
     profitRound = Math.round(+moneyProfit * 100) / 100;
-    showHistory(description + " " + FixMoney(profitRound));
+    showHistory(description, FixMoney(profitRound));
   },
   init: function () {
     objMoney.amount = parseFloat(localStorage.getItem("Money")) || 2000;
@@ -460,7 +542,7 @@ var objFarmRobot = {
   },
   timerCountdown: function () {
     document.getElementById("RobotTimer").innerHTML =
-      "De oogst is klaar over: " + objFarmRobot.robotTimer + " Seconden";
+      "Oogst klaar over " + objFarmRobot.robotTimer + " seconden";
   },
   work: function () {
     if (+objFarmRobot.robots === 0) return 0;
@@ -498,26 +580,31 @@ var objFarmRobot = {
     }
   },
   show: function () {
-    document.getElementById("ShowFarmRobot").innerHTML =
-      "<p>Op dit moment zijn er: " +
-      objFarmRobot.robots +
-      " Robots die " +
-      +objFarmRobot.robots * +objFarmRobot.robotCap +
-      " velden bewerken (voor " +
-      FixNumber(
-        AfrondenGewicht(
-          +objFarmland.harvest * (+objFarmRobot.robots * +objFarmRobot.robotCap)
-        )
-      ) +
-      "kg graan per run). Dit kost " +
-      +objFarmRobot.robots * +objFarmRobot.robotEnergy +
-      " Energie per run</p>";
-    document.getElementById("FarmRobotPrice").innerHTML =
-      "<p>Een FarmRobot kopen kost: " +
-      FixMoney(objFarmRobot.robotCost) +
-      ".<br>Een robot verkopen levert: " +
-      FixMoney(+objFarmRobot.robotCost * 0.75) +
-      " op.</p>";
+    document.getElementById("ShowFarmRobot").innerHTML = renderStats([
+      ["Robots", FixNumber(objFarmRobot.robots)],
+      [
+        "Velden bewerkt",
+        FixNumber(+objFarmRobot.robots * +objFarmRobot.robotCap),
+      ],
+      [
+        "Opbrengst per run",
+        FixUnit(
+          AfrondenGewicht(
+            +objFarmland.harvest *
+              (+objFarmRobot.robots * +objFarmRobot.robotCap)
+          ),
+          "kg"
+        ),
+      ],
+      [
+        "Energie per run",
+        FixNumber(+objFarmRobot.robots * +objFarmRobot.robotEnergy),
+      ],
+    ]);
+    document.getElementById("FarmRobotPrice").innerHTML = renderStats([
+      ["Prijs per robot", FixMoney(objFarmRobot.robotCost)],
+      ["Verkoopwaarde", FixMoney(+objFarmRobot.robotCost * 0.75)],
+    ]);
     objFarmland.manualFarm();
   },
   init: function () {
@@ -586,36 +673,30 @@ var objGrainSilo = {
       (+objGrainSilo.contents / (+objGrainSilo.amount * +objGrainSilo.cap)) *
       100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("Grainstock").innerHTML =
-      '<p>Graan:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objGrainSilo.contents) +
-      "kg (" +
-      percentageFilled +
-      "%)</div></div>";
+    document.getElementById("Grainstock").innerHTML = renderBar(
+      "Graan",
+      FixUnit(objGrainSilo.contents, "kg"),
+      percentageFilled
+    );
   },
   show: function () {
     objGrainSilo.contents = Math.round(+objGrainSilo.contents * 100) / 100;
     var TempCap =
       +objGrainSilo.amount * +objGrainSilo.cap - +objGrainSilo.contents;
     document.getElementById("GrainSilo").innerHTML =
-      "Er zijn " +
-      objGrainSilo.amount +
-      " silo's beschikbaar met nog " +
-      FixNumber(TempCap) +
-      "KG aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 80% onder de huidige marktprijs.";
-    document.getElementById("GrainAmount").innerHTML =
-      "<p>Hoeveelheid graan op voorraad: " +
-      FixNumber(objGrainSilo.contents) +
-      "kg</p>";
+      renderStats([
+        ["Silo's", FixNumber(objGrainSilo.amount)],
+        ["Vrije ruimte", FixUnit(TempCap, "kg")],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.");
+    document.getElementById("GrainAmount").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objGrainSilo.contents, "kg")],
+    ]);
     localStorage.setItem("GrainSiloContents", objGrainSilo.contents);
-    document.getElementById("GrainSiloPrice").innerHTML =
-      "<p>Een silo kost " +
-      FixMoney(objGrainSilo.price) +
-      " en kan " +
-      FixNumber(objGrainSilo.cap) +
-      "KG graan bevatten</p>";
+    document.getElementById("GrainSiloPrice").innerHTML = renderStats([
+      ["Prijs per silo", FixMoney(objGrainSilo.price)],
+      ["Capaciteit per silo", FixUnit(objGrainSilo.cap, "kg")],
+    ]);
     document.getElementById("GrainTop").innerHTML =
       "Graan: <kbd2>" +
       FixNumber(objGrainSilo.contents) +
@@ -675,35 +756,29 @@ var objFlourSilo = {
       (+objFlourSilo.contents / (+objFlourSilo.amount * +objFlourSilo.cap)) *
       100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("Flourstock").innerHTML =
-      '<p>Bloem:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objFlourSilo.contents) +
-      "kg (" +
-      percentageFilled +
-      "%)</div></div>";
+    document.getElementById("Flourstock").innerHTML = renderBar(
+      "Bloem",
+      FixUnit(objFlourSilo.contents, "kg"),
+      percentageFilled
+    );
   },
   show: function () {
-    document.getElementById("Flour").innerHTML =
-      "<p>Hoeveelheid bloem op voorraad: " +
-      FixNumber(objFlourSilo.contents) +
-      "kg</p>";
+    document.getElementById("Flour").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objFlourSilo.contents, "kg")],
+    ]);
     var TempCap =
       +objFlourSilo.amount * +objFlourSilo.cap - +objFlourSilo.contents;
     document.getElementById("FlourSilo").innerHTML =
-      "Er zijn " +
-      FixNumber(objFlourSilo.amount) +
-      " silo's beschikbaar met nog " +
-      FixNumber(TempCap) +
-      "KG aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
+      renderStats([
+        ["Silo's", FixNumber(objFlourSilo.amount)],
+        ["Vrije ruimte", FixUnit(TempCap, "kg")],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 80% van de marktprijs.");
     localStorage.setItem("FlourSiloContents", objFlourSilo.contents);
-    document.getElementById("FlourSiloPrice").innerHTML =
-      "<p>Een silo kost " +
-      FixMoney(objFlourSilo.price) +
-      " en kan " +
-      FixNumber(objFlourSilo.cap) +
-      "KG bloem bevatten</p>";
+    document.getElementById("FlourSiloPrice").innerHTML = renderStats([
+      ["Prijs per silo", FixMoney(objFlourSilo.price)],
+      ["Capaciteit per silo", FixUnit(objFlourSilo.cap, "kg")],
+    ]);
     document.getElementById("FlourTop").innerHTML =
       "Bloem: <kbd2>" +
       FixNumber(objFlourSilo.contents) +
@@ -832,75 +907,48 @@ var objOilTank = {
   visual: function () {
     var percentageFilled = (+objOilTank.contents / +objOilTank.totalCap) * 100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("Oilstock").innerHTML =
-      '<p>Olie:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objOilTank.contents) +
-      "l (" +
-      percentageFilled +
-      "%)</div></div>";
+    document.getElementById("Oilstock").innerHTML = renderBar(
+      "Olie",
+      FixUnit(objOilTank.contents, "vaten"),
+      percentageFilled
+    );
   },
   show: function () {
     var TempCap = +objOilTank.totalCap - +objOilTank.contents;
+    var bigTanks = +objPlayerInfo.level > 9;
+    var onlyBig =
+      bigTanks && +objOilTank.amount == 0 && +objOilTank.amountBig > 0;
 
-    if (+objPlayerInfo.level > 9) {
-      document.getElementById("OilTankPrice").innerHTML =
-        "<p>Een extra olietank (klein) kan " +
-        FixNumber(objOilTank.cap) +
-        " vaten bevatten en kost: " +
-        FixMoney(objOilTank.price) +
-        "<br>Een grote olietank kan " +
-        FixNumber(objOilTank.capBig) +
-        " vaten bevatten en kost " +
-        FixMoney(objOilTank.priceBig) +
-        "</p><p>Kleine olietanks kunnen verkocht worden voor 50% van de aanschafwaarde, eventuele olie in deze tanks wordt weggespoeld!</p>";
-      document.getElementById("oilTankBig").style.display = "";
-      document.getElementById("sellOilTank").style.display = "";
+    document.getElementById("oilTank").innerHTML =
+      renderStats([
+        ["Tanks", FixNumber(objOilTank.amount)],
+        bigTanks && ["Grote tanks", FixNumber(objOilTank.amountBig)],
+        ["Vrije ruimte", FixUnit(TempCap, "vaten")],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 80% van de marktprijs.");
+    document.getElementById("OilTankPrice").innerHTML =
+      renderStats([
+        ["Prijs per tank", FixMoney(objOilTank.price)],
+        ["Capaciteit per tank", FixUnit(objOilTank.cap, "vaten")],
+        bigTanks && ["Prijs grote tank", FixMoney(objOilTank.priceBig)],
+        bigTanks && [
+          "Capaciteit grote tank",
+          FixUnit(objOilTank.capBig, "vaten"),
+        ],
+      ]) +
+      renderHint(
+        "Een tank verkopen levert 50% van de prijs op; olie die daarna niet meer past gaat verloren."
+      );
+    document.getElementById("oilTankBig").style.display = bigTanks
+      ? ""
+      : "none";
+    document.getElementById("oilTankSmall").style.display = onlyBig
+      ? "none"
+      : "";
 
-      if (+objOilTank.amount == 0 && +objOilTank.amountBig > 0) {
-        document.getElementById("oilTankSmall").style.display = "none";
-        document.getElementById("sellOilTank").style.display = "none";
-        document.getElementById("buySmallOilTank").style.display = "none";
-        document.getElementById("oilTank").innerHTML =
-          "Er zijn " +
-          FixNumber(objOilTank.amountBig) +
-          " tanks (groot) beschikbaar met nog " +
-          FixNumber(TempCap) +
-          "l aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
-      }
-      if (+objOilTank.amount > 0 && +objOilTank.amountBig > 0) {
-        document.getElementById("oilTankSmall").style.display = "";
-        document.getElementById("oilTank").innerHTML =
-          "Er zijn " +
-          FixNumber(objOilTank.amountBig) +
-          " grote tanks en " +
-          FixNumber(objOilTank.amount) +
-          " kleine tanks beschikbaar met nog " +
-          FixNumber(TempCap) +
-          " vaten aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
-      }
-    } else {
-      document.getElementById("OilTankPrice").innerHTML =
-        "<p>Een extra olietank kan " +
-        FixNumber(objOilTank.cap) +
-        " vaten bevatten en kost: " +
-        FixMoney(objOilTank.price) +
-        "</p>";
-      document.getElementById("oilTank").innerHTML =
-        "Er zijn " +
-        FixNumber(objOilTank.amount) +
-        " tanks (klein) beschikbaar met nog " +
-        FixNumber(TempCap) +
-        "l aan restcapaciteit. Eventueel overschot wordt direct verkocht voor 20% onder de huidige marktprijs.";
-      document.getElementById("oilTankSmall").style.display = "";
-      document.getElementById("oilTankBig").style.display = "none";
-    }
-
-    document.getElementById("clickCount").innerHTML =
-      "<p>Aantal vaten olie op voorraad: " +
-      FixNumber(objOilTank.contents) +
-      "</p>";
+    document.getElementById("clickCount").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objOilTank.contents, "vaten")],
+    ]);
 
     document.getElementById("OilTop").innerHTML =
       "Olie: <kbd2>" +
@@ -964,16 +1012,18 @@ var objFarmland = {
   timerCountdown: function () {
     if (this.FarmTimer > 0) {
       document.getElementById("FarmlandTimer").innerHTML =
-        "De oogst is klaar over: " + this.FarmTimer + " Seconden";
+        "Oogst klaar over " + this.FarmTimer + " seconden";
     } else {
       document.getElementById("FarmlandTimer").innerHTML = "";
     }
   },
   showPrice: function () {
-    document.getElementById("FarmlandPrice").innerHTML =
-      "<p>Kosten landbouwgrond: " + FixMoney(objFarmland.cost) + "</p>";
-    document.getElementById("FarmHarvestPerField").innerHTML =
-      "<p>Opbrengst per veld: " + objFarmland.harvest + "kg</p>";
+    document.getElementById("FarmlandPrice").innerHTML = renderStats([
+      ["Prijs per veld", FixMoney(objFarmland.cost)],
+    ]);
+    document.getElementById("FarmHarvestPerField").innerHTML = renderStats([
+      ["Opbrengst per veld", FixUnit(objFarmland.harvest, "kg")],
+    ]);
     localStorage.setItem("FarmlandCost", objFarmland.cost);
     localStorage.setItem("Harvest", objFarmland.harvest);
   },
@@ -982,8 +1032,9 @@ var objFarmland = {
     objFarmland.cost = Math.round(objFarmland.cost * 100) / 100;
   },
   showFarms: function () {
-    document.getElementById("Farmland").innerHTML =
-      "<p>Hoeveelheid landbouwgrond: " + FixNumber(objFarmland.amount) + "</p>";
+    document.getElementById("Farmland").innerHTML = renderStats([
+      ["Velden", FixNumber(objFarmland.amount)],
+    ]);
     localStorage.setItem("Farmland", objFarmland.amount);
     objFarmland.manualFarm();
   },
@@ -1028,9 +1079,7 @@ var objFarmland = {
       objFarmland.GrainResearchTimer
     );
     document.getElementById("GrainResearchTimer").innerHTML =
-      "<p>Het onderzoek is klaar over: " +
-      objFarmland.GrainResearchTimer +
-      " Seconden</p>";
+      "Onderzoek klaar over " + objFarmland.GrainResearchTimer + " seconden";
     if (objFarmland.GrainResearchTimer < 1) {
       objFarmland.harvest =
         Math.round(
@@ -1072,16 +1121,15 @@ var objFarmland = {
     }
   },
   showResearch: function () {
-    document.getElementById("GrainResearchCost").innerHTML =
-      "<p>Het onderzoek zal: " +
-      objFarmland.GrainResearchDuration +
-      " seconden duren en kost: " +
-      FixMoney(objFarmland.GrainResearchCostVar) +
-      "</p><p>Opbrengstverbetering: " +
-      objFarmland.GrainResearchProfit +
-      "% (voor deze upgrade)</p><p>Je bent nu op research level: " +
-      objFarmland.GrainResearchLevel +
-      "</p>";
+    document.getElementById("GrainResearchCost").innerHTML = renderStats([
+      ["Onderzoekslevel", FixNumber(objFarmland.GrainResearchLevel)],
+      [
+        "Volgende stap",
+        "+" + FixNumber(objFarmland.GrainResearchProfit) + "% opbrengst",
+      ],
+      ["Kosten", FixMoney(objFarmland.GrainResearchCostVar)],
+      ["Duur", FixNumber(objFarmland.GrainResearchDuration) + " seconden"],
+    ]);
   },
   init: function () {
     objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
@@ -1103,9 +1151,7 @@ var objFarmland = {
     if (objFarmland.GrainResearchTimer > 0) {
       document.getElementById("GRButton").disabled = true;
       document.getElementById("GrainResearchTimer").innerHTML =
-        "<p>Het onderzoek is klaar over: " +
-        objFarmland.GrainResearchTimer +
-        " Seconden</p>";
+        "Onderzoek klaar over " + objFarmland.GrainResearchTimer + " seconden";
     }
     objFarmland.showFarms();
     objFarmland.showPrice();
@@ -1277,7 +1323,7 @@ var objWindmill = {
   grindTimerCountdown: function () {
     if (objWindmill.GrindTimer > 0) {
       document.getElementById("GrindTimer").innerHTML =
-        "De molen is klaar over: " + objWindmill.GrindTimer + " Seconden";
+        "Malen klaar over " + objWindmill.GrindTimer + " seconden";
     } else {
       document.getElementById("GrindTimer").innerHTML = "";
     }
@@ -1285,26 +1331,27 @@ var objWindmill = {
   autoGrindTimerCountdown: function () {
     if (objWindmill.autoGrindTimer > 0) {
       document.getElementById("AutoGrindTimer").innerHTML =
-        "De geautomatiseerde molens zijn klaar over: " +
+        "Automatisch malen klaar over " +
         objWindmill.autoGrindTimer +
-        " Seconden";
+        " seconden";
     } else {
       document.getElementById("AutoGrindTimer").innerHTML = "";
     }
   },
   show: function () {
-    document.getElementById("WindmillCost").innerHTML =
-      "<p>Een windmolen kost: " +
-      FixMoney(objWindmill.cost) +
-      "  en kan " +
-      FixNumber(objWindmill.cap) +
-      "kg per run vermalen</p>";
-    document.getElementById("Windmills").innerHTML =
-      "<p>Hoeveelheid windmolens: " + FixNumber(objWindmill.amount) + "</p>";
-    document.getElementById("WindmillCap").innerHTML =
-      "<p>Maalcapaciteit per run: " +
-      FixNumber(objWindmill.amount * objWindmill.cap) +
-      "kg</p>";
+    document.getElementById("Windmills").innerHTML = renderStats([
+      ["Windmolens", FixNumber(objWindmill.amount)],
+    ]);
+    document.getElementById("WindmillCap").innerHTML = renderStats([
+      [
+        "Maalcapaciteit per run",
+        FixUnit(objWindmill.amount * objWindmill.cap, "kg"),
+      ],
+    ]);
+    document.getElementById("WindmillCost").innerHTML = renderStats([
+      ["Prijs per windmolen", FixMoney(objWindmill.cost)],
+      ["Capaciteit per windmolen", FixUnit(objWindmill.cap, "kg")],
+    ]);
   },
   init: function () {
     objWindmill.amount = parseInt(localStorage.getItem("WindmillAmount")) || 1;
@@ -1359,22 +1406,21 @@ var objWindmillController = {
     }
   },
   show: function () {
-    document.getElementById("WindmillControllerInfo").innerHTML =
-      "<p>Een windmolencontroller kan " +
-      FixNumber(objWindmillController.cap) +
-      " windmolen(s) aansturen. </p><p>Er zijn op dit moment " +
-      FixNumber(objWindmillController.amount) +
-      " controllers actief die samen een energieverbruik hebben van: " +
-      FixNumber(
-        (objWindmillController.amount * objWindmillController.energy) / 10
-      ) +
-      " units per tick";
-    document.getElementById("WindmillControllerCost").innerHTML =
-      "Een windmolencontroller kost: " + FixMoney(objWindmillController.price);
-    document.getElementById("SellWindmillController").innerHTML =
-      "<p>Verkoop een controller voor: " +
-      FixMoney(objWindmillController.price * 0.75) +
-      "</p>";
+    document.getElementById("WindmillControllerInfo").innerHTML = renderStats([
+      ["Controllers", FixNumber(objWindmillController.amount)],
+      [
+        "Energie per tick",
+        FixNumber(
+          (objWindmillController.amount * objWindmillController.energy) / 10
+        ),
+      ],
+    ]);
+    document.getElementById("WindmillControllerCost").innerHTML = renderStats([
+      ["Prijs per controller", FixMoney(objWindmillController.price)],
+    ]);
+    document.getElementById("SellWindmillController").innerHTML = renderStats([
+      ["Verkoopwaarde", FixMoney(objWindmillController.price * 0.75)],
+    ]);
   },
   init: function () {
     objWindmillController.amount =
@@ -1484,10 +1530,12 @@ var objOilPump = {
       document.getElementById("sellOilPump").disabled = false;
     }
 
-    document.getElementById("FactoryCount").innerHTML =
-      "<p>Aantal pompen: " + FixNumber(objOilPump.amount) + "</p>";
-    document.getElementById("FactoryCost").innerHTML =
-      "<p>Kosten van een pomp: " + FixMoney(objOilPump.price) + "</p>";
+    document.getElementById("FactoryCount").innerHTML = renderStats([
+      ["Oliepompen", FixNumber(objOilPump.amount)],
+    ]);
+    document.getElementById("FactoryCost").innerHTML = renderStats([
+      ["Prijs per pomp", FixMoney(objOilPump.price)],
+    ]);
     objOilPumpAdv.show();
     localStorage.setItem("FactoryCost", objOilPump.price);
   },
@@ -1628,50 +1676,64 @@ var objEnergy = {
     objEnergy.show();
   },
   show: function () {
-    document.getElementById("EnergieOpslag").innerHTML =
-      "<p>Op dit moment is er maximaal " +
-      FixNumber(+objEnergy.capacitors * +objEnergy.storageCap) +
-      " units opslag beschikbaar</p>" +
-      "<p>Iedere unit kan " +
-      FixNumber(objEnergy.storageCap) +
-      " energie opslaan en kost: " +
-      FixMoney(objEnergy.capaCost) +
-      "</p>";
+    document.getElementById("EnergieOpslag").innerHTML = renderStats([
+      [
+        "Opslagcapaciteit",
+        FixNumber(+objEnergy.capacitors * +objEnergy.storageCap),
+      ],
+      ["Prijs per opslagunit", FixMoney(objEnergy.capaCost)],
+      ["Capaciteit per unit", FixNumber(objEnergy.storageCap)],
+    ]);
     document.getElementById("EnergyStats").innerHTML =
       "Energie: <kbd2>" +
       FixNumber(objEnergy.available) +
       "/" +
       FixNumber(objEnergy.capacitors * objEnergy.storageCap) +
       "</kbd2>";
-    document.getElementById("TotalEnergyProduction").innerHTML =
-      "<p>De huidige energieproductie: " +
-      FixNumber(
-        +objPowerPlant.amount * +objPowerPlant.yield +
-          +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
-          +objNuclearPowerPlant.reactors *
-            +objNuclearPowerPlant.reactorProduction
-      ) +
-      "</p>";
-    document.getElementById("OilUsage").innerHTML =
-      "<p>Olieverbruik: " +
-      FixNumber(
-        +objPowerPlant.amount +
-          +objPlasticFactory.activeFactories *
-            +objPlasticFactory.oilNeededProduction
-      ) +
-      "</p>";
-    document.getElementById("CurrentEnergyUsage").innerHTML =
-      "<p>De huidige piekenergievraag: " +
-      FixNumber(
-        +objOilPump.amount +
-          +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy +
-          (objWindmillController.amount * objWindmillController.energy) / 10 +
-          +objMines.coalAmountActive * +objCoalMine.energy +
-          +objMines.uraniumAmountActive * +objUraniumMine.energy +
-          +objOilPumpAdv.amount * +objOilPumpAdv.energy +
-          +objMines.ironAmountActive * +objIronMine.energy
-      ) +
-      "</p>";
+    document.getElementById("AvailableEnergy").innerHTML = renderStats([
+      [
+        "Opgeslagen",
+        FixNumber(objEnergy.available) +
+          " / " +
+          FixNumber(objEnergy.capacitors * objEnergy.storageCap),
+      ],
+    ]);
+    document.getElementById("TotalEnergyProduction").innerHTML = renderStats([
+      [
+        "Productie per tick",
+        FixNumber(
+          +objPowerPlant.amount * +objPowerPlant.yield +
+            +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
+            +objNuclearPowerPlant.reactors *
+              +objNuclearPowerPlant.reactorProduction
+        ),
+      ],
+    ]);
+    document.getElementById("OilUsage").innerHTML = renderStats([
+      [
+        "Olieverbruik per tick",
+        FixUnit(
+          +objPowerPlant.amount +
+            +objPlasticFactory.activeFactories *
+              +objPlasticFactory.oilNeededProduction,
+          "vaten"
+        ),
+      ],
+    ]);
+    document.getElementById("CurrentEnergyUsage").innerHTML = renderStats([
+      [
+        "Piekvraag per tick",
+        FixNumber(
+          +objOilPump.amount +
+            +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy +
+            (objWindmillController.amount * objWindmillController.energy) / 10 +
+            +objMines.coalAmountActive * +objCoalMine.energy +
+            +objMines.uraniumAmountActive * +objUraniumMine.energy +
+            +objOilPumpAdv.amount * +objOilPumpAdv.energy +
+            +objMines.ironAmountActive * +objIronMine.energy
+        ),
+      ],
+    ]);
   },
   init: function () {
     objEnergy.available = localStorage.getItem("EnergyAvailable") || 0;
@@ -1735,16 +1797,18 @@ var objChicken = {
     }
   },
   show: function () {
-    document.getElementById("Chickens").innerHTML =
-      "<p>Je hebt op dit moment " +
-      FixNumber(objChicken.amount) +
-      " kippen rondlopen. Deze kippen leggen: " +
-      FixNumber(+objChicken.eggProduction * +objChicken.amount) +
-      " eieren per 5 ticks. In deze periode eten ze " +
-      FixNumber(+objChicken.foodIntake * +objChicken.amount) +
-      "kg graan</p><p>Een kip kost: " +
-      FixMoney(objChicken.cost) +
-      "</p> <h3>Koop kippen</h3>";
+    document.getElementById("Chickens").innerHTML = renderStats([
+      ["Kippen", FixNumber(objChicken.amount)],
+      [
+        "Eieren per 5 ticks",
+        FixNumber(+objChicken.eggProduction * +objChicken.amount),
+      ],
+      [
+        "Voer per 5 ticks",
+        FixUnit(+objChicken.foodIntake * +objChicken.amount, "kg"),
+      ],
+      ["Prijs per kip", FixMoney(objChicken.cost)],
+    ]);
   },
   init: function () {
     objChicken.amount = Math.round(localStorage.getItem("Chickens")) || 0;
@@ -1805,24 +1869,32 @@ var objChickenFarm = {
   },
   show: function () {
     document.getElementById("ChickenFarm").innerHTML =
-      "<p>Je hebt op dit moment " +
-      objChickenFarm.amount +
-      " kippenboerderijen met nog plek voor " +
-      (+objChickenFarm.amount * +objChickenFarm.cap - +objChicken.amount) +
-      " kippen. Een extra kippenboerderij kost: " +
-      FixMoney(objChickenFarm.cost) +
-      "</p><p>" +
-      "Er is opslag voor " +
-      FixNumber(+objEgg.storageCap * +objEgg.storageUnits) +
-      " eieren. Extra opslag bied plaats voor " +
-      FixNumber(objEgg.storageCap) +
-      " eieren en kost: " +
-      FixMoney(objEgg.storageUnitCost) +
-      "</p><p>Iedere farm heeft opslag voor " +
-      FixNumber(objChickenFarm.grainSiloCap) +
-      "kg voer. Er is nog " +
-      FixNumber(objChickenFarm.grainReserve) +
-      "kg voer voor de kippen beschikbaar";
+      renderStats([
+        ["Kippenboerderijen", FixNumber(objChickenFarm.amount)],
+        [
+          "Plek voor kippen",
+          FixNumber(
+            +objChickenFarm.amount * +objChickenFarm.cap - +objChicken.amount
+          ),
+        ],
+        ["Voer in voorraad", FixUnit(objChickenFarm.grainReserve, "kg")],
+        [
+          "Voeropslag per boerderij",
+          FixUnit(objChickenFarm.grainSiloCap, "kg"),
+        ],
+        ["Prijs per boerderij", FixMoney(objChickenFarm.cost)],
+        [
+          "Eieropslag",
+          FixNumber(+objEgg.storageCap * +objEgg.storageUnits) + " eieren",
+        ],
+        [
+          "Prijs extra eieropslag",
+          FixMoney(objEgg.storageUnitCost) +
+            " (" +
+            FixNumber(objEgg.storageCap) +
+            " eieren)",
+        ],
+      ]) + renderHint("Het voer wordt uit je graansilo's aangevuld.");
     // Eventueel de knoppen voor het kopen van kippen uitschakelen als er geen plek meer is.
     ChickenSpace =
       +objChickenFarm.amount * +objChickenFarm.cap - +objChicken.amount;
@@ -1924,22 +1996,23 @@ var objEgg = {
     var percentageFilled =
       (+objEgg.amount / (+objEgg.storageUnits * +objEgg.storageCap)) * 100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
-    document.getElementById("eggStock").innerHTML =
-      '<p>Eieren:</p><div class="progress"><div class="progress-bar" style="width:' +
-      percentageFilled +
-      '%">' +
-      FixNumber(objEgg.amount) +
-      "stk (" +
-      percentageFilled +
-      "%)</div></div><br>";
+    document.getElementById("eggStock").innerHTML = renderBar(
+      "Voorraad",
+      FixNumber(objEgg.amount) + " eieren",
+      percentageFilled
+    );
   },
   show: function () {
     document.getElementById("eggs").innerHTML =
-      "<p> Je hebt op dit moment nog plek voor: " +
-      FixNumber(+objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount) +
-      " eieren. Eventueel overschot wordt direct verkocht voor de helft van de huidge prijs. De huidige prijs is: " +
-      FixMoney(+objEgg.price) +
-      "</p>";
+      renderStats([
+        [
+          "Vrije ruimte",
+          FixNumber(
+            +objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount
+          ) + " eieren",
+        ],
+        ["Prijs per ei", FixMoney(+objEgg.price)],
+      ]) + renderHint("Wat niet past wordt direct verkocht.");
     objEgg.visual();
   },
   init: function () {
@@ -1983,7 +2056,7 @@ var objPastaFactory = {
     } else {
       notificationOverlay(
         "Geen fabrieken om te verkopen",
-        "Pastafabrieken",
+        "Pastafabriek",
         "fa-info"
       );
     }
@@ -2087,33 +2160,34 @@ var objPastaFactory = {
     }
   },
   show: function () {
-    document.getElementById("PastaFactory").innerHTML =
-      "<p>Aantal pastafabrieken: " +
-      FixNumber(objPastaFactory.amount) +
-      "<br>" +
-      "Een pastafabriek kost: " +
-      FixMoney(objPastaFactory.cost) +
-      "<br>" +
-      "Een pastafabriek kan verkocht worden voor: " +
-      FixMoney(objPastaFactory.cost * 0.75) +
-      "<br>";
+    document.getElementById("PastaFactory").innerHTML = renderStats([
+      ["Pastafabriek", FixNumber(objPastaFactory.amount)],
+      ["Prijs per fabriek", FixMoney(objPastaFactory.cost)],
+      ["Verkoopwaarde", FixMoney(objPastaFactory.cost * 0.75)],
+    ]);
 
     var flour = objPastaFactory.amount * objPastaFactory.cap;
     var eggs = flour * (objPasta.recipeEggs / objPasta.recipe);
     document.getElementById("PastaInstruction").innerHTML =
-      "<p>Op dit moment kunnen we per run " +
-      FixNumber(flour) +
-      "kg bloem en " +
-      FixNumber(eggs) +
-      " eieren verwerken tot pasta. Iedere run verbruikt " +
-      FixNumber(objPastaFactory.amount * objPastaFactory.energy) +
-      " energie. Dit levert " +
-      FixNumber(Math.floor(flour / objPasta.recipe)) +
-      " dozen pasta op.</p>Recept: " +
-      FixNumber(objPasta.recipe) +
-      "kg bloem gemixt met " +
-      FixNumber(objPasta.recipeEggs) +
-      " eieren levert één doos pasta op.</p>";
+      renderStats([
+        ["Bloem per run", FixUnit(flour, "kg")],
+        ["Eieren per run", FixNumber(eggs)],
+        [
+          "Energie per run",
+          FixNumber(objPastaFactory.amount * objPastaFactory.energy),
+        ],
+        [
+          "Opbrengst per run",
+          FixNumber(Math.floor(flour / objPasta.recipe)) + " dozen",
+        ],
+      ]) +
+      renderHint(
+        "Recept: " +
+          FixUnit(objPasta.recipe, "kg") +
+          " bloem en " +
+          FixNumber(objPasta.recipeEggs) +
+          " eieren maken één doos pasta."
+      );
     objStorehouse.show();
   },
   init: function () {
@@ -2144,8 +2218,9 @@ var objPasta = {
     objMoney.add(ProfitPasta, reason, 8, amount);
   },
   show: function () {
-    document.getElementById("SellPasta").innerHTML =
-      "<p>Verkoop de pasta voor " + FixMoney(objPasta.price()) + " per doos";
+    document.getElementById("SellPasta").innerHTML = renderStats([
+      ["Prijs per doos", FixMoney(objPasta.price())],
+    ]);
   },
   init: function () {
     objPasta.show();
@@ -2192,7 +2267,7 @@ var objPastaHelper = {
     } else {
       notificationOverlay(
         "Er is niemand om te ontslaan!",
-        "Ontslag pastahelper",
+        "Pastahelper",
         "fa-address-card"
       );
       return 0;
@@ -2208,16 +2283,18 @@ var objPastaHelper = {
   show: function () {
     if (objPlayerInfo.level > 6) {
       document.getElementById("pastaHelperDiv").innerHTML =
-        "<p>Je kan iemand in dienst nemen om een pastafabriek voor je te bedienen. Hij/Zij drukt iedere 15 seconden op de knop om pasta voor je te maken.</p>" +
-        "<p>Iedere pastahelper pakt 5% van de pasta mee naar huis om zijn familie te laten eten. Het aannemen van een pastahelper kost je: " +
-        FixMoney(objPastaHelper.cost) +
-        ", " +
-        "je kan hem ook weer ontslaan, je krijgt hier geen geld voor terug! Iedere pastahelper kan 1 fabriek aansturen</p>" +
-        "<p>Je hebt op dit moment " +
-        FixNumber(objPastaHelper.amount) +
-        " pastahelper(s) in dienst</p>" +
-        "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem een pastahelper aan!</button> " +
-        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla een pastahelper!</button> ";
+        "<h3>Pastahelpers</h3>" +
+        renderStats([
+          ["Pastahelpers", FixNumber(objPastaHelper.amount)],
+          ["Prijs per helper", FixMoney(objPastaHelper.cost)],
+        ]) +
+        renderHint(
+          "Een helper bedient één fabriek en maakt elke 15 seconden pasta. Hij neemt 5% mee naar huis; ontslaan levert niets op."
+        ) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem pastahelper aan</button> " +
+        "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla pastahelper</button>" +
+        "</div>";
     }
   },
   init: function () {
@@ -2242,10 +2319,9 @@ var objStorehouse = {
     localStorage.setItem("Pasta", objStorehouse.pasta);
   },
   show: function () {
-    document.getElementById("StorehousePasta").innerHTML =
-      "<p>Aantal dozen pasta op voorraad: " +
-      FixNumber(objStorehouse.pasta) +
-      "</p>";
+    document.getElementById("StorehousePasta").innerHTML = renderStats([
+      ["Voorraad", FixNumber(objStorehouse.pasta) + " dozen"],
+    ]);
   },
   init: function () {
     objStorehouse.amount = localStorage.getItem("Storehouses") || 0;
@@ -2269,7 +2345,7 @@ var objPowerPlant = {
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Energiecentrale",
+        "Oliecentrale",
         "fa-euro-sign"
       );
     }
@@ -2291,7 +2367,7 @@ var objPowerPlant = {
     } else {
       notificationOverlay(
         "Geen energiecentrales om te verkopen",
-        "Energiecentrale",
+        "Oliecentrale",
         "fa-info"
       );
     }
@@ -2303,18 +2379,15 @@ var objPowerPlant = {
     objPowerPlant.show();
   },
   show: function () {
-    document.getElementById("PowerPlantAmount").innerHTML =
-      "<p>Op dit moment zijn er " +
-      FixNumber(objPowerPlant.amount) +
-      " energiecentrales.";
-    document.getElementById("PowerPlantPrice").innerHTML =
-      "<p>Kosten eenvoudige energiecentrale: " +
-      FixMoney(objPowerPlant.price) +
-      "</p>";
-    document.getElementById("SellPowerPlant").innerHTML =
-      "<p>Je kan een energiecentrale verkopen voor 75% van de prijs van de vorige centrale (" +
-      FixMoney((+objPowerPlant.price / 110) * 100 * 0.75) +
-      ")</p>";
+    document.getElementById("PowerPlantAmount").innerHTML = renderStats([
+      ["Centrales", FixNumber(objPowerPlant.amount)],
+    ]);
+    document.getElementById("PowerPlantPrice").innerHTML = renderStats([
+      ["Prijs per centrale", FixMoney(objPowerPlant.price)],
+    ]);
+    document.getElementById("SellPowerPlant").innerHTML = renderStats([
+      ["Verkoopwaarde", FixMoney((+objPowerPlant.price / 110) * 100 * 0.75)],
+    ]);
     objEnergy.show();
   },
   init: function () {
@@ -2339,7 +2412,7 @@ var objCoalPowerPlant = {
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Steenkool energiecentrale",
+        "Kolencentrale",
         "fa-euro-sign"
       );
     }
@@ -2362,7 +2435,7 @@ var objCoalPowerPlant = {
     } else {
       notificationOverlay(
         "Geen centrales om te verkopen",
-        "Steenkool energiecentrale",
+        "Kolencentrale",
         "fa-info"
       );
     }
@@ -2377,24 +2450,28 @@ var objCoalPowerPlant = {
   show: function () {
     if (objMines.coalAmountActive >= 1) {
       document.getElementById("CoalPowerPlantAmount").innerHTML =
-        "<h2>Energie (steenkool):</h2><p>Op dit moment zijn er " +
-        FixNumber(objCoalPowerPlant.amount) +
-        " energiecentrales.</p>";
-      document.getElementById("CoalPowerPlantPrice").innerHTML =
-        "<p>Kosten steenkool energiecentrale: " +
-        FixMoney(objCoalPowerPlant.price) +
-        "</p>  <p>Deze centrale gebruikt " +
-        FixNumber(objCoalPowerPlant.CoalUsageTons) +
-        " ton steenkool per tick en levert daarvoor " +
-        FixNumber(objCoalPowerPlant.yield) +
-        " eenheden energie</p>";
+        "<h2>Kolencentrales</h2>" +
+        renderStats([["Centrales", FixNumber(objCoalPowerPlant.amount)]]);
+      document.getElementById("CoalPowerPlantPrice").innerHTML = renderStats([
+        ["Prijs per centrale", FixMoney(objCoalPowerPlant.price)],
+        [
+          "Verkoopwaarde",
+          FixMoney((+objCoalPowerPlant.price / 105) * 100 * 0.75),
+        ],
+        [
+          "Steenkool per centrale",
+          FixUnit(objCoalPowerPlant.CoalUsageTons, "ton per tick"),
+        ],
+        [
+          "Energie per centrale",
+          FixNumber(objCoalPowerPlant.yield) + " per tick",
+        ],
+      ]);
       document.getElementById("CoalSellPowerPlant").innerHTML =
-        "<p>Je kan een steenkool energiecentrale verkopen voor 75% van de prijs van de vorige centrale (" +
-        FixMoney((+objCoalPowerPlant.price / 105) * 100 * 0.75) +
-        ")</p>" +
-        "<p>Bouw (of verkoop) een steenkoolenergiecentrale:</p>" +
-        "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw!</button>" +
-        " <button type='button' class='btn btn-warning' onClick='objCoalPowerPlant.sell();' id='CoalpowerPlantSell'>Verkoop!</button>";
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw kolencentrale</button>" +
+        " <button type='button' class='btn btn-warning' onClick='objCoalPowerPlant.sell();' id='CoalpowerPlantSell'>Verkoop kolencentrale</button>" +
+        "</div>";
       objEnergy.show();
       objCoal.show();
     }
@@ -2433,7 +2510,7 @@ var objSalesComputer = {
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Sales Computer",
+        "Salescomputer",
         "fa-euro-sign"
       );
     }
@@ -2447,36 +2524,24 @@ var objSalesComputer = {
       objSalesComputer.show();
     } else {
       notificationOverlay(
-        "Geen CPUs om te verkopen",
+        "Geen CPU's om te verkopen",
         "Salescomputer",
         "fa-info"
       );
     }
   },
   show: function () {
-    if (objSalesComputer.cpu == 1) {
-      var cpus = " CPU ";
-    } else {
-      var cpus = " CPU's ";
-    }
-    if (objSalesComputer.cpu <= 3) {
-      document.getElementById("autoSellIntro").innerHTML =
-        "<p>Je salescomputer heeft CPU's nodig om te werken. Voor iedere CPU komt het volgende item beschikbaar. Je hebt op dit moment " +
-        +objSalesComputer.cpu +
-        cpus +
-        ". Koop een extra CPU voor: " +
-        FixMoney(objSalesComputer.cpuCost) +
-        ". Je kan een CPU ook weer verkopen voor: " +
-        FixMoney(objSalesComputer.cpuCost * 0.75) +
-        "</p>";
-      document.getElementById("addCPU").disabled = false;
-    } else {
-      document.getElementById("autoSellIntro").innerHTML =
-        "<p>Je hebt het maximale niveau bereikt! (" +
-        objSalesComputer.cpu +
-        " stuks) </p>";
-      document.getElementById("addCPU").disabled = true;
-    }
+    var maxCpu = +objSalesComputer.cpu > 3;
+    document.getElementById("autoSellIntro").innerHTML =
+      renderStats([
+        ["CPU's", FixNumber(objSalesComputer.cpu) + " van 4"],
+        !maxCpu && ["Prijs per CPU", FixMoney(objSalesComputer.cpuCost)],
+        ["Verkoopwaarde", FixMoney(objSalesComputer.cpuCost * 0.75)],
+      ]) +
+      renderHint(
+        "Iedere CPU zet het volgende product vrij: olie, bloem, pasta en kunststof."
+      );
+    document.getElementById("addCPU").disabled = maxCpu;
     switch (+objSalesComputer.cpu) {
       case 0:
         document.getElementById("autoOilCheck").disabled = true;
@@ -2521,66 +2586,42 @@ var objSalesComputer = {
   showOil: function (inputwaarde) {
     localStorage.setItem("autoOil", inputwaarde);
     objSalesComputer.oilValue = inputwaarde;
-    var autoSellOilOn = " niet ";
-    if (objSalesComputer.autoSellOil == true) {
-      var autoSellOilOn = " ";
-    }
-    document.getElementById("autoSellOil").innerHTML =
-      "<h3>Automatisch verkopen olie</h3><p>Olie wordt op dit moment" +
-      autoSellOilOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objOil.price) +
-      "</p>";
+    document.getElementById("autoSellOil").innerHTML = renderAutoSell(
+      "Olie",
+      objSalesComputer.autoSellOil == true,
+      inputwaarde,
+      FixMoney(objOil.price)
+    );
   },
   showFlour: function (inputwaarde) {
     localStorage.setItem("autoFlour", inputwaarde);
     objSalesComputer.flourValue = inputwaarde;
-    var autoSellFlourOn = " niet ";
-    if (objSalesComputer.autoSellFlour == true) {
-      var autoSellFlourOn = " ";
-    }
-    document.getElementById("autoSellFlour").innerHTML =
-      "<h3>Automatisch verkopen bloem</h3><p>Bloem wordt op dit moment" +
-      autoSellFlourOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objFlour.price) +
-      "</p>";
+    document.getElementById("autoSellFlour").innerHTML = renderAutoSell(
+      "Bloem",
+      objSalesComputer.autoSellFlour == true,
+      inputwaarde,
+      FixMoney(objFlour.price)
+    );
   },
   showPasta: function (inputwaarde) {
     localStorage.setItem("autoPasta", inputwaarde);
     objSalesComputer.pastaValue = inputwaarde;
-    var autoSellPastaOn = " niet ";
-    if (objSalesComputer.autoSellPasta == true) {
-      var autoSellPastaOn = " ";
-    }
-    document.getElementById("autoSellPasta").innerHTML =
-      "<h3>Automatisch verkopen pasta</h3><p>Pasta wordt op dit moment" +
-      autoSellPastaOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objPasta.price()) +
-      "</p>";
+    document.getElementById("autoSellPasta").innerHTML = renderAutoSell(
+      "Pasta",
+      objSalesComputer.autoSellPasta == true,
+      inputwaarde,
+      FixMoney(objPasta.price())
+    );
   },
   showKunststof: function (inputwaarde) {
     localStorage.setItem("autoKunststof", inputwaarde);
     objSalesComputer.kunststofValue = inputwaarde;
-    var autoSellKunststofOn = " niet ";
-    if (objSalesComputer.autoSellKunststof == true) {
-      var autoSellKunststofOn = " ";
-    }
-    document.getElementById("autoSellKunststof").innerHTML =
-      "<h3>Automatisch verkopen kunststof</h3><p>Kunststof wordt op dit moment" +
-      autoSellKunststofOn +
-      "automatisch verkocht als de prijs " +
-      FixMoney(+inputwaarde) +
-      " of hoger is! De huidige prijs is op dit moment: " +
-      FixMoney(objPlastic.price) +
-      "</p>";
+    document.getElementById("autoSellKunststof").innerHTML = renderAutoSell(
+      "Kunststof",
+      objSalesComputer.autoSellKunststof == true,
+      inputwaarde,
+      FixMoney(objPlastic.price)
+    );
   },
   checkOil: function (checkState) {
     localStorage.setItem("autoOilCheck", checkState);
@@ -2702,16 +2743,15 @@ var objSalesComputer = {
 };
 
 function showPrice() {
-  document.getElementById("Oilprice").innerHTML =
-    "<p>De huidige olieprijs: " + FixMoney(objOil.price) + "</p>";
-  document.getElementById("GrainPrice").innerHTML =
-    "<p>De huidige graanprijs: " +
-    FixMoney(objGrain.price) +
-    " per 1.000kg</p>";
-  document.getElementById("FlourPrice").innerHTML =
-    "<p>De huidige bloemprijs: " +
-    FixMoney(objFlour.price) +
-    " per 1.000kg</p>";
+  document.getElementById("Oilprice").innerHTML = renderStats([
+    ["Prijs per vat", FixMoney(objOil.price)],
+  ]);
+  document.getElementById("GrainPrice").innerHTML = renderStats([
+    ["Prijs per 1.000 kg", FixMoney(objGrain.price)],
+  ]);
+  document.getElementById("FlourPrice").innerHTML = renderStats([
+    ["Prijs per 1.000 kg", FixMoney(objFlour.price)],
+  ]);
 }
 
 // research voor mijnbouw
@@ -2754,7 +2794,7 @@ var objResearch = {
       ) {
         notificationOverlay(
           "Niet genoeg doekoe!",
-          "Mijnbouw onderzoek",
+          "Mijnbouwonderzoek",
           "fa-euro-sign"
         );
         return 0;
@@ -2771,7 +2811,7 @@ var objResearch = {
     objResearch.timer--;
     localStorage.setItem("rTimer", objResearch.timer);
     document.getElementById("ResearchTimer").innerHTML =
-      "<p>Het onderzoek is klaar over: " + objResearch.timer + " Seconden</p>";
+      "Onderzoek klaar over " + objResearch.timer + " seconden";
     if (objResearch.timer < 1 && objResearch.running === 1) {
       objResearch.level++;
       localStorage.setItem("Rlevel", objResearch.level);
@@ -2785,31 +2825,32 @@ var objResearch = {
   },
   show: function () {
     if (objResearch.level <= objResearch.research_tree.length) {
+      var phase = objResearch.research_tree[objResearch.level - 1];
       document.getElementById("ResDesc").innerHTML =
-        "<p>De " +
-        objResearch.research_tree[objResearch.level - 1].phase +
-        " fase in het onderzoek naar mijnbouw kost: " +
-        FixMoney(objResearch.research_tree[objResearch.level - 1].cost) +
-        " en zal " +
-        FixNumber(objResearch.research_tree[objResearch.level - 1].time) +
-        " seconden duren. " +
-        objResearch.research_tree[objResearch.level - 1].description +
-        "</p>";
+        renderStats([
+          [
+            "Fase",
+            objResearch.level + " van " + objResearch.research_tree.length,
+          ],
+          ["Kosten", FixMoney(phase.cost)],
+          ["Duur", FixNumber(phase.time) + " seconden"],
+        ]) + renderHint(phase.description);
     } else {
-      document.getElementById("ResDesc").innerHTML =
-        "<p>Je bent helemaal klaar met de research; succes met het vinden van een goed mijngebied! " +
-        "Je hebt al onderzocht: Mijnbouw algemeen, prospecting en het daadwerkelijk openen van een mijn.</p>";
+      document.getElementById("ResDesc").innerHTML = renderHint(
+        "Onderzoek afgerond: je kunt nu naar mijnlocaties zoeken en mijnen openen."
+      );
       document.getElementById("MiningResearch").disabled = true;
+      document.getElementById("MiningResearch").style.display = "none";
       document.getElementById("ResearchTimer").style.display = "none";
     }
 
     if (+objPlayerInfo.level < 8) {
-      document.getElementById("MiningLevel").innerHTML =
-        "<p> Vanaf level 8 mag je dit onderzoek starten!</p>";
-
+      document.getElementById("MiningLevel").innerHTML = renderHint(
+        "Beschikbaar vanaf level 8."
+      );
       document.getElementById("MiningResearch").disabled = true;
     } else {
-      // document.getElementById("MiningLevel").style.display = "none";
+      document.getElementById("MiningLevel").innerHTML = "";
       if (objResearch.running === 0) {
         document.getElementById("MiningResearch").disabled = false;
       }
@@ -2827,9 +2868,7 @@ var objResearch = {
         objResearch.timer = parseInt(localStorage.getItem("rTimer"));
         showMessage("Research timer", objResearch.timer);
         document.getElementById("ResearchTimer").innerHTML =
-          "<p>Het onderzoek is klaar over: " +
-          objResearch.timer +
-          " Seconden</p>";
+          "Onderzoek klaar over " + objResearch.timer + " seconden";
         document.getElementById("MiningResearch").disabled = true;
       }
       if (objResearch.level > 3) {
@@ -2893,9 +2932,7 @@ var objMines = {
     objMines.prospectTimerActive--;
     localStorage.setItem("pTimer", objMines.prospectTimerActive);
     document.getElementById("ProspectingProgress").innerHTML =
-      "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
-      objMines.prospectTimerActive +
-      " Seconden</p>";
+      "Zoeken klaar over " + objMines.prospectTimerActive + " seconden";
     if (objMines.prospectTimerActive < 1) {
       //bepalen welke resource er gevonden wordt: (geinspireerd door: http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
 
@@ -2958,8 +2995,9 @@ var objMines = {
       localStorage.setItem("prospecting", objMines.prospecting);
       document.getElementById("ProspectingProgress").style.display = "none";
       document.getElementById("ProspectingButton").disabled = false;
-      document.getElementById("ProspectingResult").innerHTML =
-        "<p>Laatst gevonden resource: " + selectedItem + "</p>";
+      document.getElementById("ProspectingResult").innerHTML = renderStats([
+        ["Laatste vondst", selectedItem],
+      ]);
       objMines.showProspecting();
       objMines.showMining();
     }
@@ -2974,42 +3012,30 @@ var objMines = {
       document.getElementById("minesites").style.display = "none";
     }
     document.getElementById("Prospecting").innerHTML =
-      "<p>Zoek hier naar nieuwe gebieden om je mijnen te kunnen openen. De zoektocht duurt: " +
-      objMines.prospectTimer +
-      " seconden en hiervoor betaal je: " +
-      FixMoney(+objMines.prospectCost) +
-      "</p>";
-    document.getElementById("minesites").innerHTML =
-      "<p>Aantal ijzererts locaties/mijnen: " +
-      FixNumber(objMines.ironAmountProspected) +
-      "/" +
-      FixNumber(objMines.ironAmountActive) +
-      "</p>" +
-      "<p>Aantal steenkool locaties/mijnen: " +
-      FixNumber(objMines.coalAmountProspected) +
-      "/" +
-      FixNumber(objMines.coalAmountActive) +
-      "</p>" +
-      "<p>Aantal uranium locaties/mijnen: " +
-      FixNumber(objMines.uraniumAmountProspected) +
-      "/" +
-      FixNumber(objMines.uraniumAmountActive) +
-      "</p>" +
-      "<p>Aantal koper locaties/mijnen: " +
-      FixNumber(objMines.copperAmountProspected) +
-      "/" +
-      FixNumber(objMines.copperAmountActive) +
-      "</p>" +
-      "<p>Aantal goud locaties/mijnen: " +
-      FixNumber(objMines.goldAmountProspected) +
-      "/" +
-      FixNumber(objMines.goldAmountActive) +
-      "</p>" +
-      "<p>Aantal diamant locaties/mijnen: " +
-      FixNumber(objMines.diamondAmountProspected) +
-      "/" +
-      FixNumber(objMines.diamondAmountActive) +
-      "</p>";
+      renderStats([
+        ["Kosten", FixMoney(+objMines.prospectCost)],
+        ["Duur", FixNumber(objMines.prospectTimer) + " seconden"],
+      ]) +
+      renderHint(
+        "Je vindt een willekeurige locatie: ijzererts, steenkool, uranium, koper, goud of diamant."
+      );
+    var site = function (label, type) {
+      return [
+        label,
+        FixNumber(objMines[type + "AmountProspected"]) +
+          " gevonden, " +
+          FixNumber(objMines[type + "AmountActive"]) +
+          " actief",
+      ];
+    };
+    document.getElementById("minesites").innerHTML = renderStats([
+      site("IJzererts", "iron"),
+      site("Steenkool", "coal"),
+      site("Uranium", "uranium"),
+      site("Koper", "copper"),
+      site("Goud", "gold"),
+      site("Diamant", "diamond"),
+    ]);
   },
   addMine: function (typeMine, amount) {
     //functie voor werkelijk toevoegen mijn
@@ -3109,27 +3135,24 @@ var objMines = {
       active,
       mineName,
       mineCode,
-      mineButton
+      mineButton,
+      title
     ) {
       document.getElementById(htmlfield).innerHTML =
         "<h2>" +
-        mineName +
-        "en</h2><p>Je hebt in totaal " +
-        FixNumber(objMines[typeMine]) +
-        " " +
-        mineName +
-        " locaties gevonden. Hiervan zijn er " +
-        FixNumber(objMines[active]) +
-        " actief in gebruik.</p>" +
-        "Je kan nog " +
-        FixNumber(+objMines[typeMine] - +objMines[active]) +
-        " " +
-        mineName +
-        " openen. Een " +
-        mineName +
-        " kost nu " +
-        FixMoney(objMines[mineCost]) +
-        ". Je kan een mijn ook verkopen voor 75% van de aanschafwaarde.</p>" +
+        title +
+        "</h2>" +
+        renderStats([
+          ["Locaties gevonden", FixNumber(objMines[typeMine])],
+          ["Mijnen actief", FixNumber(objMines[active])],
+          [
+            "Vrije locaties",
+            FixNumber(+objMines[typeMine] - +objMines[active]),
+          ],
+          ["Prijs per mijn", FixMoney(objMines[mineCost])],
+          ["Verkoopwaarde", FixMoney(objMines[mineCost] * 0.75)],
+        ]) +
+        "<div class='actions'>" +
         "<button type='button' class='btn btn-primary' onClick='objMines.addMine(" +
         mineCode +
         ", 1);' id='" +
@@ -3143,7 +3166,7 @@ var objMines = {
         mineButton +
         "Sell'>Verkoop " +
         mineName +
-        "</button>";
+        "</button></div>";
       return 0;
     }
 
@@ -3154,7 +3177,8 @@ var objMines = {
       "ironAmountActive",
       "ijzerertsmijn",
       1,
-      "ironMineButton"
+      "ironMineButton",
+      "IJzerertsmijnen"
     );
     generateText(
       "coal-mines",
@@ -3163,7 +3187,8 @@ var objMines = {
       "coalAmountActive",
       "steenkoolmijn",
       2,
-      "coalMineButton"
+      "coalMineButton",
+      "Steenkoolmijnen"
     );
     generateText(
       "uranium-mines",
@@ -3172,7 +3197,8 @@ var objMines = {
       "uraniumAmountActive",
       "uraniummijn",
       3,
-      "uraniumMineButton"
+      "uraniumMineButton",
+      "Uraniummijnen"
     );
     //generateText("copper-mines", "copperAmountProspected", "copperMineCost","copperAmountActive", "kopermijn", 4, "copperMineButton);
     //generateText("gold-mines", "goldAmountProspected", "goldMineCost","goldAmountActive", "goudmijn", 5, "goldMineButton");
@@ -3240,9 +3266,7 @@ var objMines = {
     if (+objMines.prospecting === 1) {
       document.getElementById("ProspectingButton").disabled = true;
       document.getElementById("ProspectingProgress").innerHTML =
-        "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
-        objMines.prospectTimerActive +
-        " Seconden</p>";
+        "Zoeken klaar over " + objMines.prospectTimerActive + " seconden";
     } else {
       document.getElementById("ProspectingButton").disabled = false;
     }
@@ -3279,36 +3303,29 @@ var objCoalMine = {
   },
   show: function () {
     document.getElementById("coalMine").innerHTML =
-      "<p>Een steenkoolmijn produceert: " +
-      FixNumber(+objCoalMine.production) +
-      " ton steenkool per tick." +
-      " Dit kost je " +
-      FixNumber(objCoalMine.energy) +
-      " energie per tick</p><p>Je produceert op dit moment " +
-      FixNumber(+objMines.coalAmountActive * +objCoalMine.production) +
-      " ton steenkool per tick, dit kost " +
-      FixNumber(+objMines.coalAmountActive * +objCoalMine.energy) +
-      " energie.</p>" +
-      "<p>Je hebt nu: " +
-      FixNumber(objCoal.storage) +
-      " steenkool silo's" +
-      "<br>Totale opslag capaciteit: " +
-      FixNumber(+objCoal.storage * +objCoal.storageCap) +
-      "<br>Steenkool voorraad / capaciteit: " +
-      FixNumber(objCoal.amount) +
-      "/" +
-      FixNumber(+objCoal.storage * +objCoal.storageCap) +
-      " ton</p>" +
-      "<p>Je kan steenkool verkopen voor: " +
-      FixMoney(objCoal.price) +
-      " per ton. In geval van nood kan je steenkool ook kopen voor: " +
-      FixMoney(+objCoal.price * 1.5) +
-      " per ton (alleen als je minder dan 5% van je maximale steenkool capaciteit beschikbaar hebt)</p>" +
-      "<button type='button' class='btn btn-danger' onClick='objCoal.sell(0)' id='sellCoalButton'>Verkoop steenkool!</button> " +
-      "<button type='button' class='btn btn-outline-success' onClick='objCoal.buy(50000)' id='buyCoalButton'>Koop 50k steenkool</button>" +
-      "<p>Koop een extra silo voor: " +
-      FixMoney(objCoal.storagePrice) +
-      "</p>";
+      renderResource({
+        amount: objCoal.amount,
+        production: +objMines.coalAmountActive * +objCoalMine.production,
+        energy: +objMines.coalAmountActive * +objCoalMine.energy,
+        period: "tick",
+        price: objCoal.price,
+        silos: objCoal.storage,
+        siloCap: objCoal.storageCap,
+        siloPrice: objCoal.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objCoalMine.production, "ton") +
+          " per tick voor " +
+          FixNumber(objCoalMine.energy) +
+          " energie. Bijkopen kan alleen onder 5% voorraad, voor " +
+          FixMoney(+objCoal.price * 1.5) +
+          " per ton.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objCoal.sell(0)' id='sellCoalButton'>Verkoop steenkool</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objCoal.buy(50000)' id='buyCoalButton'>Koop 50.000 ton steenkool</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objCoal.addSilo();' id='coalSiloButton'>Bouw steenkoolsilo</button>" +
+      "</div>";
   },
 };
 
@@ -3370,7 +3387,7 @@ var objCoal = {
     if (moneyCheck(+objCoal.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Steelkool opslag",
+        "Steenkoolopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -3387,14 +3404,11 @@ var objCoal = {
       (+objCoal.amount / (+objCoal.storageCap * +objCoal.storage)) * 100;
     percentageFilled = Math.round(percentageFilled * 100) / 100;
     if (objCoalPowerPlant.amount > 0) {
-      document.getElementById("CoalStock").innerHTML =
-        '<p>Steenkool:</p><div class="progress"><div class="progress-bar" style="width:' +
-        percentageFilled +
-        '%">' +
-        FixNumber(objCoal.amount) +
-        "kg (" +
-        percentageFilled +
-        "%)</div></div>";
+      document.getElementById("CoalStock").innerHTML = renderBar(
+        "Steenkool",
+        FixUnit(objCoal.amount, "ton"),
+        percentageFilled
+      );
     }
   },
   init: function () {
@@ -3433,34 +3447,26 @@ var objIronMine = {
   },
   show: function () {
     document.getElementById("IronMine").innerHTML =
-      "<p>Een ijzererts-mijn produceert: " +
-      FixNumber(+objIronMine.production) +
-      " ton ijzererts per tick." +
-      " Dit kost je " +
-      FixNumber(objIronMine.energy) +
-      " energie per tick</p><p>Je produceert op dit moment " +
-      FixNumber(+objMines.ironAmountActive * +objIronMine.production) +
-      " ton ijzererts per tick, dit kost " +
-      FixNumber(+objMines.ironAmountActive * +objIronMine.energy) +
-      " energie.</p>" +
-      "<p>Je hebt nu: " +
-      FixNumber(objIronOre.storage) +
-      " ijzererts silo's" +
-      "<br>Totale opslag capaciteit: " +
-      FixNumber(+objIronOre.storage * +objIronOre.storageCap) +
-      "ton <br>Ijzererts voorraad / capaciteit: " +
-      FixNumber(objIronOre.amount) +
-      "/" +
-      FixNumber(+objIronOre.storage * +objIronOre.storageCap) +
-      " ton</p>" +
-      "<p>Je kan ijzererts verkopen voor: " +
-      FixMoney(objIronOre.price) +
-      " per ton. Als de opslag vol is stoppen de ijzermijnen met werken (ze kosten dan ook geen energie meer)</p>" +
-      "<button type='button' class='btn btn-danger' onClick='objIronOre.sell(0)' id='sellIronButton'>Verkoop ijzererts!</button>" +
-      "<p>Koop een extra silo voor: " +
-      FixMoney(objIronOre.storagePrice) +
-      "</p>" +
-      "<button type='button' class='btn btn-primary' onClick='objIronOre.addSilo();' id='ironOreSiloButton'>Bouw ijzererts-silo</button>";
+      renderResource({
+        amount: objIronOre.amount,
+        production: +objMines.ironAmountActive * +objIronMine.production,
+        energy: +objMines.ironAmountActive * +objIronMine.energy,
+        period: "tick",
+        price: objIronOre.price,
+        silos: objIronOre.storage,
+        siloCap: objIronOre.storageCap,
+        siloPrice: objIronOre.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objIronMine.production, "ton") +
+          " per tick voor " +
+          FixNumber(objIronMine.energy) +
+          " energie. Is de opslag vol, dan stoppen de mijnen.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objIronOre.sell(0)' id='sellIronButton'>Verkoop ijzererts</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objIronOre.addSilo();' id='ironOreSiloButton'>Bouw ijzererts-silo</button>" +
+      "</div>";
   },
 };
 
@@ -3493,7 +3499,7 @@ var objIronOre = {
     if (moneyCheck(+objIronOre.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Ijzererts opslag",
+        "IJzerertsopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -3604,35 +3610,43 @@ var objIronMelter = {
   show: function () {
     if (+objMines.ironAmountProspected > 0) {
       document.getElementById("steelProduction").innerHTML =
-        "<h2>Staal</h2><p>Staal kan geproduceerd worden door het gebruiken van ijzererts, steenkool en een hoop energie. " +
-        "Je kan een hoogoven bouwen voor " +
-        FixMoney(objIronMelter.cost) +
-        ". Als je een hoogoven verkoopt levert dat: " +
-        FixMoney(objIronMelter.cost * 0.75) +
-        " op. " +
-        "Iedere hoogoven gebruikt " +
-        FixNumber(objIronMelter.ironOreNeeded) +
-        " ton ijzererts, " +
-        FixNumber(objIronMelter.coalNeeded) +
-        " ton steenkool en " +
-        FixNumber(objIronMelter.energy) +
-        " energie</p>" +
-        "<p><button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
-        "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button></p>";
+        "<h2>Hoogovens</h2>" +
+        renderStats([
+          ["Hoogovens", FixNumber(objIronMelter.amount)],
+          ["Prijs per hoogoven", FixMoney(objIronMelter.cost)],
+          ["Verkoopwaarde", FixMoney(objIronMelter.cost * 0.75)],
+        ]) +
+        "<h3>Per hoogoven per run</h3>" +
+        renderStats([
+          ["IJzererts", FixUnit(objIronMelter.ironOreNeeded, "ton")],
+          ["Steenkool", FixUnit(objIronMelter.coalNeeded, "ton")],
+          ["Energie", FixNumber(objIronMelter.energy)],
+          ["Staal", FixUnit(objIronMelter.production, "ton")],
+        ]) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
+        "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button>" +
+        "</div>";
       document.getElementById("steelProductionStats").innerHTML =
-        "<p> Je hebt op dit moment " +
-        FixNumber(objIronMelter.amount) +
-        " hoogovens. Deze hoogovens produceren " +
-        FixNumber(+objIronMelter.amount * +objIronMelter.production) +
-        " ton staal per run</p><p>" +
-        "Dit kost per run: <br> Steenkool: " +
-        FixNumber(objIronMelter.amount * objIronMelter.coalNeeded) +
-        "<br> Ijzererts: " +
-        FixNumber(objIronMelter.amount * objIronMelter.ironOreNeeded) +
-        "<br> Energie: " +
-        FixNumber(objIronMelter.amount * objIronMelter.energy) +
-        "</p><p>" +
-        "<button type='button' class='btn btn-primary' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button></p>";
+        "<h3>Totaal per run</h3>" +
+        renderStats([
+          [
+            "Staal",
+            FixUnit(+objIronMelter.amount * +objIronMelter.production, "ton"),
+          ],
+          [
+            "IJzererts",
+            FixUnit(objIronMelter.amount * objIronMelter.ironOreNeeded, "ton"),
+          ],
+          [
+            "Steenkool",
+            FixUnit(objIronMelter.amount * objIronMelter.coalNeeded, "ton"),
+          ],
+          ["Energie", FixNumber(objIronMelter.amount * objIronMelter.energy)],
+        ]) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-success' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button>" +
+        "</div>";
     }
   },
   init: function () {
@@ -3649,11 +3663,7 @@ var objSteel = {
   storagePrice: 15000000,
   addStorage: function () {
     if (moneyCheck(+objSteel.storagePrice) == 0) {
-      notificationOverlay(
-        "Niet genoeg doekoe!",
-        "Ijzererts opslag",
-        "fa-euro-sign"
-      );
+      notificationOverlay("Niet genoeg doekoe!", "Staalopslag", "fa-euro-sign");
       return 0;
     } else {
       objMoney.use(+objSteel.storagePrice);
@@ -3683,34 +3693,38 @@ var objSteel = {
     useResource("objSteel", amount, "steelAmount");
   },
   show: function () {
+    var steelCapacity = +objSteel.storage * +objSteel.storageCap;
     document.getElementById("Steel").innerHTML =
-      "<h2>Staalvoorraden</h2><p>Staal wordt in loodsen opgeslagen. Iedere loods kan " +
-      FixNumber(objSteel.storageCap) +
-      " ton staal opslaan</p><p>Info:<br>Aantal loodsen: " +
-      FixNumber(objSteel.storage) +
-      "<br>Totale opslagcapaciteit: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap) +
-      "<br>Extra loodsen kosten: " +
-      FixMoney(objSteel.storagePrice) +
-      "</P>";
-    document.getElementById("steelStats").innerHTML =
-      "<p>Stats:<br>Aantal loodsen: " +
-      FixNumber(objSteel.storage) +
-      "<br>Staal in voorraad: " +
-      FixNumber(objSteel.amount) +
-      "<br>Totale ruimte: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap) +
-      "<br>Beschikbare ruimte: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap - +objSteel.amount);
+      "<h2>Staal</h2>" +
+      renderBar(
+        "Voorraad",
+        FixUnit(objSteel.amount, "ton"),
+        (+objSteel.amount / steelCapacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixUnit(steelCapacity - +objSteel.amount, "ton")],
+        [
+          "Loodsen",
+          FixNumber(objSteel.storage) +
+            " (" +
+            FixUnit(steelCapacity, "ton") +
+            ")",
+        ],
+        ["Prijs extra loods", FixMoney(objSteel.storagePrice)],
+        ["Capaciteit per loods", FixUnit(objSteel.storageCap, "ton")],
+      ]);
+    document.getElementById("steelStats").innerHTML = "";
     document.getElementById("steelStorage").innerHTML =
-      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button> " +
-      "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
+      renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.") +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button>" +
+      "</div>";
   },
   showPrice: function () {
-    document.getElementById("steelPrice").innerHTML =
-      "<p>De huidige staalprijs is: " +
-      FixMoney(objSteel.price) +
-      " per ton</p>";
+    document.getElementById("steelPrice").innerHTML = renderStats([
+      ["Prijs per ton", FixMoney(objSteel.price)],
+    ]);
   },
   init: function () {
     objSteel.amount = localStorage.getItem("steelAmount") || 0;
@@ -3739,7 +3753,7 @@ var objPlasticFactory = {
       Price = +objPlasticFactory.cost * 0.75;
       if (objPlasticFactory.amount == 0) {
         notificationOverlay(
-          "Geen plasticfabrieken om te verkopen",
+          "Geen kunststoffabrieken om te verkopen",
           "Kunststoffabriek",
           "fa-industry"
         );
@@ -3812,7 +3826,7 @@ var objPlasticFactory = {
     if (objPlasticFactory.amount == 0) {
       if (typeProduction == 0) {
         notificationOverlay(
-          "Geen Kunststoffabrieken!",
+          "Geen kunststoffabrieken!",
           "Kunststoffabriek",
           "fa-industry"
         );
@@ -3885,41 +3899,56 @@ var objPlasticFactory = {
   },
   show: function () {
     document.getElementById("pFactory1").innerHTML =
-      "<h2>Kunststoffabrieken</h2><p>Je hebt op dit moment " +
-      FixNumber(objPlasticFactory.amount) +
-      " fabriek(en) die " +
-      "kunststof producten kunnen maken</p><p>Stroomverbruik per fabriek per run: " +
-      FixNumber(objPlasticFactory.energy) +
-      " <br>Olieverbruik per fabriek per run: " +
-      FixNumber(objPlasticFactory.oilNeededProduction) +
-      " <br>" +
-      "Opbrengst per fabriek per run: " +
-      FixNumber(objPlasticFactory.production) +
-      " eenheden</p><p>Een extra fabriek kost: " +
-      FixMoney(objPlasticFactory.cost) +
-      "<br>";
-    if (objPlasticFactory.amount > 0) {
-      document.getElementById("pFactory2").innerHTML =
-        "<p>Totaalverbruik per run: <br> Energie: " +
-        FixNumber(+objPlasticFactory.amount * +objPlasticFactory.energy) +
-        " <br>Olie: " +
-        FixNumber(
-          +objPlasticFactory.amount * +objPlasticFactory.oilNeededProduction
-        ) +
-        "<br></p><p>Totaal opbrengst per run:<br>Kunststof: " +
-        FixNumber(+objPlasticFactory.amount * +objPlasticFactory.production) +
-        " eenheden</p>";
-    }
+      renderStats([
+        ["Fabrieken", FixNumber(objPlasticFactory.amount)],
+        ["Prijs per fabriek", FixMoney(objPlasticFactory.cost)],
+      ]) +
+      "<h3>Per fabriek per run</h3>" +
+      renderStats([
+        ["Energie", FixNumber(objPlasticFactory.energy)],
+        ["Olie", FixUnit(objPlasticFactory.oilNeededProduction, "vaten")],
+        ["Opbrengst", FixUnit(objPlasticFactory.production, "eenheden")],
+      ]);
+    document.getElementById("pFactory2").innerHTML =
+      objPlasticFactory.amount > 0
+        ? "<h3>Totaal per run</h3>" +
+          renderStats([
+            [
+              "Energie",
+              FixNumber(+objPlasticFactory.amount * +objPlasticFactory.energy),
+            ],
+            [
+              "Olie",
+              FixUnit(
+                +objPlasticFactory.amount *
+                  +objPlasticFactory.oilNeededProduction,
+                "vaten"
+              ),
+            ],
+            [
+              "Opbrengst",
+              FixUnit(
+                +objPlasticFactory.amount * +objPlasticFactory.production,
+                "eenheden"
+              ),
+            ],
+          ])
+        : "";
     document.getElementById("plasticAuto").innerHTML =
-      "<h3>Automatiseer kunststoffabriek</h3><p>Neem medewerkers aan die kunststof voor je maken. Een medewerker eet: " +
-      FixNumber(objPlasticFactory.workerFood) +
-      " eenheden pasta per 15 ticks en kan 1 kunststoffabriek aansturen.</p><p>Aantal medewerkers: " +
-      FixNumber(objPlasticFactory.workers) +
-      "<br>Pastaverbruik per 15 ticks: " +
-      FixNumber(+objPlasticFactory.workers * objPlasticFactory.workerFood) +
-      "<br>Een medewerker kost: " +
-      FixMoney(objPlasticFactory.workerCost) +
-      "</p><p>Je krijgt geen geld terug als je een medewerker ontslaat.</p>";
+      renderStats([
+        ["Medewerkers", FixNumber(objPlasticFactory.workers)],
+        [
+          "Pasta per 15 ticks",
+          FixNumber(+objPlasticFactory.workers * objPlasticFactory.workerFood) +
+            " dozen",
+        ],
+        ["Prijs per medewerker", FixMoney(objPlasticFactory.workerCost)],
+      ]) +
+      renderHint(
+        "Een medewerker bedient één fabriek en eet " +
+          FixNumber(objPlasticFactory.workerFood) +
+          " dozen pasta per 15 ticks. Ontslaan levert niets op."
+      );
     if (objPlasticFactory.workers >= objPlasticFactory.amount) {
       document.getElementById("makePlastic").disabled = true;
     } else {
@@ -3944,7 +3973,7 @@ var objPlastic = {
     if (moneyCheck(+objPlastic.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Kunststof opslag",
+        "Kunststofopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -3978,27 +4007,30 @@ var objPlastic = {
     useResource("objPlastic", amount, "plasticAmount");
   },
   show: function () {
-    document.getElementById("plasticStorage").innerHTML =
-      "<h2>Kunststofopslag</h2><p>Je hebt op dit moment plek voor maximaal " +
-      FixNumber(+objPlastic.storage * +objPlastic.storageCap) +
-      " eenheden kunststof.</p><p>Totale hoeveelheid kunststof beschikbaar: " +
-      FixNumber(objPlastic.amount) +
-      " <br>Nog beschikbare ruimte: " +
-      FixNumber(
-        +objPlastic.storage * +objPlastic.storageCap - +objPlastic.amount
-      ) +
-      "</p><p>Je kan opslag bij kopen voor " +
-      FixNumber(objPlastic.storageCap) +
-      " eenheden kunststof, " +
-      "dit kost je " +
-      FixMoney(objPlastic.storagePrice);
+    document.getElementById("plasticStorage").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objPlastic.amount, "eenheden")],
+      [
+        "Vrije ruimte",
+        FixUnit(
+          +objPlastic.storage * +objPlastic.storageCap - +objPlastic.amount,
+          "eenheden"
+        ),
+      ],
+    ]);
+    document.getElementById("plasticStoragePrice").innerHTML = renderStats([
+      [
+        "Opslagcapaciteit",
+        FixUnit(+objPlastic.storage * +objPlastic.storageCap, "eenheden"),
+      ],
+      ["Prijs extra opslag", FixMoney(objPlastic.storagePrice)],
+      ["Extra capaciteit", FixUnit(objPlastic.storageCap, "eenheden")],
+    ]);
   },
   showPrice: function () {
     objPlastic.price = +objOil.price * 8 + 100;
-    document.getElementById("plasticPrice").innerHTML =
-      "<p>De huidige prijs voor kunststof is: " +
-      FixMoney(objPlastic.price) +
-      " per eenheid</p>";
+    document.getElementById("plasticPrice").innerHTML = renderStats([
+      ["Prijs per eenheid", FixMoney(objPlastic.price)],
+    ]);
   },
   init: function () {
     objPlastic.amount = localStorage.getItem("plasticAmount") || 0;
@@ -4055,39 +4087,30 @@ var objUraniumMine = {
     objUraniumOre.show();
   },
   show: function () {
-    document.getElementById("UraniumMine1").innerHTML =
-      "<p>Een uraniummijn produceert: " +
-      FixNumber(+objUraniumMine.production) +
-      " ton uranium per 10 ticks." +
-      " Dit kost je " +
-      FixNumber(objUraniumMine.energy) +
-      " energie per 10 ticks</p><p>Je produceert op dit moment " +
-      FixNumber(+objMines.uraniumAmountActive * +objUraniumMine.production) +
-      " ton uranium per 10 ticks, dit kost " +
-      FixNumber(+objMines.uraniumAmountActive * +objUraniumMine.energy) +
-      " energie. Daarnaast eet je personeel " +
-      FixNumber(
-        +objUraniumMine.workerFood *
-          (+objUraniumMine.workers * +objMines.uraniumAmountActive)
-      ) +
-      " pasta per 10 ticks</p>" +
-      "<p>Je hebt nu: " +
-      FixNumber(objUraniumOre.storage) +
-      " uranium silo's" +
-      "<br>Totale opslag capaciteit: " +
-      FixNumber(+objUraniumOre.storage * +objUraniumOre.storageCap) +
-      "ton <br>Uranium voorraad / capaciteit: " +
-      FixNumber(objUraniumOre.amount) +
-      "/" +
-      FixNumber(+objUraniumOre.storage * +objUraniumOre.storageCap) +
-      " ton</p>" +
-      "<p>Je kan uranium verkopen voor: " +
-      FixMoney(objUraniumOre.price) +
-      " per ton. Als de opslag vol is stoppen de mijnen met werken (ze kosten dan ook geen energie meer)</p>";
-    document.getElementById("UraniumMine").innerHTML =
-      "<p>Koop een extra silo voor: " +
-      FixMoney(objUraniumOre.storagePrice) +
-      "</p>";
+    document.getElementById("UraniumMine1").innerHTML = renderResource({
+      amount: objUraniumOre.amount,
+      production: +objMines.uraniumAmountActive * +objUraniumMine.production,
+      energy: +objMines.uraniumAmountActive * +objUraniumMine.energy,
+      period: "10 ticks",
+      extra: [
+        "Pasta",
+        FixNumber(
+          +objUraniumMine.workerFood *
+            (+objUraniumMine.workers * +objMines.uraniumAmountActive)
+        ) + " dozen per 10 ticks",
+      ],
+      price: objUraniumOre.price,
+      silos: objUraniumOre.storage,
+      siloCap: objUraniumOre.storageCap,
+      siloPrice: objUraniumOre.storagePrice,
+      hint:
+        "Een mijn levert " +
+        FixUnit(objUraniumMine.production, "ton") +
+        " per 10 ticks voor " +
+        FixNumber(objUraniumMine.energy) +
+        " energie; het personeel eet pasta. Is de opslag vol, dan stoppen de mijnen.",
+    });
+    document.getElementById("UraniumMine").innerHTML = "";
   },
 };
 
@@ -4120,7 +4143,7 @@ var objUraniumOre = {
     if (moneyCheck(+objUraniumOre.storagePrice) == 0) {
       notificationOverlay(
         "Niet genoeg doekoe!",
-        "Ijzererts opslag",
+        "Uraniumopslag",
         "fa-euro-sign"
       );
       return 0;
@@ -4298,46 +4321,52 @@ var objFuelCellFactory = {
       objFuelCellFactory.counter = 0;
     }
     localStorage.setItem("fcfCounter", +objFuelCellFactory.counter);
-    if (+objFuelCellFactory.activeFactories > 1) {
-      document.getElementById("fuelRodCounter").innerHTML =
-        "<p>Aantal ticks te gaan voor de splijtstofstaven voltooid zijn: " +
-        FixNumber(100 - +objFuelCellFactory.counter) +
-        "</p>";
-    } else {
-      document.getElementById("fuelRodCounter").innerHTML =
-        "<p>Aantal ticks te gaan voor de splijtstofstaaf voltooid is: " +
-        FixNumber(100 - +objFuelCellFactory.counter) +
-        "</p>";
-    }
+    document.getElementById("fuelRodCounter").innerHTML =
+      "Productie klaar over " +
+      FixNumber(100 - +objFuelCellFactory.counter) +
+      " ticks";
   },
   show: function () {
     document.getElementById("fuelRod").innerHTML =
-      "<h2>Splijtstofstavenproductie</h2><p>Uranium kan worden omgezet in brandstof voor kencentrales. Dit omzetten kost je de volgende resources (per fabriek): <br>" +
-      "Energie: " +
-      FixNumber(objFuelCellFactory.energy) +
-      " <br>Staal: " +
-      FixNumber(objFuelCellFactory.steelNeeded) +
-      "<br>Uranium: " +
-      FixNumber(objFuelCellFactory.urianiumOreNeeded) +
-      "<br>Tijd: " +
-      FixNumber(objFuelCellFactory.timeNeeded) +
-      " ticks</p>" +
-      "<p>Deze fabrieken kunnen niet stilgelegd worden, dus alle resources die benodigd zijn worden in 1x opgenomen bij de start van een run! Iedere fabriek produceert 1 staaf per keer</p>" +
-      "<p>Je hebt momenteel " +
-      FixNumber(objFuelCellFactory.amount) +
-      " fabrieken waar splijtstofstaven kunnen produceren. Een extra fabriek kost: " +
-      FixMoney(objFuelCellFactory.cost) +
-      "<br>Je kan een fabriek ook weer verkopen voor 75% van de waarde.</p>";
+      "<h2>Splijtstofstaven</h2>" +
+      renderStats([
+        ["Fabrieken", FixNumber(objFuelCellFactory.amount)],
+        ["Prijs per fabriek", FixMoney(objFuelCellFactory.cost)],
+        ["Verkoopwaarde", FixMoney(objFuelCellFactory.cost * 0.75)],
+      ]) +
+      "<h3>Per fabriek per run</h3>" +
+      renderStats([
+        ["Uranium", FixUnit(objFuelCellFactory.urianiumOreNeeded, "ton")],
+        ["Staal", FixUnit(objFuelCellFactory.steelNeeded, "ton")],
+        ["Energie", FixNumber(objFuelCellFactory.energy)],
+        ["Duur", FixNumber(objFuelCellFactory.timeNeeded) + " ticks"],
+        ["Opbrengst", "1 staaf"],
+      ]) +
+      renderHint(
+        "Fabrieken draaien altijd door; alle grondstoffen worden aan het begin van een run afgeschreven."
+      );
     document.getElementById("fuelRod2").innerHTML =
-      "<p>Het huidige (maximale) verbruik per batch:<br>Energie: " +
-      FixNumber(objFuelCellFactory.amount * +objFuelCellFactory.energy) +
-      "<br>Staal: " +
-      FixNumber(objFuelCellFactory.amount * +objFuelCellFactory.steelNeeded) +
-      "<br>Uranium: " +
-      FixNumber(
-        objFuelCellFactory.amount * +objFuelCellFactory.urianiumOreNeeded
-      ) +
-      "</p>";
+      "<h3>Totaal per run</h3>" +
+      renderStats([
+        [
+          "Uranium",
+          FixUnit(
+            objFuelCellFactory.amount * +objFuelCellFactory.urianiumOreNeeded,
+            "ton"
+          ),
+        ],
+        [
+          "Staal",
+          FixUnit(
+            objFuelCellFactory.amount * +objFuelCellFactory.steelNeeded,
+            "ton"
+          ),
+        ],
+        [
+          "Energie",
+          FixNumber(objFuelCellFactory.amount * +objFuelCellFactory.energy),
+        ],
+      ]);
     if (+objFuelCellFactory.amount == 0) {
       document.getElementById("fcfSellButton").disabled = true;
     } else {
@@ -4365,10 +4394,9 @@ var objFuelRod = {
   wastePrice: 0,
   calculateWastePrice: function (max, min) {
     objFuelRod.wastePrice = Math.random() * (max - min) + min;
-    document.getElementById("sellWaste").innerHTML =
-      "<p>Je kan je afval door een ander op laten ruimen voor: " +
-      FixMoney(objFuelRod.wastePrice) +
-      "  per splijtstofstaaf</p>";
+    document.getElementById("sellWaste").innerHTML = renderStats([
+      ["Laten opruimen per staaf", FixMoney(objFuelRod.wastePrice)],
+    ]);
     if (objFuelRod.waste == 0) {
       document.getElementById("fcSellWasteButton").disabled = true;
     } else {
@@ -4427,33 +4455,36 @@ var objFuelRod = {
     objMoney.use(+objFuelRod.waste * +objFuelRod.wasteCost);
   },
   show: function () {
+    var factoryStorage = +objFuelCellFactory.amount * +objFuelRod.storageFactor;
     document.getElementById("fuelStorage").innerHTML =
-      "<h2>Splijtstofstavenopslag</h2><p>De splijtstofstaven die gemaakt worden kunnen alleen in een centrale of in de " +
-      "fabriek worden opgeslagen. Iedere fabriek heeft plek voor " +
-      FixNumber(objFuelRod.storageFactor) +
-      " staven. De totaalcapaciteit in de fabrieken is op dit moment: " +
-      FixNumber(+objFuelCellFactory.amount * +objFuelRod.storageFactor) +
-      " staven</p><p>Restcapaciteit in de fabrieken (opslag): " +
-      FixNumber(
-        +objFuelCellFactory.amount * +objFuelRod.storageFactor -
-          +objFuelRod.amount
-      ) +
-      "<br>Totaalvoorraad splijstofstaven: " +
-      FixNumber(objFuelRod.amount) +
-      "</p>";
-    document.getElementById("fuelStoragePlant").innerHTML =
-      "<p>De opslag in de kerncentrales wordt direct gevuld vanuit de fabrieken.</p>";
+      "<h2>Opslag splijtstofstaven</h2>" +
+      renderStats([
+        ["Voorraad", FixNumber(objFuelRod.amount) + " staven"],
+        [
+          "Vrije ruimte",
+          FixNumber(factoryStorage - +objFuelRod.amount) + " staven",
+        ],
+        ["Opslag per fabriek", FixNumber(objFuelRod.storageFactor) + " staven"],
+      ]);
+    document.getElementById("fuelStoragePlant").innerHTML = renderHint(
+      "Staven gaan uit de fabrieken direct naar de kerncentrales."
+    );
     document.getElementById("fuelWaste").innerHTML =
-      "<h3>Afvalopslag</h3><p>Verbruikte splijtstofstaven moeten opgeslagen worden, dit kost geld. Verwerking is op dit moment " +
-      "nog niet mogelijk. Ook wanneer je een fabriek of centrale sluit zullen de staven die daar liggen (ook de nieuwe!) naar de afval opslag gebracht worden, deze staven kunnen " +
-      "(nog) niet hergebruikt worden!</p><p>Er is onbeperkt ruimte voor de opslag van deze staven. De opslag kost " +
-      FixMoney(objFuelRod.wasteCost) +
-      " per staaf per 60 ticks</p>" +
-      "<p>Aantal waste staven in opslag: " +
-      FixNumber(objFuelRod.waste) +
-      "<br>Kosten per 60 ticks: " +
-      FixMoney(+objFuelRod.waste * +objFuelRod.wasteCost) +
-      "</p>";
+      "<h3>Afval</h3>" +
+      renderStats([
+        ["Afvalstaven", FixNumber(objFuelRod.waste)],
+        [
+          "Opslagkosten per staaf",
+          FixMoney(objFuelRod.wasteCost) + " per 60 ticks",
+        ],
+        [
+          "Totaal per 60 ticks",
+          FixMoney(+objFuelRod.waste * +objFuelRod.wasteCost),
+        ],
+      ]) +
+      renderHint(
+        "Verbruikte staven, en staven uit een gesloten fabriek of centrale, gaan naar het afval en kunnen niet hergebruikt worden."
+      );
   },
   init: function () {
     objFuelRod.waste = localStorage.getItem("frWaste") || 0;
@@ -4609,13 +4640,18 @@ var objNuclearPowerPlant = {
   },
   show: function () {
     document.getElementById("npp").innerHTML =
-      "<h2>Kernenergie</h2><p>Een kerncentrale bestaat uit twee elementen, de centrale zelf en de reactoren. Iedere centrale bied plek aan " +
-      FixNumber(objNuclearPowerPlant.plantReactorCap) +
-      " reactoren.</p><p>Het bouwen van een kerncentrale kost: <br>Staal: " +
-      FixNumber(objNuclearPowerPlant.plantSteelNeeded) +
-      " <br>Financiën: " +
-      FixMoney(objNuclearPowerPlant.plantCost) +
-      "</p>";
+      "<h2>Kerncentrales</h2>" +
+      renderStats([
+        ["Prijs per centrale", FixMoney(objNuclearPowerPlant.plantCost)],
+        [
+          "Staal per centrale",
+          FixUnit(objNuclearPowerPlant.plantSteelNeeded, "ton"),
+        ],
+        [
+          "Reactoren per centrale",
+          FixNumber(objNuclearPowerPlant.plantReactorCap),
+        ],
+      ]);
     if (
       +objNuclearPowerPlant.amount < 1 ||
       +objNuclearPowerPlant.reactors ==
@@ -4626,44 +4662,62 @@ var objNuclearPowerPlant = {
       document.getElementById("npprBuild").disabled = false;
     }
     document.getElementById("nppr").innerHTML =
-      "<h3>Reactoren</h3><p>Iedere reactor die je bouwt, levert energie (als er brandstof is). Reactoren kunnen niet verkocht worden" +
-      " en staan aan of uit, eventueel teveel geproduceerde stroom gaat verloren!</p><p>De kosten van de bouw: <br>Staal: " +
-      FixNumber(objNuclearPowerPlant.reactorSteelNeeded) +
-      "<br>Financiën: " +
-      FixMoney(objNuclearPowerPlant.reactorCost) +
-      "</p><p>Een reactor verbruikt: " +
-      FixNumber(objNuclearPowerPlant.reactorFuelUsage) +
-      " uranium pellets per tick " +
-      "(er zitten 1000 pellets in een splijtstofstaaf). Verbruikte pellets worden opnieuw verpakt in staven (per 1000) gaan automatisch naar de waste opslag</p>";
+      "<h3>Reactoren</h3>" +
+      renderStats([
+        ["Prijs per reactor", FixMoney(objNuclearPowerPlant.reactorCost)],
+        [
+          "Staal per reactor",
+          FixUnit(objNuclearPowerPlant.reactorSteelNeeded, "ton"),
+        ],
+        [
+          "Verbruik per reactor",
+          FixNumber(objNuclearPowerPlant.reactorFuelUsage) +
+            (+objNuclearPowerPlant.reactorFuelUsage == 1
+              ? " pellet"
+              : " pellets") +
+            " per tick",
+        ],
+      ]) +
+      renderHint(
+        "Een staaf bevat 1.000 pellets. Reactoren kunnen niet verkocht worden; stroom die niet past gaat verloren."
+      );
   },
   showUsage: function () {
     document.getElementById("nppsum").innerHTML =
-      "<p>Je hebt op dit moment:<br>Kerncentrales: " +
-      FixNumber(objNuclearPowerPlant.amount) +
-      "<br> Kernreactoren (actief/totaal): " +
-      FixNumber(objNuclearPowerPlant.activeReactors) +
-      "/" +
-      FixNumber(objNuclearPowerPlant.reactors) +
-      " <br>Splijtstofstaven (aanwezig/max): " +
-      FixNumber(objNuclearPowerPlant.fuelRods) +
-      "/" +
-      FixNumber(
-        +objNuclearPowerPlant.reactors * +objNuclearPowerPlant.reactorFuelCap
-      ) +
-      "<br>Waste pellets: " +
-      FixNumber(objNuclearPowerPlant.pelletsUsed) +
-      " <br></p>" +
-      "<p>Energieproductie: " +
-      FixNumber(
-        +objNuclearPowerPlant.activeReactors *
-          +objNuclearPowerPlant.reactorProduction
-      ) +
-      " <br>Pelletverbruik (per tick): " +
-      FixNumber(
-        +objNuclearPowerPlant.activeReactors *
-          +objNuclearPowerPlant.reactorFuelUsage
-      ) +
-      "</p>";
+      "<h3>Overzicht</h3>" +
+      renderStats([
+        ["Kerncentrales", FixNumber(objNuclearPowerPlant.amount)],
+        [
+          "Reactoren actief",
+          FixNumber(objNuclearPowerPlant.activeReactors) +
+            " van " +
+            FixNumber(objNuclearPowerPlant.reactors),
+        ],
+        [
+          "Staven in centrales",
+          FixNumber(objNuclearPowerPlant.fuelRods) +
+            " van " +
+            FixNumber(
+              +objNuclearPowerPlant.reactors *
+                +objNuclearPowerPlant.reactorFuelCap
+            ),
+        ],
+        [
+          "Energie per tick",
+          FixNumber(
+            +objNuclearPowerPlant.activeReactors *
+              +objNuclearPowerPlant.reactorProduction
+          ),
+        ],
+        [
+          "Pellets per tick",
+          FixNumber(
+            +objNuclearPowerPlant.activeReactors *
+              +objNuclearPowerPlant.reactorFuelUsage
+          ),
+        ],
+        ["Verbruikte pellets", FixNumber(objNuclearPowerPlant.pelletsUsed)],
+      ]);
   },
   init: function () {
     objNuclearPowerPlant.fuelRods = localStorage.getItem("ppFuelRods") || 0;
@@ -4692,7 +4746,7 @@ var objOilPumpAdv = {
     if (+amount == 0) {
       notificationOverlay(
         "Geen pompen om te upgraden!",
-        "High Tech Oliepomp",
+        "High-tech oliepomp",
         "fa-info-circle"
       );
       return 0;
@@ -4715,7 +4769,7 @@ var objOilPumpAdv = {
     if (+amount == 0) {
       notificationOverlay(
         "Niet genoeg monnies!",
-        "High Tech Oliepomp",
+        "High-tech oliepomp",
         "fa-euro-sign"
       );
     }
@@ -4723,7 +4777,7 @@ var objOilPumpAdv = {
       amount = Math.floor(+objSteel.amount / +objOilPumpAdv.steelNeeded);
     }
     if (+amount == 0) {
-      notificationOverlay("Niet genoeg staal!", "High Tech Oliepomp", "fa-box");
+      notificationOverlay("Niet genoeg staal!", "High-tech oliepomp", "fa-box");
     }
     return +amount;
   },
@@ -4751,7 +4805,7 @@ var objOilPumpAdv = {
       document.getElementById("o2sell").disabled = true;
       notificationOverlay(
         "Geen pompen om te verkopen!",
-        "High Tech Oliepomp",
+        "High-tech oliepomp",
         "fa-box"
       );
     }
@@ -4776,21 +4830,22 @@ var objOilPumpAdv = {
       document.getElementById("oil2").style.display = "none";
     }
     document.getElementById("o2intro").innerHTML =
-      "<h3>High Tech oliepomp</h3><p>Met een productie van " +
-      FixNumber(objOilPumpAdv.production) +
-      " olie per tick presteren deze " +
-      "pompen aanzienlijk beter dan het oude model. Een pomp gebruikt " +
-      FixNumber(objOilPumpAdv.energy) +
-      " energie per tick</p><p>Het bouwen van een nieuwe pomp kost: " +
-      FixMoney(objOilPumpAdv.price) +
-      " en " +
-      FixNumber(objOilPumpAdv.steelNeeded) +
-      " ton staal</p>";
+      "<h3>High-tech oliepompen</h3>" +
+      renderStats([
+        [
+          "Productie per pomp",
+          FixUnit(objOilPumpAdv.production, "vaten per tick"),
+        ],
+        ["Energie per pomp", FixNumber(objOilPumpAdv.energy) + " per tick"],
+        ["Prijs per pomp", FixMoney(objOilPumpAdv.price)],
+        ["Staal per pomp", FixUnit(objOilPumpAdv.steelNeeded, "ton")],
+      ]);
     if (+objOilPump.amount > 0) {
-      document.getElementById("o2upgrade").innerHTML =
-        "<p>Je kan je oude pompen upgraden. Het oude model wordt verkocht (75% van de aanschafwaarde, " +
-        FixMoney(+objOilPump.price * 0.75) +
-        ") en een nieuwe pomp wordt geplaatst</p>";
+      document.getElementById("o2upgrade").innerHTML = renderHint(
+        "Upgraden verkoopt een gewone pomp voor 75% (" +
+          FixMoney(+objOilPump.price * 0.75) +
+          ") en plaatst er een high-tech pomp voor terug."
+      );
     } else {
       document.getElementById("o2upgradeButton").style.display = "none";
     }
@@ -4802,14 +4857,17 @@ var objOilPumpAdv = {
     objOilPumpAdv.showStats();
   },
   showStats: function () {
-    document.getElementById("o2stats").innerHTML =
-      "<h2>Stats</h2><p>Aantal pompen: " +
-      FixNumber(objOilPumpAdv.amount) +
-      "<br>Productie (per tick): " +
-      FixNumber(+objOilPumpAdv.amount * +objOilPumpAdv.production) +
-      "<br>Energieverbruik (per tick):" +
-      FixNumber(+objOilPumpAdv.amount * +objOilPumpAdv.energy) +
-      " </p>";
+    document.getElementById("o2stats").innerHTML = renderStats([
+      ["High-tech pompen", FixNumber(objOilPumpAdv.amount)],
+      [
+        "Productie per tick",
+        FixUnit(+objOilPumpAdv.amount * +objOilPumpAdv.production, "vaten"),
+      ],
+      [
+        "Energie per tick",
+        FixNumber(+objOilPumpAdv.amount * +objOilPumpAdv.energy),
+      ],
+    ]);
   },
   init: function () {
     objOilPumpAdv.amount = localStorage.getItem("oilPumpAmount") || 0;
@@ -4880,17 +4938,13 @@ function notificationOverlay(messageText, messageTitle, messageIcon) {
 
 // History functie voor inkomsten
 var messages = [];
-function showHistory(messageText) {
+function showHistory(description, amount) {
   if (messages.length > 4) {
     messages.pop();
   }
-  messageHistory = document.getElementById("HistoryMessages");
-  messageHistory.innerHTML = "Laatste stortingen: <br>";
-  messages.unshift(messageText);
-  messages.forEach(displayMessages);
-  function displayMessages(item, index) {
-    messageHistory.innerHTML = messageHistory.innerHTML + item + "<br>";
-  }
+  messages.unshift([description, amount]);
+  document.getElementById("HistoryMessages").innerHTML =
+    "<h3>Laatste inkomsten</h3>" + renderStats(messages);
 }
 
 //Gebruiken resources
@@ -5021,7 +5075,7 @@ var objMarket = {
     if (resType === "eggs") {
       cost = +objEgg.price * 1.5;
       if (moneyCheck(+cost * +amount) === 0) {
-        notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+        notificationOverlay("Niet genoeg doekoe!", "Markt", "fa-euro-sign");
         return 0;
       } else {
         objMoney.use(+cost * amount);
@@ -5032,7 +5086,7 @@ var objMarket = {
     if (resType === "steel") {
       cost = +objSteel.price * 1.25;
       if (moneyCheck(+cost * +amount) === 0) {
-        notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+        notificationOverlay("Niet genoeg doekoe!", "Markt", "fa-euro-sign");
         return 0;
       } else {
         objMoney.use(+cost * amount);
@@ -5043,7 +5097,7 @@ var objMarket = {
     if (resType === "used_fuelrod") {
       cost = +objFuelRod.wastePrice * 0.5;
       if (moneyCheck(+cost * +amount) === 0) {
-        notificationOverlay("Niet genoeg doekoe!", "Market", "fa-euro-sign");
+        notificationOverlay("Niet genoeg doekoe!", "Markt", "fa-euro-sign");
         return 0;
       } else {
         objMoney.use(+cost * amount);
@@ -5054,30 +5108,33 @@ var objMarket = {
   },
   show: function () {
     document.getElementById("buyEggs").innerHTML =
-      "<p>Koop nu eieren voor " +
-      FixMoney(+objEgg.price * 1.5) +
-      " per stuk</p>" +
-      "<p>Er zijn momenteel " +
-      FixNumber(objSalesInfo.eggs) +
-      " eieren te koop op de markt. Je hebt nog ruimte voor: " +
-      FixNumber(+objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount) +
-      " eieren. Eventueel overschot wordt direct weer verkocht</p>";
+      renderStats([
+        ["Prijs per ei", FixMoney(+objEgg.price * 1.5)],
+        ["Te koop", FixNumber(objSalesInfo.eggs) + " eieren"],
+        [
+          "Jouw vrije ruimte",
+          FixNumber(
+            +objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount
+          ) + " eieren",
+        ],
+      ]) + renderHint("Wat niet past wordt direct weer verkocht.");
     document.getElementById("buySteel").innerHTML =
-      "<p>Koop nu staal voor " +
-      FixMoney(+objSteel.price * 1.25) +
-      " per ton</p>" +
-      "<p>Er is momenteel " +
-      FixNumber(objSalesInfo.steel) +
-      " ton staal te koop op de mark. Je hebt nog ruimte voor: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap - +objSteel.amount) +
-      " ton staal. Eventueel overschot wordt direct weer verkocht</p>";
+      renderStats([
+        ["Prijs per ton", FixMoney(+objSteel.price * 1.25)],
+        ["Te koop", FixUnit(objSalesInfo.steel, "ton")],
+        [
+          "Jouw vrije ruimte",
+          FixUnit(
+            +objSteel.storage * +objSteel.storageCap - +objSteel.amount,
+            "ton"
+          ),
+        ],
+      ]) + renderHint("Wat niet past wordt direct weer verkocht.");
     document.getElementById("buyWasteFuell").innerHTML =
-      "<p>Koop nu afval splijtstofstaven voor " +
-      FixMoney(+objFuelRod.wastePrice * 0.5) +
-      " per staaf</p>" +
-      "<p>Er zijn momenteel " +
-      FixNumber(objSalesInfo.used_fuelrod) +
-      " afval splijtstofstaven te koop op de markt. Je hebt onbeperkt ruimte voor afval.</p>";
+      renderStats([
+        ["Prijs per staaf", FixMoney(+objFuelRod.wastePrice * 0.5)],
+        ["Te koop", FixNumber(objSalesInfo.used_fuelrod) + " staven"],
+      ]) + renderHint("Voor afval heb je onbeperkt ruimte.");
     objMarket.showButtonState();
   },
   showButtons: function () {
@@ -5100,23 +5157,21 @@ var objMarket = {
     }
   },
   generateBuyButtons: function (resType, buttonName) {
-    var i = 100;
-    document.getElementById(buttonName).innerHTML = "<p>";
-    do {
-      var scale = i;
-      i = i * 10;
-      var buttonAction = '"' + resType + '"' + ", " + parseInt(scale);
-      document.getElementById(buttonName).innerHTML +=
-        "<button type='button' class='btn btn-danger' onClick='objMarket.buy(" +
-        buttonAction +
+    var html = "<div class='actions'>";
+    for (var scale = 100; scale <= 1000000; scale *= 10) {
+      html +=
+        "<button type='button' class='btn btn-primary' onClick='objMarket.buy(\"" +
+        resType +
+        '", ' +
+        scale +
         ")' id='BB" +
         resType +
         scale +
-        "'>" +
-        scale +
-        "x</button> ";
-    } while (i < 1000001);
-    document.getElementById(buttonName).innerHTML += "</p>";
+        "'>+" +
+        FixNumber(scale) +
+        "</button> ";
+    }
+    document.getElementById(buttonName).innerHTML = html + "</div>";
   },
   buttonState: function (resType, amountMarket) {
     var i = 100;
@@ -5163,8 +5218,7 @@ function showQuickSell(inputQS) {
     Display.updateRows();
   } else {
     document.getElementById("sellMenu").style.display = "none";
-    elverkooptabBTN.innerHTML =
-      icon("square") + " Zet verkooptab aan (lvl9)";
+    elverkooptabBTN.innerHTML = icon("square") + " Zet verkooptab aan (lvl9)";
     localStorage.setItem("QS", quickSell);
   }
 }
@@ -5182,8 +5236,7 @@ function turnAutoClose(input) {
     elAutoCloseBTN.innerHTML =
       icon("check-square") + " Zet auto-sluit berichten uit";
   } else {
-    elAutoCloseBTN.innerHTML =
-      icon("square") + " Zet auto-sluit berichten aan";
+    elAutoCloseBTN.innerHTML = icon("square") + " Zet auto-sluit berichten aan";
   }
 }
 
@@ -5191,48 +5244,60 @@ function quickSellMenu() {
   if (objPlayerInfo.level < 9) {
     return 0;
   }
-  document.getElementById("quickGrain").innerHTML =
-    "<h2>Graan</h2><p>Voorraad: " +
-    FixNumber(objGrainSilo.contents) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objGrain.price) +
-    "</p>";
-  document.getElementById("quickFlour").innerHTML =
-    "<h2>Bloem</h2><p>Voorraad: " +
-    FixNumber(objFlourSilo.contents) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objFlour.price) +
-    "</p>";
-  document.getElementById("quickPasta").innerHTML =
-    "<h2>Pasta</h2><p>Voorraad: " +
-    FixNumber(objStorehouse.pasta) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objPasta.price()) +
-    "</p>";
-  document.getElementById("quickOil").innerHTML =
-    "<h2>Olie</h2><p>Voorraad: " +
-    FixNumber(objOilTank.contents) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objOil.price) +
-    "</p>";
-  document.getElementById("quickCoal").innerHTML =
-    "<h2>Steenkool</h2><p>Voorraad: " +
-    FixNumber(objCoal.amount) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objCoal.price) +
-    "</p>";
-  document.getElementById("quickIronOre").innerHTML =
-    "<h2>IJzererts</h2><p>Voorraad: " +
-    FixNumber(objIronOre.amount) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objIronOre.price) +
-    "</p>";
-  document.getElementById("quickSteel").innerHTML =
-    "<h2>Staal</h2><p>Voorraad: " +
-    FixNumber(objSteel.amount) +
-    "<br>En de huidige prijs is: " +
-    FixMoney(objSteel.price) +
-    "</p>";
+  var items = [
+    [
+      "quickGrain",
+      "Graan",
+      FixUnit(objGrainSilo.contents, "kg"),
+      FixMoney(objGrain.price) + " / 1.000 kg",
+    ],
+    [
+      "quickFlour",
+      "Bloem",
+      FixUnit(objFlourSilo.contents, "kg"),
+      FixMoney(objFlour.price) + " / 1.000 kg",
+    ],
+    [
+      "quickPasta",
+      "Pasta",
+      FixNumber(objStorehouse.pasta) + " dozen",
+      FixMoney(objPasta.price()) + " / doos",
+    ],
+    [
+      "quickOil",
+      "Olie",
+      FixUnit(objOilTank.contents, "vaten"),
+      FixMoney(objOil.price) + " / vat",
+    ],
+    [
+      "quickCoal",
+      "Steenkool",
+      FixUnit(objCoal.amount, "ton"),
+      FixMoney(objCoal.price) + " / ton",
+    ],
+    [
+      "quickIronOre",
+      "IJzererts",
+      FixUnit(objIronOre.amount, "ton"),
+      FixMoney(objIronOre.price) + " / ton",
+    ],
+    [
+      "quickSteel",
+      "Staal",
+      FixUnit(objSteel.amount, "ton"),
+      FixMoney(objSteel.price) + " / ton",
+    ],
+  ];
+  items.forEach(function (item) {
+    document.getElementById(item[0]).innerHTML =
+      "<h2>" +
+      item[1] +
+      "</h2>" +
+      renderStats([
+        ["Voorraad", item[2]],
+        ["Prijs", item[3]],
+      ]);
+  });
 }
 
 function quickSellButtons() {
@@ -5274,10 +5339,11 @@ function quickSellButtons() {
       window[object][action](...(params || []))
     );
 
-    let paragraph = document.createElement("p");
-    paragraph.appendChild(button);
+    let actions = document.createElement("div");
+    actions.className = "actions";
+    actions.appendChild(button);
 
-    document.getElementById(elementId).replaceChildren(paragraph);
+    document.getElementById(elementId).replaceChildren(actions);
   });
 }
 

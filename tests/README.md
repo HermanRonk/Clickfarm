@@ -42,6 +42,7 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 - **Nep-klok**: de hoofdloop tikt iedere seconde. De tests gebruiken `page.clock`, waardoor `tick(page, 600)` tien minuten speeltijd in een paar milliseconden afspeelt.
 - **Vaste random-seed**: prijzen en prospecting gebruiken `Math.random`; die is in de tests voorspelbaar, zodat een test altijd hetzelfde verloopt.
 - **Savegame klaarzetten**: `startGame(page, { state: { PlayerLevel: 8, Money: 1e6 } })` vult `localStorage` vóórdat het spel laadt. Zo kan ieder level getest worden zonder uren te spelen.
+- **Waardes lezen**: kaarten tonen waardes als label/waarde-lijst (`renderStats` in `inc/base.js`). Lees ze met `stat(page, "#grain-col", "Voorraad")` in plaats van op hele zinnen te testen; zo breekt een test niet op een tekstwijziging.
 - Helpers staan in `helpers/game.js`.
 
 ## Bekende problemen

@@ -1,6 +1,6 @@
 // Spelen zoals een speler: klikken op knoppen en de tijd laten lopen.
 const { test, expect } = require("@playwright/test");
-const { startGame, tick, game, isShown, expectNoBrokenNumbers } = require("./helpers/game");
+const { startGame, tick, game, isShown, expectNoBrokenNumbers, stat } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 const button = (page, name) => page.getByRole("button", { name, exact: true });
@@ -13,11 +13,11 @@ test.describe("Landbouw (level 1)", () => {
     await work.click();
     await expect(work).toBeDisabled();
     await tick(page, 1);
-    await expect(page.locator("#FarmlandTimer")).toHaveText("De oogst is klaar over: 9 Seconden");
+    await expect(page.locator("#FarmlandTimer")).toHaveText("Oogst klaar over 9 seconden");
     await tick(page, 9);
     await expect(work).toBeEnabled();
     expect(await game(page, () => +objGrainSilo.contents)).toBe(100);
-    await expect(page.locator("#GrainAmount")).toHaveText("Hoeveelheid graan op voorraad: 100kg");
+    await expect(stat(page, "#grain-col", "Voorraad")).toHaveText("100 kg");
   });
 
   test("landbouwgrond kopen kost geld en verhoogt de prijs met 5%", async ({ page }) => {
@@ -25,14 +25,15 @@ test.describe("Landbouw (level 1)", () => {
     await button(page, "Koop landbouwgrond").click();
     expect(await game(page, () => objFarmland.amount)).toBe(2);
     expect(await game(page, () => objMoney.amount)).toBe(1990);
-    await expect(page.locator("#FarmlandPrice")).toHaveText("Kosten landbouwgrond: € 10,50");
+    await expect(stat(page, "#landbouw-col", "Prijs per veld")).toHaveText("€ 10,50");
+    await expect(stat(page, "#landbouw-col", "Velden")).toHaveText("2");
   });
 
   test("graan verkopen levert geld op tegen de marktprijs", async ({ page }) => {
     await startGame(page, { state: { GrainSiloContents: 4000 } });
     const price = await game(page, () => objGrain.price);
     expect(price).toBeGreaterThan(0);
-    await button(page, "Verkoop graan!").click();
+    await button(page, "Verkoop graan").click();
     expect(await game(page, () => +objGrainSilo.contents)).toBe(0);
     expect(await game(page, () => objMoney.amount)).toBeCloseTo(2000 + 4 * price, 2);
   });
@@ -77,7 +78,7 @@ test.describe("Landbouw (level 1)", () => {
     for (let round = 0; round < 40 && (await game(page, () => +objPlayerInfo.level)) < 2; round++) {
       await work.click();
       await tick(page, 10);
-      await button(page, "Verkoop graan!").click();
+      await button(page, "Verkoop graan").click();
       await tick(page, 1);
     }
 
@@ -122,7 +123,7 @@ test.describe("Windmolens en bloem (level 2)", () => {
   test("bloem verkopen levert geld op", async ({ page }) => {
     await startGame(page, { state: { ...level2, FlourSiloContents: 3000 } });
     const price = await game(page, () => objFlour.price);
-    await button(page, "Verkoop bloem!").click();
+    await button(page, "Verkoop bloem").click();
     expect(await game(page, () => +objFlourSilo.contents)).toBe(0);
     expect(await game(page, () => objMoney.amount)).toBeCloseTo(2000 + 3 * price, 2);
   });
@@ -131,10 +132,10 @@ test.describe("Windmolens en bloem (level 2)", () => {
 test.describe("Olie en energie (level 3-4)", () => {
   test("olie pompen en verkopen", async ({ page }) => {
     await startGame(page, { state: { PlayerLevel: 3, NextLevel: threshold(3), Oil: 0 } });
-    for (let i = 0; i < 5; i++) await button(page, "Pomp olie!").click();
+    for (let i = 0; i < 5; i++) await button(page, "Pomp olie").click();
     expect(await game(page, () => +objOilTank.contents)).toBe(5);
     const price = await game(page, () => +objOil.price);
-    await button(page, "Verkoop olie!").click();
+    await button(page, "Verkoop olie").click();
     expect(await game(page, () => +objOilTank.contents)).toBe(0);
     expect(await game(page, () => objMoney.amount)).toBeCloseTo(2000 + 5 * price, 2);
   });
@@ -149,6 +150,7 @@ test.describe("Olie en energie (level 3-4)", () => {
     expect(await game(page, () => +objEnergy.available)).toBe(26);
     expect(await game(page, () => +objOilTank.contents)).toBe(101);
     await expect(page.locator("#EnergyStats")).toContainText("26/1.000");
+    await expect(stat(page, "#energy-col", "Opgeslagen")).toHaveText("26 / 1.000");
   });
 
   test("energieopslag is begrensd door de capaciteit", async ({ page }) => {
@@ -202,7 +204,7 @@ test.describe("Spelopties", () => {
     await page.locator("#navbarOptionDropdown").click();
     await page.locator("#verkooptabBTN").click();
     await expect(page.locator("#sellMenu")).toBeVisible();
-    await expect(page.locator("#quickGrain")).toContainText("Voorraad: 5.000");
+    await expect(stat(page, "#quickGrain", "Voorraad")).toHaveText("5.000 kg");
 
     await page.locator("#quickGrainBTN button").click();
     expect(await game(page, () => +objGrainSilo.contents)).toBe(0);
