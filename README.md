@@ -26,6 +26,7 @@ De bestanden:
 | Pad | Inhoud |
 | --- | --- |
 | `index.html` | De pagina, inclusief de iconen (geen externe bibliotheken of CDN) |
+| `info.html` | Spelinformatie: hoe het spel werkt en wat ieder level brengt |
 | `inc/base.js` | Alle spellogica |
 | `css/style.css` | Alle opmaak, met automatisch donker thema |
 | `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |

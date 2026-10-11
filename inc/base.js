@@ -55,6 +55,7 @@ window.onload = function () {
     "EnergyStats",
   ]);
   cleanupLegacyKeys();
+  initHelp();
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
   objMoney.init();
@@ -125,7 +126,11 @@ var Display = {
     document.querySelectorAll(".rows").forEach(function (row) {
       var filled = false;
       Array.from(row.children).forEach(function (child) {
-        var hasContent = child.textContent.trim() !== "";
+        var text = child.textContent;
+        child.querySelectorAll(".help-ui").forEach(function (help) {
+          text = text.replace(help.textContent, "");
+        });
+        var hasContent = text.trim() !== "";
         child.classList.toggle("col-empty", !hasContent);
         if (hasContent && child.style.display !== "none") filled = true;
       });
@@ -177,6 +182,172 @@ document.addEventListener("keydown", function (event) {
   closeDropdowns();
   if (open) open.focus();
 });
+
+// Uitleg per kaart: de "?"-knop rechtsboven toont deze tekst
+var helpTexts = {
+  "geld-col": [
+    "Financiën",
+    "Je vermogen is al het geld dat je hebt. Je verdient door producten te verkopen; bouwen en kopen kost geld. Haal je de drempel van het volgende level, dan ga je een level omhoog; dat kost niets.",
+  ],
+  "level-col": [
+    "Level",
+    "Ieder level geeft nieuwe onderdelen vrij. Je stijgt zodra je vermogen de drempel haalt, maximaal één level per seconde. De drempel wordt daarna 3 tot 5 keer zo hoog.",
+  ],
+  "opslag-col": [
+    "Voorraden",
+    "Hoe vol je silo's en olietanks zijn. Wat niet meer past wordt automatisch verkocht, maar voor minder dan de marktprijs.",
+  ],
+  "energy-col": [
+    "Energie",
+    "Centrales maken iedere seconde (tick) energie; die wordt opgeslagen tot de opslag vol is. Pompen, robots, controllers, mijnen en fabrieken gebruiken energie. Is er te weinig, dan draaien ze maar gedeeltelijk.",
+  ],
+  "landbouw-col": [
+    "Landbouw",
+    "Klik op Bewerk landbouwgrond: na 10 seconden levert ieder veld de opbrengst per veld aan graan. Ieder extra veld is 5% duurder dan het vorige. Velden die door farmrobots bewerkt worden, oogsten vanzelf.",
+  ],
+  "grain-col": [
+    "Graan",
+    "Graan komt van je velden en gaat eerst naar de voeropslag van de kippen, daarna naar de silo's. De prijs verandert iedere 10 seconden; verkoop als hij hoog is. Wat niet in de silo's past, wordt verkocht voor 20% van de prijs.",
+  ],
+  "flour-col": [
+    "Bloem",
+    "Windmolens malen graan tot bloem (1 kg graan wordt 1 kg bloem). Bloem is meer waard dan graan en is nodig voor pasta. Wat niet past, wordt verkocht voor 80% van de prijs.",
+  ],
+  "farmland-automation": [
+    "Farmrobots",
+    "Een robot bewerkt 10 velden en oogst iedere 10 seconden vanzelf. Iedere run kost 15 energie per robot; zonder energie staan de robots stil. Verkopen levert 75% van de prijs op.",
+  ],
+  "windmills-col": [
+    "Windmolens",
+    "Met Maal graan vermaalt iedere windmolen tot 1.000 kg graan in 10 seconden; de bloem komt geleidelijk binnen. Meer windmolens malen meer tegelijk.",
+  ],
+  WindmillController: [
+    "Windmolencontrollers",
+    "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per tick.",
+  ],
+  "olie-col": [
+    "Olie",
+    "Pomp olie met de hand of met oliepompen. Bij verkopen blijft er 5 vaten per oliecentrale achter als brandstof. Wat niet in je tanks past, wordt verkocht voor 80% van de prijs.",
+  ],
+  "pomp-col": [
+    "Oliepompen",
+    "Een oliepomp maakt iedere tick 1 vat olie en gebruikt daarvoor 1 energie. Iedere pomp is 10% duurder dan de vorige. Vanaf level 10 zijn er high-tech pompen: 100 vaten per tick voor 75 energie, maar ze kosten ook staal.",
+  ],
+  "energieproductie-col": [
+    "Oliecentrales",
+    "Een oliecentrale verbrandt 1 vat olie per tick en levert 10 energie. Energieopslag bepaalt hoeveel energie je kunt bewaren; wat niet past gaat verloren.",
+  ],
+  coalPower: [
+    "Kolencentrales",
+    "Een kolencentrale verbruikt 1.000 ton steenkool per tick en levert 750 energie. Bij het verkopen van steenkool blijft de voorraad voor je centrales achter.",
+  ],
+  "chicken-col": [
+    "Eieren",
+    "Iedere 5 ticks leggen kippen eieren en eten ze graan uit de voeropslag van de kippenboerderij (aangevuld met je oogst). Is er te weinig voer, dan sterven er kippen. Een boerderij biedt plek aan 1.000 kippen.",
+  ],
+  "pasta-col": [
+    "Pasta",
+    "Een doos pasta maak je van 10 kg bloem en 100 eieren. Iedere fabriek verwerkt per run tot 2.000 kg bloem en gebruikt 50 energie. Pasta kost de helft van de bloemprijs per doos. Vanaf level 7 kunnen pastahelpers de fabrieken bedienen.",
+  ],
+  "graanopbrengst-col": [
+    "Onderzoek",
+    "Graanveredeling verhoogt de opbrengst per veld; iedere stap is duurder en duurt langer. Vanaf level 8 kun je mijnbouw onderzoeken; na drie fases kun je naar mijnlocaties zoeken en mijnen openen.",
+  ],
+  "AutoSell-col": [
+    "Salescomputer",
+    "Iedere CPU zet automatisch verkopen voor één product vrij: olie, bloem, pasta en kunststof. Zet het vinkje aan en kies met de schuif vanaf welke prijs er verkocht wordt; de computer kijkt iedere 5 seconden.",
+  ],
+  "platicFactory-col": [
+    "Kunststoffabrieken",
+    "Een kunststoffabriek maakt per run 1.000 eenheden kunststof van 1.000 vaten olie en 500 energie. Klik zelf op Maak kunststof of neem medewerkers aan; die eten pasta.",
+  ],
+  "plasticStorage-col": [
+    "Kunststof",
+    "De prijs van kunststof volgt de olieprijs (8 keer de olieprijs plus € 100). Breid de opslag uit als je meer wilt bewaren.",
+  ],
+  "Prospecting-col": [
+    "Prospecting",
+    "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
+  ],
+  "MiningSites-col": [
+    "Mijnlocaties",
+    "Per grondstof hoeveel locaties je gevonden hebt en hoeveel mijnen er actief zijn. Op iedere gevonden locatie kun je één mijn bouwen.",
+  ],
+  "Coal-col": [
+    "Steenkool",
+    "Een steenkoolmijn levert 3.500 ton per tick voor 250 energie. Steenkool is brandstof voor kolencentrales en hoogovens. Heb je bijna niets meer, dan kun je steenkool bijkopen voor 150% van de prijs.",
+  ],
+  "Iron-col": [
+    "IJzererts",
+    "Een ijzerertsmijn levert 1.000 ton per tick voor 450 energie. IJzererts is nodig voor staal. Is de opslag vol, dan stoppen de mijnen.",
+  ],
+  "SteelProduction-col": [
+    "Hoogovens",
+    "Een hoogoven maakt per run 10.000 ton staal van 10.000 ton ijzererts, 1.000 ton steenkool en 5.000 energie. Klik op Maak staal om een run te starten.",
+  ],
+  "SteelInfo-col": [
+    "Staal",
+    "Staal wordt in loodsen opgeslagen. De prijs is (ijzerertsprijs × 10 + steenkoolprijs) × 1,25. Staal heb je nodig voor high-tech pompen en kernenergie.",
+  ],
+  "Uranium-col": [
+    "Uranium",
+    "Een uraniummijn levert iedere 10 ticks 100 ton uranium voor 2.500 energie. Het personeel eet pasta. Uranium is de grondstof voor splijtstofstaven.",
+  ],
+  fuelRodFactory: [
+    "Splijtstofstaven",
+    "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium, 1.000 ton staal en 150.000 energie; alles wordt bij de start van een run afgeschreven. Fabrieken draaien altijd door.",
+  ],
+  fuelRodStorage: [
+    "Opslag en afval",
+    "Nieuwe staven gaan naar je kerncentrales. Verbruikte staven worden afval; opslag kost iedere 60 ticks geld per staaf. Je kunt afval laten opruimen; de prijs daarvan wisselt.",
+  ],
+  nuclearPower: [
+    "Kerncentrales",
+    "Een kerncentrale biedt plek aan 5 reactoren. Een reactor verbruikt 1 pellet per tick (1.000 pellets per staaf) en levert 5.000 energie. Reactoren kunnen niet verkocht worden.",
+  ],
+  marketEggs: [
+    "Markt: eieren",
+    "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht.",
+  ],
+  marketSteel: [
+    "Markt: staal",
+    "Staal kost op de markt 125% van de normale prijs. Wat niet in je loodsen past, wordt direct weer verkocht.",
+  ],
+  marketWasteFuel: [
+    "Markt: afval splijtstofstaven",
+    "Je kunt afvalstaven opkopen voor de helft van de opruimprijs. Let op: ook voor dit afval betaal je opslagkosten.",
+  ],
+};
+
+// Voeg aan iedere kaart met uitleg een "?"-knop en een (verborgen) uitlegblok toe
+function initHelp() {
+  Object.keys(helpTexts).forEach(function (cardId) {
+    var card = document.getElementById(cardId);
+    if (!card) return;
+    var title = helpTexts[cardId][0];
+    var panel = document.createElement("div");
+    panel.className = "help help-ui";
+    panel.id = "help-" + cardId;
+    panel.hidden = true;
+    panel.innerHTML = "<p>" + helpTexts[cardId][1] + "</p>";
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "help-toggle help-ui";
+    button.textContent = "?";
+    button.setAttribute("aria-label", "Uitleg over " + title);
+    button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-controls", panel.id);
+    button.addEventListener("click", function () {
+      panel.hidden = !panel.hidden;
+      button.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+    // Uitleg direct onder de kop van de kaart (of bovenaan als de kop later wordt opgebouwd)
+    var heading = card.querySelector(":scope > h2");
+    if (heading) heading.after(panel);
+    else card.prepend(panel);
+    card.prepend(button);
+  });
+}
 
 // Functie voor het goed weergeven van bedragen
 function FixMoney(InputMoney) {

@@ -509,3 +509,96 @@ kbd2 {
     gap: 0.5rem;
     font-size: 0.9rem;
 }
+
+/* Uitleg per kaart ("?"-knop, zie initHelp in inc/base.js) */
+.rows > * {
+    position: relative;
+}
+
+.rows h2 {
+    padding-right: 2rem;
+}
+
+.help-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.help-toggle:hover,
+.help-toggle[aria-expanded="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.help {
+    margin: 0 0 0.75rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent-soft-text);
+    font-size: 0.88rem;
+}
+
+.help p {
+    margin: 0;
+}
+
+/* Informatiepagina (info.html) */
+.back-link {
+    margin-left: auto;
+}
+
+.info {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: var(--gap);
+}
+
+.info-card {
+    margin-bottom: var(--gap);
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.info h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+}
+
+.info ul {
+    margin: 0 0 0.5rem;
+    padding-left: 1.2rem;
+}
+
+.info li {
+    margin-bottom: 0.35rem;
+}
+
+.info details {
+    border-top: 1px solid var(--border);
+    padding: 0.6rem 0;
+}
+
+.info summary {
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.info details[open] summary {
+    margin-bottom: 0.5rem;
+}

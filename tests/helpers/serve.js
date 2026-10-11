@@ -1,12 +1,12 @@
 // Minimale statische webserver voor de tests (zonder extra dependencies).
-// Serveert dezelfde bestanden als de container: index.html, favicon.ico, css/ en inc/.
+// Serveert dezelfde bestanden als de container: index.html, info.html, favicon.ico, css/ en inc/.
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..", "..");
 const port = Number(process.env.PORT) || 8081;
-const allowed = [/^\/index\.html$/, /^\/favicon\.ico$/, /^\/css\/[\w.-]+$/, /^\/inc\/[\w.-]+$/];
+const allowed = [/^\/index\.html$/, /^\/info\.html$/, /^\/favicon\.ico$/, /^\/css\/[\w.-]+$/, /^\/inc\/[\w.-]+$/];
 const types = {
   ".html": "text/html; charset=utf-8",
   ".js": "application/javascript; charset=utf-8",
