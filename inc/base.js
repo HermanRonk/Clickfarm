@@ -3886,41 +3886,56 @@ var objPlasticFactory = {
   },
   show: function () {
     document.getElementById("pFactory1").innerHTML =
-      "<h2>Kunststoffabrieken</h2><p>Je hebt op dit moment " +
-      FixNumber(objPlasticFactory.amount) +
-      " fabriek(en) die " +
-      "kunststof producten kunnen maken</p><p>Stroomverbruik per fabriek per run: " +
-      FixNumber(objPlasticFactory.energy) +
-      " <br>Olieverbruik per fabriek per run: " +
-      FixNumber(objPlasticFactory.oilNeededProduction) +
-      " <br>" +
-      "Opbrengst per fabriek per run: " +
-      FixNumber(objPlasticFactory.production) +
-      " eenheden</p><p>Een extra fabriek kost: " +
-      FixMoney(objPlasticFactory.cost) +
-      "<br>";
-    if (objPlasticFactory.amount > 0) {
-      document.getElementById("pFactory2").innerHTML =
-        "<p>Totaalverbruik per run: <br> Energie: " +
-        FixNumber(+objPlasticFactory.amount * +objPlasticFactory.energy) +
-        " <br>Olie: " +
-        FixNumber(
-          +objPlasticFactory.amount * +objPlasticFactory.oilNeededProduction
-        ) +
-        "<br></p><p>Totaal opbrengst per run:<br>Kunststof: " +
-        FixNumber(+objPlasticFactory.amount * +objPlasticFactory.production) +
-        " eenheden</p>";
-    }
+      renderStats([
+        ["Fabrieken", FixNumber(objPlasticFactory.amount)],
+        ["Prijs per fabriek", FixMoney(objPlasticFactory.cost)],
+      ]) +
+      "<h3>Per fabriek per run</h3>" +
+      renderStats([
+        ["Energie", FixNumber(objPlasticFactory.energy)],
+        ["Olie", FixUnit(objPlasticFactory.oilNeededProduction, "vaten")],
+        ["Opbrengst", FixUnit(objPlasticFactory.production, "eenheden")],
+      ]);
+    document.getElementById("pFactory2").innerHTML =
+      objPlasticFactory.amount > 0
+        ? "<h3>Totaal per run</h3>" +
+          renderStats([
+            [
+              "Energie",
+              FixNumber(+objPlasticFactory.amount * +objPlasticFactory.energy),
+            ],
+            [
+              "Olie",
+              FixUnit(
+                +objPlasticFactory.amount *
+                  +objPlasticFactory.oilNeededProduction,
+                "vaten"
+              ),
+            ],
+            [
+              "Opbrengst",
+              FixUnit(
+                +objPlasticFactory.amount * +objPlasticFactory.production,
+                "eenheden"
+              ),
+            ],
+          ])
+        : "";
     document.getElementById("plasticAuto").innerHTML =
-      "<h3>Automatiseer kunststoffabriek</h3><p>Neem medewerkers aan die kunststof voor je maken. Een medewerker eet: " +
-      FixNumber(objPlasticFactory.workerFood) +
-      " eenheden pasta per 15 ticks en kan 1 kunststoffabriek aansturen.</p><p>Aantal medewerkers: " +
-      FixNumber(objPlasticFactory.workers) +
-      "<br>Pastaverbruik per 15 ticks: " +
-      FixNumber(+objPlasticFactory.workers * objPlasticFactory.workerFood) +
-      "<br>Een medewerker kost: " +
-      FixMoney(objPlasticFactory.workerCost) +
-      "</p><p>Je krijgt geen geld terug als je een medewerker ontslaat.</p>";
+      renderStats([
+        ["Medewerkers", FixNumber(objPlasticFactory.workers)],
+        [
+          "Pasta per 15 ticks",
+          FixNumber(+objPlasticFactory.workers * objPlasticFactory.workerFood) +
+            " dozen",
+        ],
+        ["Prijs per medewerker", FixMoney(objPlasticFactory.workerCost)],
+      ]) +
+      renderHint(
+        "Een medewerker bedient één fabriek en eet " +
+          FixNumber(objPlasticFactory.workerFood) +
+          " dozen pasta per 15 ticks. Ontslaan levert niets op."
+      );
     if (objPlasticFactory.workers >= objPlasticFactory.amount) {
       document.getElementById("makePlastic").disabled = true;
     } else {
@@ -3979,27 +3994,30 @@ var objPlastic = {
     useResource("objPlastic", amount, "plasticAmount");
   },
   show: function () {
-    document.getElementById("plasticStorage").innerHTML =
-      "<h2>Kunststofopslag</h2><p>Je hebt op dit moment plek voor maximaal " +
-      FixNumber(+objPlastic.storage * +objPlastic.storageCap) +
-      " eenheden kunststof.</p><p>Totale hoeveelheid kunststof beschikbaar: " +
-      FixNumber(objPlastic.amount) +
-      " <br>Nog beschikbare ruimte: " +
-      FixNumber(
-        +objPlastic.storage * +objPlastic.storageCap - +objPlastic.amount
-      ) +
-      "</p><p>Je kan opslag bij kopen voor " +
-      FixNumber(objPlastic.storageCap) +
-      " eenheden kunststof, " +
-      "dit kost je " +
-      FixMoney(objPlastic.storagePrice);
+    document.getElementById("plasticStorage").innerHTML = renderStats([
+      ["Voorraad", FixUnit(objPlastic.amount, "eenheden")],
+      [
+        "Vrije ruimte",
+        FixUnit(
+          +objPlastic.storage * +objPlastic.storageCap - +objPlastic.amount,
+          "eenheden"
+        ),
+      ],
+    ]);
+    document.getElementById("plasticStoragePrice").innerHTML = renderStats([
+      [
+        "Opslagcapaciteit",
+        FixUnit(+objPlastic.storage * +objPlastic.storageCap, "eenheden"),
+      ],
+      ["Prijs extra opslag", FixMoney(objPlastic.storagePrice)],
+      ["Extra capaciteit", FixUnit(objPlastic.storageCap, "eenheden")],
+    ]);
   },
   showPrice: function () {
     objPlastic.price = +objOil.price * 8 + 100;
-    document.getElementById("plasticPrice").innerHTML =
-      "<p>De huidige prijs voor kunststof is: " +
-      FixMoney(objPlastic.price) +
-      " per eenheid</p>";
+    document.getElementById("plasticPrice").innerHTML = renderStats([
+      ["Prijs per eenheid", FixMoney(objPlastic.price)],
+    ]);
   },
   init: function () {
     objPlastic.amount = localStorage.getItem("plasticAmount") || 0;

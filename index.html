@@ -370,24 +370,34 @@
         </div>
         <div class="row rows" id="plastic-row">
             <div class="container col-sm" id="platicFactory-col">
+                <h2>Kunststoffabrieken</h2>
                 <div id="pFactory1"></div>
-                <div>
+                <div class="actions">
                     <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addFactory(1);" id="addPlasticFactory">Bouw kunststoffabriek</button>
                 </div>
                 <div id="pFactory2"></div>
-                <div>
-                    <button type="button" class="btn btn-dark" onClick="objPlasticFactory.produce(0);" id="makePlastic">Maak kunststof</button>
+                <div class="actions">
+                    <button type="button" class="btn btn-success" onClick="objPlasticFactory.produce(0);" id="makePlastic">Maak kunststof</button>
+                </div>
+                <h3>Medewerkers</h3>
+                <div id="plasticAuto"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addWorker(1);" id="hireWorker">Neem medewerker aan</button>
+                    <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(0);" id="fireWorker">Ontsla medewerker</button>
                 </div>
             </div>
             <div class="container col-sm" id="plasticStorage-col">
+                <h2>Kunststof</h2>
                 <div id="plasticStorage"></div>
-                <button type="button" class="btn btn-primary" onClick="objPlastic.addStorage();" id="addPlasticStorage">Bouw kunststofopslag</button>
                 <div id="plasticPrice"></div>
-                <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0, 'Handmatige verkoop kunststof');" id="sellPlastic">Verkoop kunststof</button>
-                <div id="plasticAuto"></div>
-                <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(1);" id="hireWorker">Neem aan</button>
-                <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addWorker(0);"
-                    id="fireWorker">Ontsla</button>
+                <div class="actions">
+                    <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0, 'Handmatige verkoop kunststof');" id="sellPlastic">Verkoop kunststof</button>
+                </div>
+                <h3>Opslag</h3>
+                <div id="plasticStoragePrice"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objPlastic.addStorage();" id="addPlasticStorage">Bouw kunststofopslag</button>
+                </div>
             </div>
         </div>
         <div class="row rows" id="mijnbouw-row">
