@@ -242,6 +242,23 @@ function renderAutoSell(product, active, minimumPrice, currentPrice) {
   );
 }
 
+// Voorraad, productie en opslag van een grondstof uit mijnen (steenkool, ijzererts, uranium)
+function renderResource(o) {
+  var capacity = +o.silos * +o.siloCap;
+  return (
+    renderBar("Voorraad", FixUnit(o.amount, "ton"), (+o.amount / capacity) * 100) +
+    renderStats([
+      ["Productie", FixUnit(o.production, "ton per " + o.period)],
+      ["Energie", FixNumber(o.energy) + " per " + o.period],
+      o.extra,
+      ["Prijs per ton", FixMoney(o.price)],
+      ["Silo's", FixNumber(o.silos) + " (" + FixUnit(capacity, "ton") + ")"],
+      ["Prijs extra silo", FixMoney(o.siloPrice)],
+    ]) +
+    renderHint(o.hint)
+  );
+}
+
 // Korte uitleg onder een lijst
 function renderHint(text) {
   return '<p class="hint">' + text + "</p>";
@@ -2900,9 +2917,7 @@ var objMines = {
     objMines.prospectTimerActive--;
     localStorage.setItem("pTimer", objMines.prospectTimerActive);
     document.getElementById("ProspectingProgress").innerHTML =
-      "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
-      objMines.prospectTimerActive +
-      " Seconden</p>";
+      "Zoeken klaar over " + objMines.prospectTimerActive + " seconden";
     if (objMines.prospectTimerActive < 1) {
       //bepalen welke resource er gevonden wordt: (geinspireerd door: http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
 
@@ -2965,8 +2980,9 @@ var objMines = {
       localStorage.setItem("prospecting", objMines.prospecting);
       document.getElementById("ProspectingProgress").style.display = "none";
       document.getElementById("ProspectingButton").disabled = false;
-      document.getElementById("ProspectingResult").innerHTML =
-        "<p>Laatst gevonden resource: " + selectedItem + "</p>";
+      document.getElementById("ProspectingResult").innerHTML = renderStats([
+        ["Laatste vondst", selectedItem],
+      ]);
       objMines.showProspecting();
       objMines.showMining();
     }
@@ -2981,42 +2997,30 @@ var objMines = {
       document.getElementById("minesites").style.display = "none";
     }
     document.getElementById("Prospecting").innerHTML =
-      "<p>Zoek hier naar nieuwe gebieden om je mijnen te kunnen openen. De zoektocht duurt: " +
-      objMines.prospectTimer +
-      " seconden en hiervoor betaal je: " +
-      FixMoney(+objMines.prospectCost) +
-      "</p>";
-    document.getElementById("minesites").innerHTML =
-      "<p>Aantal ijzererts locaties/mijnen: " +
-      FixNumber(objMines.ironAmountProspected) +
-      "/" +
-      FixNumber(objMines.ironAmountActive) +
-      "</p>" +
-      "<p>Aantal steenkool locaties/mijnen: " +
-      FixNumber(objMines.coalAmountProspected) +
-      "/" +
-      FixNumber(objMines.coalAmountActive) +
-      "</p>" +
-      "<p>Aantal uranium locaties/mijnen: " +
-      FixNumber(objMines.uraniumAmountProspected) +
-      "/" +
-      FixNumber(objMines.uraniumAmountActive) +
-      "</p>" +
-      "<p>Aantal koper locaties/mijnen: " +
-      FixNumber(objMines.copperAmountProspected) +
-      "/" +
-      FixNumber(objMines.copperAmountActive) +
-      "</p>" +
-      "<p>Aantal goud locaties/mijnen: " +
-      FixNumber(objMines.goldAmountProspected) +
-      "/" +
-      FixNumber(objMines.goldAmountActive) +
-      "</p>" +
-      "<p>Aantal diamant locaties/mijnen: " +
-      FixNumber(objMines.diamondAmountProspected) +
-      "/" +
-      FixNumber(objMines.diamondAmountActive) +
-      "</p>";
+      renderStats([
+        ["Kosten", FixMoney(+objMines.prospectCost)],
+        ["Duur", FixNumber(objMines.prospectTimer) + " seconden"],
+      ]) +
+      renderHint(
+        "Je vindt een willekeurige locatie: ijzererts, steenkool, uranium, koper, goud of diamant."
+      );
+    var site = function (label, type) {
+      return [
+        label,
+        FixNumber(objMines[type + "AmountProspected"]) +
+          " gevonden, " +
+          FixNumber(objMines[type + "AmountActive"]) +
+          " actief",
+      ];
+    };
+    document.getElementById("minesites").innerHTML = renderStats([
+      site("IJzererts", "iron"),
+      site("Steenkool", "coal"),
+      site("Uranium", "uranium"),
+      site("Koper", "copper"),
+      site("Goud", "gold"),
+      site("Diamant", "diamond"),
+    ]);
   },
   addMine: function (typeMine, amount) {
     //functie voor werkelijk toevoegen mijn
@@ -3116,27 +3120,24 @@ var objMines = {
       active,
       mineName,
       mineCode,
-      mineButton
+      mineButton,
+      title
     ) {
       document.getElementById(htmlfield).innerHTML =
         "<h2>" +
-        mineName +
-        "en</h2><p>Je hebt in totaal " +
-        FixNumber(objMines[typeMine]) +
-        " " +
-        mineName +
-        " locaties gevonden. Hiervan zijn er " +
-        FixNumber(objMines[active]) +
-        " actief in gebruik.</p>" +
-        "Je kan nog " +
-        FixNumber(+objMines[typeMine] - +objMines[active]) +
-        " " +
-        mineName +
-        " openen. Een " +
-        mineName +
-        " kost nu " +
-        FixMoney(objMines[mineCost]) +
-        ". Je kan een mijn ook verkopen voor 75% van de aanschafwaarde.</p>" +
+        title +
+        "</h2>" +
+        renderStats([
+          ["Locaties gevonden", FixNumber(objMines[typeMine])],
+          ["Mijnen actief", FixNumber(objMines[active])],
+          [
+            "Vrije locaties",
+            FixNumber(+objMines[typeMine] - +objMines[active]),
+          ],
+          ["Prijs per mijn", FixMoney(objMines[mineCost])],
+          ["Verkoopwaarde", FixMoney(objMines[mineCost] * 0.75)],
+        ]) +
+        "<div class='actions'>" +
         "<button type='button' class='btn btn-primary' onClick='objMines.addMine(" +
         mineCode +
         ", 1);' id='" +
@@ -3150,7 +3151,7 @@ var objMines = {
         mineButton +
         "Sell'>Verkoop " +
         mineName +
-        "</button>";
+        "</button></div>";
       return 0;
     }
 
@@ -3161,7 +3162,8 @@ var objMines = {
       "ironAmountActive",
       "ijzerertsmijn",
       1,
-      "ironMineButton"
+      "ironMineButton",
+      "IJzerertsmijnen"
     );
     generateText(
       "coal-mines",
@@ -3170,7 +3172,8 @@ var objMines = {
       "coalAmountActive",
       "steenkoolmijn",
       2,
-      "coalMineButton"
+      "coalMineButton",
+      "Steenkoolmijnen"
     );
     generateText(
       "uranium-mines",
@@ -3179,7 +3182,8 @@ var objMines = {
       "uraniumAmountActive",
       "uraniummijn",
       3,
-      "uraniumMineButton"
+      "uraniumMineButton",
+      "Uraniummijnen"
     );
     //generateText("copper-mines", "copperAmountProspected", "copperMineCost","copperAmountActive", "kopermijn", 4, "copperMineButton);
     //generateText("gold-mines", "goldAmountProspected", "goldMineCost","goldAmountActive", "goudmijn", 5, "goldMineButton");
@@ -3247,9 +3251,7 @@ var objMines = {
     if (+objMines.prospecting === 1) {
       document.getElementById("ProspectingButton").disabled = true;
       document.getElementById("ProspectingProgress").innerHTML =
-        "<p>De zoektocht naar een nieuwe mijnlocatie is klaar over: " +
-        objMines.prospectTimerActive +
-        " Seconden</p>";
+        "Zoeken klaar over " + objMines.prospectTimerActive + " seconden";
     } else {
       document.getElementById("ProspectingButton").disabled = false;
     }
@@ -3286,36 +3288,29 @@ var objCoalMine = {
   },
   show: function () {
     document.getElementById("coalMine").innerHTML =
-      "<p>Een steenkoolmijn produceert: " +
-      FixNumber(+objCoalMine.production) +
-      " ton steenkool per tick." +
-      " Dit kost je " +
-      FixNumber(objCoalMine.energy) +
-      " energie per tick</p><p>Je produceert op dit moment " +
-      FixNumber(+objMines.coalAmountActive * +objCoalMine.production) +
-      " ton steenkool per tick, dit kost " +
-      FixNumber(+objMines.coalAmountActive * +objCoalMine.energy) +
-      " energie.</p>" +
-      "<p>Je hebt nu: " +
-      FixNumber(objCoal.storage) +
-      " steenkool silo's" +
-      "<br>Totale opslag capaciteit: " +
-      FixNumber(+objCoal.storage * +objCoal.storageCap) +
-      "<br>Steenkool voorraad / capaciteit: " +
-      FixNumber(objCoal.amount) +
-      "/" +
-      FixNumber(+objCoal.storage * +objCoal.storageCap) +
-      " ton</p>" +
-      "<p>Je kan steenkool verkopen voor: " +
-      FixMoney(objCoal.price) +
-      " per ton. In geval van nood kan je steenkool ook kopen voor: " +
-      FixMoney(+objCoal.price * 1.5) +
-      " per ton (alleen als je minder dan 5% van je maximale steenkool capaciteit beschikbaar hebt)</p>" +
-      "<button type='button' class='btn btn-danger' onClick='objCoal.sell(0)' id='sellCoalButton'>Verkoop steenkool!</button> " +
-      "<button type='button' class='btn btn-outline-success' onClick='objCoal.buy(50000)' id='buyCoalButton'>Koop 50k steenkool</button>" +
-      "<p>Koop een extra silo voor: " +
-      FixMoney(objCoal.storagePrice) +
-      "</p>";
+      renderResource({
+        amount: objCoal.amount,
+        production: +objMines.coalAmountActive * +objCoalMine.production,
+        energy: +objMines.coalAmountActive * +objCoalMine.energy,
+        period: "tick",
+        price: objCoal.price,
+        silos: objCoal.storage,
+        siloCap: objCoal.storageCap,
+        siloPrice: objCoal.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objCoalMine.production, "ton") +
+          " per tick voor " +
+          FixNumber(objCoalMine.energy) +
+          " energie. Bijkopen kan alleen onder 5% voorraad, voor " +
+          FixMoney(+objCoal.price * 1.5) +
+          " per ton.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objCoal.sell(0)' id='sellCoalButton'>Verkoop steenkool</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objCoal.buy(50000)' id='buyCoalButton'>Koop 50.000 ton steenkool</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objCoal.addSilo();' id='coalSiloButton'>Bouw steenkoolsilo</button>" +
+      "</div>";
   },
 };
 
@@ -3434,34 +3429,26 @@ var objIronMine = {
   },
   show: function () {
     document.getElementById("IronMine").innerHTML =
-      "<p>Een ijzererts-mijn produceert: " +
-      FixNumber(+objIronMine.production) +
-      " ton ijzererts per tick." +
-      " Dit kost je " +
-      FixNumber(objIronMine.energy) +
-      " energie per tick</p><p>Je produceert op dit moment " +
-      FixNumber(+objMines.ironAmountActive * +objIronMine.production) +
-      " ton ijzererts per tick, dit kost " +
-      FixNumber(+objMines.ironAmountActive * +objIronMine.energy) +
-      " energie.</p>" +
-      "<p>Je hebt nu: " +
-      FixNumber(objIronOre.storage) +
-      " ijzererts silo's" +
-      "<br>Totale opslag capaciteit: " +
-      FixNumber(+objIronOre.storage * +objIronOre.storageCap) +
-      "ton <br>Ijzererts voorraad / capaciteit: " +
-      FixNumber(objIronOre.amount) +
-      "/" +
-      FixNumber(+objIronOre.storage * +objIronOre.storageCap) +
-      " ton</p>" +
-      "<p>Je kan ijzererts verkopen voor: " +
-      FixMoney(objIronOre.price) +
-      " per ton. Als de opslag vol is stoppen de ijzermijnen met werken (ze kosten dan ook geen energie meer)</p>" +
-      "<button type='button' class='btn btn-danger' onClick='objIronOre.sell(0)' id='sellIronButton'>Verkoop ijzererts!</button>" +
-      "<p>Koop een extra silo voor: " +
-      FixMoney(objIronOre.storagePrice) +
-      "</p>" +
-      "<button type='button' class='btn btn-primary' onClick='objIronOre.addSilo();' id='ironOreSiloButton'>Bouw ijzererts-silo</button>";
+      renderResource({
+        amount: objIronOre.amount,
+        production: +objMines.ironAmountActive * +objIronMine.production,
+        energy: +objMines.ironAmountActive * +objIronMine.energy,
+        period: "tick",
+        price: objIronOre.price,
+        silos: objIronOre.storage,
+        siloCap: objIronOre.storageCap,
+        siloPrice: objIronOre.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objIronMine.production, "ton") +
+          " per tick voor " +
+          FixNumber(objIronMine.energy) +
+          " energie. Is de opslag vol, dan stoppen de mijnen.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objIronOre.sell(0)' id='sellIronButton'>Verkoop ijzererts</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objIronOre.addSilo();' id='ironOreSiloButton'>Bouw ijzererts-silo</button>" +
+      "</div>";
   },
 };
 
@@ -3605,35 +3592,43 @@ var objIronMelter = {
   show: function () {
     if (+objMines.ironAmountProspected > 0) {
       document.getElementById("steelProduction").innerHTML =
-        "<h2>Staal</h2><p>Staal kan geproduceerd worden door het gebruiken van ijzererts, steenkool en een hoop energie. " +
-        "Je kan een hoogoven bouwen voor " +
-        FixMoney(objIronMelter.cost) +
-        ". Als je een hoogoven verkoopt levert dat: " +
-        FixMoney(objIronMelter.cost * 0.75) +
-        " op. " +
-        "Iedere hoogoven gebruikt " +
-        FixNumber(objIronMelter.ironOreNeeded) +
-        " ton ijzererts, " +
-        FixNumber(objIronMelter.coalNeeded) +
-        " ton steenkool en " +
-        FixNumber(objIronMelter.energy) +
-        " energie</p>" +
-        "<p><button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
-        "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button></p>";
+        "<h2>Hoogovens</h2>" +
+        renderStats([
+          ["Hoogovens", FixNumber(objIronMelter.amount)],
+          ["Prijs per hoogoven", FixMoney(objIronMelter.cost)],
+          ["Verkoopwaarde", FixMoney(objIronMelter.cost * 0.75)],
+        ]) +
+        "<h3>Per hoogoven per run</h3>" +
+        renderStats([
+          ["IJzererts", FixUnit(objIronMelter.ironOreNeeded, "ton")],
+          ["Steenkool", FixUnit(objIronMelter.coalNeeded, "ton")],
+          ["Energie", FixNumber(objIronMelter.energy)],
+          ["Staal", FixUnit(objIronMelter.production, "ton")],
+        ]) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
+        "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button>" +
+        "</div>";
       document.getElementById("steelProductionStats").innerHTML =
-        "<p> Je hebt op dit moment " +
-        FixNumber(objIronMelter.amount) +
-        " hoogovens. Deze hoogovens produceren " +
-        FixNumber(+objIronMelter.amount * +objIronMelter.production) +
-        " ton staal per run</p><p>" +
-        "Dit kost per run: <br> Steenkool: " +
-        FixNumber(objIronMelter.amount * objIronMelter.coalNeeded) +
-        "<br> Ijzererts: " +
-        FixNumber(objIronMelter.amount * objIronMelter.ironOreNeeded) +
-        "<br> Energie: " +
-        FixNumber(objIronMelter.amount * objIronMelter.energy) +
-        "</p><p>" +
-        "<button type='button' class='btn btn-primary' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button></p>";
+        "<h3>Totaal per run</h3>" +
+        renderStats([
+          [
+            "Staal",
+            FixUnit(+objIronMelter.amount * +objIronMelter.production, "ton"),
+          ],
+          [
+            "IJzererts",
+            FixUnit(objIronMelter.amount * objIronMelter.ironOreNeeded, "ton"),
+          ],
+          [
+            "Steenkool",
+            FixUnit(objIronMelter.amount * objIronMelter.coalNeeded, "ton"),
+          ],
+          ["Energie", FixNumber(objIronMelter.amount * objIronMelter.energy)],
+        ]) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-success' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button>" +
+        "</div>";
     }
   },
   init: function () {
@@ -3684,34 +3679,38 @@ var objSteel = {
     useResource("objSteel", amount, "steelAmount");
   },
   show: function () {
+    var steelCapacity = +objSteel.storage * +objSteel.storageCap;
     document.getElementById("Steel").innerHTML =
-      "<h2>Staalvoorraden</h2><p>Staal wordt in loodsen opgeslagen. Iedere loods kan " +
-      FixNumber(objSteel.storageCap) +
-      " ton staal opslaan</p><p>Info:<br>Aantal loodsen: " +
-      FixNumber(objSteel.storage) +
-      "<br>Totale opslagcapaciteit: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap) +
-      "<br>Extra loodsen kosten: " +
-      FixMoney(objSteel.storagePrice) +
-      "</P>";
-    document.getElementById("steelStats").innerHTML =
-      "<p>Stats:<br>Aantal loodsen: " +
-      FixNumber(objSteel.storage) +
-      "<br>Staal in voorraad: " +
-      FixNumber(objSteel.amount) +
-      "<br>Totale ruimte: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap) +
-      "<br>Beschikbare ruimte: " +
-      FixNumber(+objSteel.storage * +objSteel.storageCap - +objSteel.amount);
+      "<h2>Staal</h2>" +
+      renderBar(
+        "Voorraad",
+        FixUnit(objSteel.amount, "ton"),
+        (+objSteel.amount / steelCapacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixUnit(steelCapacity - +objSteel.amount, "ton")],
+        [
+          "Loodsen",
+          FixNumber(objSteel.storage) +
+            " (" +
+            FixUnit(steelCapacity, "ton") +
+            ")",
+        ],
+        ["Prijs extra loods", FixMoney(objSteel.storagePrice)],
+        ["Capaciteit per loods", FixUnit(objSteel.storageCap, "ton")],
+      ]);
+    document.getElementById("steelStats").innerHTML = "";
     document.getElementById("steelStorage").innerHTML =
-      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button> " +
-      "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button><p>Staal dat niet in de opslag past wordt voor 20% van de marktwaarde verkocht!</p>";
+      renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.") +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button>" +
+      "</div>";
   },
   showPrice: function () {
-    document.getElementById("steelPrice").innerHTML =
-      "<p>De huidige staalprijs is: " +
-      FixMoney(objSteel.price) +
-      " per ton</p>";
+    document.getElementById("steelPrice").innerHTML = renderStats([
+      ["Prijs per ton", FixMoney(objSteel.price)],
+    ]);
   },
   init: function () {
     objSteel.amount = localStorage.getItem("steelAmount") || 0;
@@ -4074,39 +4073,30 @@ var objUraniumMine = {
     objUraniumOre.show();
   },
   show: function () {
-    document.getElementById("UraniumMine1").innerHTML =
-      "<p>Een uraniummijn produceert: " +
-      FixNumber(+objUraniumMine.production) +
-      " ton uranium per 10 ticks." +
-      " Dit kost je " +
-      FixNumber(objUraniumMine.energy) +
-      " energie per 10 ticks</p><p>Je produceert op dit moment " +
-      FixNumber(+objMines.uraniumAmountActive * +objUraniumMine.production) +
-      " ton uranium per 10 ticks, dit kost " +
-      FixNumber(+objMines.uraniumAmountActive * +objUraniumMine.energy) +
-      " energie. Daarnaast eet je personeel " +
-      FixNumber(
-        +objUraniumMine.workerFood *
-          (+objUraniumMine.workers * +objMines.uraniumAmountActive)
-      ) +
-      " pasta per 10 ticks</p>" +
-      "<p>Je hebt nu: " +
-      FixNumber(objUraniumOre.storage) +
-      " uranium silo's" +
-      "<br>Totale opslag capaciteit: " +
-      FixNumber(+objUraniumOre.storage * +objUraniumOre.storageCap) +
-      "ton <br>Uranium voorraad / capaciteit: " +
-      FixNumber(objUraniumOre.amount) +
-      "/" +
-      FixNumber(+objUraniumOre.storage * +objUraniumOre.storageCap) +
-      " ton</p>" +
-      "<p>Je kan uranium verkopen voor: " +
-      FixMoney(objUraniumOre.price) +
-      " per ton. Als de opslag vol is stoppen de mijnen met werken (ze kosten dan ook geen energie meer)</p>";
-    document.getElementById("UraniumMine").innerHTML =
-      "<p>Koop een extra silo voor: " +
-      FixMoney(objUraniumOre.storagePrice) +
-      "</p>";
+    document.getElementById("UraniumMine1").innerHTML = renderResource({
+      amount: objUraniumOre.amount,
+      production: +objMines.uraniumAmountActive * +objUraniumMine.production,
+      energy: +objMines.uraniumAmountActive * +objUraniumMine.energy,
+      period: "10 ticks",
+      extra: [
+        "Pasta",
+        FixNumber(
+          +objUraniumMine.workerFood *
+            (+objUraniumMine.workers * +objMines.uraniumAmountActive)
+        ) + " dozen per 10 ticks",
+      ],
+      price: objUraniumOre.price,
+      silos: objUraniumOre.storage,
+      siloCap: objUraniumOre.storageCap,
+      siloPrice: objUraniumOre.storagePrice,
+      hint:
+        "Een mijn levert " +
+        FixUnit(objUraniumMine.production, "ton") +
+        " per 10 ticks voor " +
+        FixNumber(objUraniumMine.energy) +
+        " energie; het personeel eet pasta. Is de opslag vol, dan stoppen de mijnen.",
+    });
+    document.getElementById("UraniumMine").innerHTML = "";
   },
 };
 

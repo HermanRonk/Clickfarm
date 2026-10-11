@@ -402,36 +402,35 @@
         </div>
         <div class="row rows" id="mijnbouw-row">
             <div class="container col-sm" id="Prospecting-col">
-                <h2>Prospecting:</h2>
+                <h2>Prospecting</h2>
                 <div id="Prospecting"></div>
-                <button type="button" class="btn btn-primary" onClick="objMines.prospect();" id="ProspectingButton">Start prospecting</button>
-                <div id="ProspectingProgress"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-success" onClick="objMines.prospect();" id="ProspectingButton">Start prospecting</button>
+                </div>
+                <div id="ProspectingProgress" class="timer"></div>
                 <div id="ProspectingResult"></div>
             </div>
             <div class="container col-sm" id="MiningSites-col">
-                <h2>Overzicht mijnen:</h2>
+                <h2>Mijnlocaties</h2>
                 <div id="minesites"></div>
             </div>
         </div>
         <div class="row rows" id="mijnen-row">
             <div id="Coal-col" class="container col-sm">
                 <div id="coal-mines"></div>
-                <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(2);" id="coalMineButton">Bouw steenkoolmijn</button> -->
+                <h3>Steenkool</h3>
                 <div id="coalMine"></div>
-                <button type="button" class="btn btn-primary" onClick="objCoal.addSilo();" id="coalSiloButton">Bouw steenkoolsilo</button>
             </div>
             <div id="Iron-col" class="container col-sm">
                 <div id="iron-mines"></div>
+                <h3>IJzererts</h3>
                 <div id="IronMine"></div>
             </div>
-
             <div id="Gold-col" class="container col-sm">
                 <div id="gold-mines"></div>
-                <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(5);" id="goldMineButton">Bouw goudmijn</button> -->
             </div>
             <div id="Diamond-col" class="container col-sm">
                 <div id="diamond-mines"></div>
-                <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(6);" id="diamondMineButton">Bouw diamantmijn</button> -->
             </div>
         </div>
 
@@ -442,28 +441,24 @@
             </div>
             <div id="SteelInfo-col" class="container col-sm">
                 <div id="Steel"></div>
+                <div id="steelPrice"></div>
                 <div id="steelStats"></div>
                 <div id="steelStorage"></div>
-                <div id="steelPrice"></div>
             </div>
-
         </div>
         <div class="row rows" id="mijnen-row2">
             <div id="Uranium-col" class="container col-sm">
                 <div id="uranium-mines"></div>
-                <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(3);" id="uraniumMineButton">Bouw uraniummijn</button> -->
+                <h3>Uranium</h3>
                 <div id="UraniumMine1"></div>
-                <div>
-                    <button type='button' class='btn btn-danger' onClick='objUraniumOre.sell(0)' id='sellUraniumButton'>Verkoop uranium!</button>
-                </div>
                 <div id="UraniumMine"></div>
-                <div>
+                <div class="actions">
+                    <button type='button' class='btn btn-danger' onClick='objUraniumOre.sell(0)' id='sellUraniumButton'>Verkoop uranium</button>
                     <button type='button' class='btn btn-primary' onClick='objUraniumOre.addSilo();' id='uraniumOreSiloButton'>Bouw uranium-silo</button>
                 </div>
             </div>
             <div id="Copper-col" class="container col-sm">
                 <div id="copper-mines"></div>
-                <!-- <button type="button" class="btn btn-primary" onClick="objMines.addMine(4);" id="copperMineButton">Bouw kopermijn</button> -->
             </div>
         </div>
         <div class="row rows" id="nuclearFuel-row">
