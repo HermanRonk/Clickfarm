@@ -7,3 +7,9 @@ Thumbs.db
 # Lokale omgeving
 .env
 *.log
+
+# Tests
+node_modules/
+test-results/
+playwright-report/
+blob-report/

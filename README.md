@@ -30,6 +30,7 @@ De bestanden:
 | `inc/base.js` | Alle spellogica |
 | `css/style.css` | Eigen opmaak |
 | `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |
+| `tests/`, `package.json`, `playwright.config.js` | End-to-end tests (gaan niet mee in de container) |
 
 # Zelf draaien
 Zonder installatie: open `index.html` in je browser, of start een simpele webserver in de map, bijvoorbeeld:
@@ -46,3 +47,15 @@ docker run --rm -p 8080:8080 clickfarm
 ```
 
 Ga daarna naar http://localhost:8080. De container luistert op poort `8080`, draait niet als root en heeft een health check op `/healthz`.
+
+# Testen
+De tests bespelen het spel in een echte browser (Playwright): levelen, welke onderdelen per level zichtbaar worden, spelverloop, opslaan/laden en eerder opgeloste bugs.
+
+```
+npm ci
+npx playwright install chromium
+npm test              # tegen een lokale server
+npm run test:docker   # tegen de gebouwde productie-container
+```
+
+Bij iedere pull request en push naar `master` draaien de tests automatisch in GitHub Actions; het rapport staat als artifact bij de run. Zie [`tests/README.md`](tests/README.md) voor alle details.
