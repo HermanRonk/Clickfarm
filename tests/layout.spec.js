@@ -86,6 +86,35 @@ test.describe("Opmaak", () => {
     }
   });
 
+  test("alle waardes in de lijstjes zijn gevuld, ook met alles vrijgespeeld", async ({ page }) => {
+    const { pageErrors } = await startGame(page, {
+      state: {
+        PlayerLevel: 12,
+        NextLevel: threshold(12),
+        Rlevel: 4,
+        ironAmountProspected: 1,
+        ironSmelters: 1,
+        coalAmountActive: 1,
+        CoalPowerPlants: 1,
+        scCPU: 2,
+        plasticFactories: 1,
+        fuellCellFactory: 1,
+        nppAmount: 1,
+        QS: 1,
+      },
+    });
+    await tick(page, 30);
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll(".stats-list")].flatMap((list) =>
+        [...list.querySelectorAll("dd")]
+          .filter((dd) => !dd.textContent.trim() || /NaN|undefined|Infinity/.test(dd.textContent))
+          .map((dd) => `${dd.previousElementSibling.textContent}: "${dd.textContent}"`)
+      )
+    );
+    expect(bad).toEqual([]);
+    expect(pageErrors).toEqual([]);
+  });
+
   test("donker thema werkt zonder fouten", async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: "dark", locale: "nl-NL" });
     const page = await context.newPage();
