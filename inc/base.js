@@ -1707,7 +1707,19 @@ var objFarmRobot = {
   robotTimer: 0,
   activeRobots: 0,
   activeFields: 0,
+  // Een robot bewerkt 10 velden: zoveel robots zijn er nodig voor alle velden
+  needed: function () {
+    return Math.ceil(+objFarmland.amount / +objFarmRobot.robotCap);
+  },
   add: function () {
+    if (+objFarmRobot.robots >= objFarmRobot.needed()) {
+      notificationOverlay(
+        "Je robots bewerken al al je velden. Koop eerst extra landbouwgrond.",
+        "Farmrobot",
+        "fa-info"
+      );
+      return 0;
+    }
     if (+objMoney.amount >= +objFarmRobot.robotCost) {
       objMoney.use(objFarmRobot.robotCost);
       objFarmRobot.robots = +objFarmRobot.robots + 1;
@@ -1754,9 +1766,12 @@ var objFarmRobot = {
     objFarmRobot.activeRobots = Math.floor(
       tempEnergy / objFarmRobot.robotEnergy
     );
-    if (objFarmRobot.activeRobots > objFarmRobot.robots) {
-      objFarmRobot.activeRobots = objFarmRobot.robots;
-    }
+    // Niet meer robots laten draaien (en energie laten gebruiken) dan er velden zijn
+    objFarmRobot.activeRobots = Math.min(
+      objFarmRobot.activeRobots,
+      +objFarmRobot.robots,
+      objFarmRobot.needed()
+    );
     if (objFarmRobot.activeRobots === 0) return 0;
     let robotEnergyUsage = objFarmRobot.activeRobots * objFarmRobot.robotEnergy;
     objEnergy.use(robotEnergyUsage, "Farmrobot");
@@ -1784,27 +1799,22 @@ var objFarmRobot = {
     }
   },
   show: function () {
+    var working = Math.min(+objFarmRobot.robots, objFarmRobot.needed());
+    var fields = Math.min(
+      working * +objFarmRobot.robotCap,
+      +objFarmland.amount
+    );
     document.getElementById("ShowFarmRobot").innerHTML = renderStats([
       ["Robots", FixNumber(objFarmRobot.robots)],
-      [
-        "Velden bewerkt",
-        FixNumber(+objFarmRobot.robots * +objFarmRobot.robotCap),
-      ],
+      ["Velden bewerkt", FixNumber(fields)],
       [
         "Opbrengst per run",
-        FixUnit(
-          AfrondenGewicht(
-            +objFarmland.harvest *
-              (+objFarmRobot.robots * +objFarmRobot.robotCap)
-          ),
-          "kg"
-        ),
+        FixUnit(AfrondenGewicht(+objFarmland.harvest * fields), "kg"),
       ],
-      [
-        "Energie per run",
-        FixNumber(+objFarmRobot.robots * +objFarmRobot.robotEnergy),
-      ],
+      ["Energie per run", FixNumber(working * +objFarmRobot.robotEnergy)],
     ]);
+    document.getElementById("buyFarmRobot").disabled =
+      +objFarmRobot.robots >= objFarmRobot.needed();
     document.getElementById("FarmRobotPrice").innerHTML = renderStats([
       ["Prijs per robot", FixMoney(objFarmRobot.robotCost)],
       ["Verkoopwaarde", FixMoney(+objFarmRobot.robotCost * 0.75)],
@@ -2204,6 +2214,7 @@ var objFarmland = {
       objFarmland.calcPrice();
       objFarmland.showPrice();
       objFarmland.showFarms();
+      objFarmRobot.show();
     }
   },
   manualFarm: function () {
@@ -2556,6 +2567,7 @@ var objWindmill = {
       ["Prijs per windmolen", FixMoney(objWindmill.cost)],
       ["Capaciteit per windmolen", FixUnit(objWindmill.cap, "kg")],
     ]);
+    objWindmillController.show();
   },
   init: function () {
     objWindmill.amount = parseInt(localStorage.getItem("WindmillAmount")) || 1;
@@ -2573,6 +2585,15 @@ var objWindmillController = {
   energy: 80,
   cap: 1,
   add: function () {
+    // Een controller bedient één windmolen
+    if (+objWindmillController.amount >= +objWindmill.amount) {
+      notificationOverlay(
+        "Iedere windmolen heeft al een controller. Bouw eerst een extra windmolen.",
+        "Windmolencontrollers",
+        "fa-info"
+      );
+      return 0;
+    }
     if (+objMoney.amount > objWindmillController.price) {
       objMoney.use(objWindmillController.price);
       objWindmillController.amount++;
@@ -2613,6 +2634,12 @@ var objWindmillController = {
     document.getElementById("WindmillControllerInfo").innerHTML = renderStats([
       ["Controllers", FixNumber(objWindmillController.amount)],
       [
+        "Molens zonder controller",
+        FixNumber(
+          Math.max(0, +objWindmill.amount - +objWindmillController.amount)
+        ),
+      ],
+      [
         "Energie per tick",
         FixNumber(
           (objWindmillController.amount * objWindmillController.energy) / 10
@@ -2625,6 +2652,8 @@ var objWindmillController = {
     document.getElementById("SellWindmillController").innerHTML = renderStats([
       ["Verkoopwaarde", FixMoney(objWindmillController.price * 0.75)],
     ]);
+    document.getElementById("addWindmillController").disabled =
+      +objWindmillController.amount >= +objWindmill.amount;
   },
   init: function () {
     objWindmillController.amount =
@@ -3247,7 +3276,13 @@ var objPastaFactory = {
     }
   },
   sell: function () {
-    if (+objPastaFactory.amount > 0) {
+    if (+objPastaFactory.amount > 0 && objPastaHelper.freeFactories() < 1) {
+      notificationOverlay(
+        "Ontsla eerst een pastahelper: iedere helper bedient één fabriek.",
+        "Pastafabriek",
+        "fa-info"
+      );
+    } else if (+objPastaFactory.amount > 0) {
       objMoney.add(objPastaFactory.cost * 0.75, "Verkoop pastafabriek", 7, 1);
       objPastaFactory.amount--;
       localStorage.setItem("PastaFactoryAmount", objPastaFactory.amount);
@@ -3273,9 +3308,12 @@ var objPastaFactory = {
       return 0;
     }
 
+    var usableFactories;
     if (typeAction == "manual") {
-      usableFactories =
-        +objPastaFactory.amount - +objPastaFactory.amountAutomated;
+      usableFactories = Math.max(
+        0,
+        +objPastaFactory.amount - +objPastaFactory.amountAutomated
+      );
     } else {
       if (+objPastaFactory.amountAutomated <= +objPastaFactory.amount) {
         usableFactories = +objPastaFactory.amountAutomated;
@@ -3393,6 +3431,7 @@ var objPastaFactory = {
           " eieren maken één doos pasta."
       );
     objStorehouse.show();
+    objPastaHelper.show();
   },
   init: function () {
     objPastaFactory.amount = localStorage.getItem("PastaFactoryAmount") || 0;
@@ -3437,8 +3476,20 @@ var objPastaHelper = {
   amount: 0,
   cost: 1000000,
   cut: 0.05,
+  // Een helper bedient één fabriek: meer helpers dan fabrieken heeft geen zin
+  freeFactories: function () {
+    return Math.max(0, +objPastaFactory.amount - +objPastaHelper.amount);
+  },
   add: function (actionType) {
     if (actionType == 1) {
+      if (objPastaHelper.freeFactories() < 1) {
+        notificationOverlay(
+          "Iedere pastafabriek heeft al een helper. Bouw eerst een extra fabriek.",
+          "Pastahelper",
+          "fa-info"
+        );
+        return 0;
+      }
       if (+objMoney.amount >= +objPastaHelper.cost) {
         objMoney.use(objPastaHelper.cost);
         objPastaHelper.amount++;
@@ -3490,13 +3541,19 @@ var objPastaHelper = {
         "<h3>Pastahelpers</h3>" +
         renderStats([
           ["Pastahelpers", FixNumber(objPastaHelper.amount)],
+          [
+            "Fabrieken zonder helper",
+            FixNumber(objPastaHelper.freeFactories()),
+          ],
           ["Prijs per helper", FixMoney(objPastaHelper.cost)],
         ]) +
         renderHint(
           "Een helper bedient één fabriek en maakt elke 15 seconden pasta. Hij neemt 5% mee naar huis; ontslaan levert niets op."
         ) +
         "<div class='actions'>" +
-        "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'>Neem pastahelper aan</button> " +
+        "<button type='button' class='btn btn-primary' onClick='objPastaHelper.add(1);' id='addPastaHelper'" +
+        (objPastaHelper.freeFactories() < 1 ? " disabled" : "") +
+        ">Neem pastahelper aan</button> " +
         "<button type='button' class='btn btn-outline-danger' onClick='objPastaHelper.add(0);' id='removePastaHelper'>Ontsla pastahelper</button>" +
         "</div>";
     }
@@ -4998,6 +5055,15 @@ var objPlasticFactory = {
       }
     } else {
       Price = +objPlasticFactory.workerCost;
+      // Een medewerker bedient één fabriek
+      if (+objPlasticFactory.workers >= +objPlasticFactory.amount) {
+        notificationOverlay(
+          "Iedere kunststoffabriek heeft al een medewerker. Bouw eerst een extra fabriek.",
+          "Kunststoffabriek",
+          "fa-industry"
+        );
+        return 0;
+      }
     }
     if (+objMoney.amount > +Price * +amount) {
       objMoney.use(+Price * +amount);
@@ -5043,7 +5109,18 @@ var objPlasticFactory = {
       return 0;
     }
     if (typeProduction == 0) {
-      factoriesActive = +objPlasticFactory.amount - +objPlasticFactory.workers;
+      factoriesActive = Math.max(
+        0,
+        +objPlasticFactory.amount - +objPlasticFactory.workers
+      );
+      if (factoriesActive == 0) {
+        notificationOverlay(
+          "Alle kunststoffabrieken worden bediend door medewerkers",
+          "Kunststoffabriek",
+          "fa-industry"
+        );
+        return 0;
+      }
     }
 
     if (+objEnergy.available < +factoriesActive * +objPlasticFactory.energy) {
@@ -5147,13 +5224,20 @@ var objPlasticFactory = {
             ],
           ])
         : "";
+    var staffed = Math.min(
+      +objPlasticFactory.workers,
+      +objPlasticFactory.amount
+    );
     document.getElementById("plasticAuto").innerHTML =
       renderStats([
         ["Medewerkers", FixNumber(objPlasticFactory.workers)],
         [
+          "Fabrieken zonder medewerker",
+          FixNumber(+objPlasticFactory.amount - staffed),
+        ],
+        [
           "Pasta per 15 ticks",
-          FixNumber(+objPlasticFactory.workers * objPlasticFactory.workerFood) +
-            " dozen",
+          FixNumber(staffed * objPlasticFactory.workerFood) + " dozen",
         ],
         ["Prijs per medewerker", FixMoney(objPlasticFactory.workerCost)],
       ]) +
@@ -5162,11 +5246,9 @@ var objPlasticFactory = {
           FixNumber(objPlasticFactory.workerFood) +
           " dozen pasta per 15 ticks. Ontslaan levert niets op."
       );
-    if (objPlasticFactory.workers >= objPlasticFactory.amount) {
-      document.getElementById("makePlastic").disabled = true;
-    } else {
-      document.getElementById("makePlastic").disabled = false;
-    }
+    var allStaffed = +objPlasticFactory.workers >= +objPlasticFactory.amount;
+    document.getElementById("makePlastic").disabled = allStaffed;
+    document.getElementById("hireWorker").disabled = allStaffed;
   },
   init: function () {
     objPlasticFactory.amount = localStorage.getItem("plasticFactories") || 0;
@@ -6013,7 +6095,8 @@ var objOilPumpAdv = {
   },
   sell: function () {
     if (+objOilPumpAdv.amount > 0) {
-      objMoney.add(+objOilPumpAdv.price, "Verkoop oliepomp", 19, 1);
+      // Net als andere gebouwen levert verkopen 75% van de prijs op (het staal komt niet terug)
+      objMoney.add(+objOilPumpAdv.price * 0.75, "Verkoop oliepomp", 19, 1);
       objOilPumpAdv.amount = +objOilPumpAdv.amount - 1;
       localStorage.setItem("oilPumpAmount", objOilPumpAdv.amount);
       objOilPumpAdv.show();
@@ -6055,6 +6138,7 @@ var objOilPumpAdv = {
         ["Energie per pomp", FixNumber(objOilPumpAdv.energy) + " per tick"],
         ["Prijs per pomp", FixMoney(objOilPumpAdv.price)],
         ["Staal per pomp", FixUnit(objOilPumpAdv.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(+objOilPumpAdv.price * 0.75)],
       ]);
     if (+objOilPump.amount > 0) {
       document.getElementById("o2upgrade").innerHTML = renderHint(
