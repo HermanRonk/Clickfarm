@@ -280,3 +280,111 @@ test.describe("Bekende problemen opgelost", () => {
     await expect(page.locator("#coalSiloButton")).toBeEnabled();
   });
 });
+
+test.describe("Personeel en besturing per gebouw", () => {
+  test("niet meer pastahelpers dan pastafabrieken", async ({ page }) => {
+    await startGame(page, { state: atLevel(7, { Money: 1e8, PastaFactoryAmount: 2 }) });
+    const hire = page.locator("#addPastaHelper");
+    await hire.click();
+    await hire.click();
+    expect(await game(page, () => +objPastaHelper.amount)).toBe(2);
+    await expect(page.locator("#addPastaHelper")).toBeDisabled();
+    await expect(stat(page, "#pasta-col", "Fabrieken zonder helper")).toHaveText("0");
+
+    await game(page, () => objPastaHelper.add(1));
+    await expect(page.locator("#notif")).toContainText("Iedere pastafabriek heeft al een helper");
+    expect(await game(page, () => +objPastaHelper.amount)).toBe(2);
+    expect(await game(page, () => objMoney.amount)).toBe(1e8 - 2 * 1000000);
+
+    // Een extra fabriek maakt weer ruimte voor een helper
+    await page.getByRole("button", { name: "Bouw pastafabriek" }).click();
+    await expect(page.locator("#addPastaHelper")).toBeEnabled();
+  });
+
+  test("een pastafabriek met een helper erop kan niet verkocht worden", async ({ page }) => {
+    await startGame(page, {
+      state: atLevel(7, { PastaFactoryAmount: 1, pastaHelper: 1, PastaFactoryAmountAutomated: 1 }),
+    });
+    await page.getByRole("button", { name: "Verkoop pastafabriek" }).click();
+    await expect(page.locator("#notif")).toContainText("Ontsla eerst een pastahelper");
+    expect(await game(page, () => +objPastaFactory.amount)).toBe(1);
+
+    await page.locator("#removePastaHelper").click();
+    await page.getByRole("button", { name: "Verkoop pastafabriek" }).click();
+    expect(await game(page, () => +objPastaFactory.amount)).toBe(0);
+  });
+
+  test("oude save met meer pastahelpers dan fabrieken: handmatig pasta maken doet niets geks", async ({ page }) => {
+    await startGame(page, {
+      state: atLevel(7, {
+        PastaFactoryAmount: 1, pastaHelper: 3, PastaFactoryAmountAutomated: 3,
+        FlourSiloContents: 5000, Eggs: 50000, EnergyAvailable: 500, Pasta: 10,
+      }),
+    });
+    await game(page, () => objPastaFactory.produce("manual"));
+    expect(await game(page, () => +objStorehouse.pasta)).toBe(10);
+    expect(await game(page, () => +objFlourSilo.contents)).toBe(5000);
+    expect(await game(page, () => +objEnergy.available)).toBe(500);
+  });
+
+  test("niet meer kunststofmedewerkers dan kunststoffabrieken", async ({ page }) => {
+    await startGame(page, { state: atLevel(7, { Money: 1e8, plasticFactories: 1 }) });
+    await page.locator("#hireWorker").click();
+    expect(await game(page, () => +objPlasticFactory.workers)).toBe(1);
+    await expect(page.locator("#hireWorker")).toBeDisabled();
+    await game(page, () => objPlasticFactory.addWorker(1));
+    await expect(page.locator("#notif")).toContainText("Iedere kunststoffabriek heeft al een medewerker");
+    expect(await game(page, () => +objPlasticFactory.workers)).toBe(1);
+    expect(await game(page, () => objMoney.amount)).toBe(1e8 - 100000);
+  });
+
+  test("oude save met meer kunststofmedewerkers dan fabrieken: kunststof maken geeft geen olie of energie", async ({ page }) => {
+    await startGame(page, {
+      state: atLevel(8, { plasticFactories: 1, plasticWorkers: 3, Oil: 500, EnergyAvailable: 0, Pasta: 0 }),
+    });
+    await expect(stat(page, "#platicFactory-col", "Pasta per 15 ticks")).toHaveText("50 dozen");
+    await game(page, () => objPlasticFactory.produce(0));
+    expect(await game(page, () => +objOilTank.contents)).toBe(500);
+    expect(await game(page, () => +objEnergy.available)).toBe(0);
+    expect(await game(page, () => +objPlastic.amount)).toBe(0);
+  });
+
+  test("niet meer windmolencontrollers dan windmolens", async ({ page }) => {
+    await startGame(page, { state: atLevel(6, { Money: 1e6, WindmillAmount: 2 }) });
+    const add = page.getByRole("button", { name: "Bouw windmolencontroller" });
+    await add.click();
+    await add.click();
+    expect(await game(page, () => +objWindmillController.amount)).toBe(2);
+    await expect(add).toBeDisabled();
+    await game(page, () => objWindmillController.add());
+    await expect(page.locator("#notif")).toContainText("Iedere windmolen heeft al een controller");
+    expect(await game(page, () => +objWindmillController.amount)).toBe(2);
+
+    await page.getByRole("button", { name: "Bouw windmolen", exact: true }).click();
+    await expect(add).toBeEnabled();
+  });
+
+  test("niet meer farmrobots dan nodig voor alle velden", async ({ page }) => {
+    // 15 velden: twee robots (10 velden per robot) zijn genoeg
+    await startGame(page, { state: atLevel(5, { Money: 1e6, Farmland: 15 }) });
+    const buy = page.getByRole("button", { name: "Koop robot", exact: true });
+    await buy.click();
+    await buy.click();
+    expect(await game(page, () => +objFarmRobot.robots)).toBe(2);
+    await expect(buy).toBeDisabled();
+    await game(page, () => objFarmRobot.add());
+    await expect(page.locator("#notif")).toContainText("Je robots bewerken al al je velden");
+    expect(await game(page, () => +objFarmRobot.robots)).toBe(2);
+
+    for (let i = 0; i < 6; i++) await page.getByRole("button", { name: "Koop landbouwgrond" }).click();
+    await expect(buy).toBeEnabled();
+  });
+
+  test("oude save met te veel farmrobots gebruikt alleen energie voor robots met werk", async ({ page }) => {
+    await startGame(page, { state: atLevel(5, { Farmland: 5, FarmRobots: 4, EnergyAvailable: 1000 }) });
+    expect(await game(page, () => objFarmRobot.activeRobots)).toBe(1);
+    expect(await game(page, () => +objEnergy.available)).toBe(985);
+    await expect(stat(page, "#farmland-automation", "Velden bewerkt")).toHaveText("5");
+    await expect(stat(page, "#farmland-automation", "Energie per run")).toHaveText("15");
+  });
+});
