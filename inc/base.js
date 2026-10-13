@@ -4969,6 +4969,16 @@ var objSteel = {
       ) +
       renderStats([
         ["Vrije ruimte", FixUnit(steelCapacity - +objSteel.amount, "ton")],
+      ]);
+    // Verkopen links en opslag rechts, net als bij kunststof (zie de brede kaarten in index.html)
+    document.getElementById("steelStats").innerHTML =
+      renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.") +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button>" +
+      "</div>";
+    document.getElementById("steelStorage").innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
         [
           "Loodsen",
           FixNumber(objSteel.storage) +
@@ -4978,12 +4988,8 @@ var objSteel = {
         ],
         ["Prijs extra loods", FixMoney(objSteel.storagePrice)],
         ["Capaciteit per loods", FixUnit(objSteel.storageCap, "ton")],
-      ]);
-    document.getElementById("steelStats").innerHTML = "";
-    document.getElementById("steelStorage").innerHTML =
-      renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.") +
+      ]) +
       "<div class='actions'>" +
-      "<button type='button' class='btn btn-danger' onClick='objSteel.sell(0)' id='sellSteel'>Verkoop staal</button> " +
       "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button>" +
       "</div>";
   },

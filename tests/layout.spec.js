@@ -191,6 +191,105 @@ for (const width of [1440, 1920]) {
   });
 }
 
+// Brede kaarten: twee kolommen breed, met hun onderdelen in twee helften naast elkaar
+const wideRows = {
+  "productie-row": ["chicken-col", "pasta-col"],
+  "plastic-row": ["platicFactory-col", "plasticStorage-col"],
+  "mijnen-row": ["Coal-col", "Iron-col"],
+  "production2-row": ["SteelProduction-col", "SteelInfo-col"],
+  "mijnen-row2": ["Uranium-col"],
+};
+const allUnlocked = {
+  PlayerLevel: 13,
+  NextLevel: threshold(13),
+  Rlevel: 4,
+  ironAmountProspected: 1,
+  ironSmelters: 1,
+  coalAmountActive: 1,
+  plasticFactories: 1,
+  PastaFactory: 1,
+};
+
+// Per kaart: [links, boven] van beide helften
+const halves = (page, id) =>
+  page
+    .locator(`#${id} .card-half`)
+    .evaluateAll((els) => els.map((el) => [el.getBoundingClientRect().left, el.getBoundingClientRect().top]));
+
+for (const width of [1440, 1920]) {
+  test.describe(`Brede kaarten (${width} px)`, () => {
+    test.use({ viewport: { width, height: 900 } });
+
+    test("de kaarten vullen samen de rij en tonen hun helften naast elkaar", async ({ page }) => {
+      await startGame(page, { state: allUnlocked });
+      for (const [rowId, cards] of Object.entries(wideRows)) {
+        const row = await page.locator(`#${rowId}`).boundingBox();
+        for (const id of cards) {
+          const card = await page.locator(`#${id}`).boundingBox();
+          // twee van de vier kolommen: de helft van de rij
+          expect(Math.abs(card.width - (row.width - 24) / 2), id).toBeLessThan(15);
+          const [left, right] = await halves(page, id);
+          expect(right[0], id).toBeGreaterThan(left[0] + card.width / 3);
+          expect(right[1], id).toBeLessThan(card.y + 80);
+        }
+        if (cards.length === 2) {
+          const [a, b] = await Promise.all(cards.map((id) => page.locator(`#${id}`).boundingBox()));
+          expect(Math.round(a.y), rowId).toBe(Math.round(b.y));
+        }
+      }
+      // de rij met eieren en pasta was ruim 850 px hoog
+      expect((await page.locator("#productie-row").boundingBox()).height).toBeLessThan(600);
+    });
+
+    test("bij een kop uit de spelcode begint de rechterhelft onder de kop", async ({ page }) => {
+      await startGame(page, { state: allUnlocked });
+      for (const id of ["Coal-col", "SteelProduction-col", "SteelInfo-col"]) {
+        const heading = await page.locator(`#${id} .card-half h2`).boundingBox();
+        const [, right] = await halves(page, id);
+        expect(right[1], id).toBeGreaterThanOrEqual(heading.y + heading.height);
+      }
+    });
+
+    test("een brede kaart klapt in tot alleen de titel", async ({ page }) => {
+      await startGame(page, {
+        state: { ...allUnlocked, layout: JSON.stringify({ order: {}, collapsed: ["chicken-col"] }) },
+      });
+      await expect(page.locator("#chicken-col .collapsed-title")).toBeVisible();
+      await expect(page.locator("#chicken-col .card-split")).toBeHidden();
+      expect((await page.locator("#chicken-col").boundingBox()).height).toBeLessThan(100);
+    });
+  });
+}
+
+test.describe("Brede kaarten op een smallere desktop (1024 px)", () => {
+  test.use({ viewport: { width: 1024, height: 900 } });
+
+  test("twee kaarten per rij, met de helften onder elkaar", async ({ page }) => {
+    await startGame(page, { state: allUnlocked });
+    const tops = await page
+      .locator("#productie-row > .card-wide")
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    expect(tops).toHaveLength(2);
+    expect(tops[0]).toBe(tops[1]);
+    const [left, right] = await halves(page, "chicken-col");
+    expect(right[0]).toBe(left[0]);
+    expect(right[1]).toBeGreaterThan(left[1]);
+  });
+});
+
+test.describe("Brede kaarten op mobiel (390 px)", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("de helften staan onder elkaar, zonder horizontale scroll", async ({ page }) => {
+    await startGame(page, { state: allUnlocked });
+    const [left, right] = await halves(page, "pasta-col");
+    expect(right[0]).toBe(left[0]);
+    expect(right[1]).toBeGreaterThan(left[1]);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
+
 test.describe("Smallere desktop (1024 px)", () => {
   test.use({ viewport: { width: 1024, height: 900 } });
 
