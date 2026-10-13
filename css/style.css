@@ -786,74 +786,118 @@ kbd2 {
     outline-offset: 2px;
 }
 
-/* Rijen inklappen (alleen desktop): knopje links naast de rij, ingeklapt een smalle balk met de kaartnamen */
-.row-ui {
-    display: none;
+/* Rijen inklappen: op desktop een knopje links naast de rij, op mobiel en tablet een kopregel boven
+   de rij met de kaartnamen. Ingeklapt blijft alleen een balk met de kaartnamen over. */
+.rows {
+    position: relative;
 }
 
+.rows > .row-toggle {
+    position: absolute;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--muted) 70%, transparent);
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    color: var(--text);
+    font: inherit;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.rows > .row-toggle:hover,
+.rows > .row-toggle:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.rows > .row-summary {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.row-collapsed > :not(.row-ui) {
+    display: none !important;
+}
+
+.row-collapsed > .row-summary:hover {
+    border-color: var(--accent);
+    color: var(--text);
+}
+
+/* Mobiel en tablet: knopje en kaartnamen als kopregel boven de rij */
+@media not all and (min-width: 1024px) and (pointer: fine) {
+    .rows > .row-toggle {
+        top: 2px;
+        left: 4px;
+        width: 30px;
+        height: 30px;
+        font-size: 1.25rem;
+    }
+
+    .rows > .row-summary {
+        min-height: 34px;
+        padding: 0 0.75rem 0 calc(30px + 1rem);
+        overflow: hidden;
+        background: none;
+        border-color: transparent;
+        box-shadow: none;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .row-collapsed > .row-summary {
+        background: var(--surface);
+        border-color: var(--border);
+    }
+}
+
+/* Desktop: knopje links naast de rij, verticaal in het midden */
 @media (min-width: 1024px) and (pointer: fine) {
     .container-fluid {
         /* net genoeg ruimte voor het knopje, zonder op 1024 px een kolom kaarten te verliezen */
-        padding-left: calc(var(--gap) + 8px);
-    }
-
-    .rows {
-        position: relative;
+        padding-left: calc(var(--gap) + 10px);
     }
 
     .rows > .row-toggle {
-        position: absolute;
         top: 50%;
-        left: -19px;
-        z-index: 2;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 18px;
-        height: 18px;
-        padding: 0;
+        left: -22px;
+        width: 22px;
+        height: 22px;
+        font-size: 1.05rem;
         transform: translateY(-50%);
-        border: 1px solid var(--border);
-        border-radius: 50%;
-        background: var(--surface);
-        box-shadow: none;
-        color: var(--muted);
-        font-size: 0.9rem;
-        line-height: 1;
-        cursor: pointer;
-        opacity: 0.6;
-        transition: opacity 0.15s, color 0.15s, border-color 0.15s;
     }
 
-    .rows:hover > .row-toggle,
-    .rows > .row-toggle:focus-visible,
-    .row-collapsed > .row-toggle {
-        opacity: 1;
-    }
-
-    .rows > .row-toggle:hover {
-        border-color: var(--accent);
-        color: var(--accent);
-    }
-
-    .row-collapsed > :not(.row-ui) {
-        display: none !important;
+    .rows > .row-summary {
+        display: none;
     }
 
     .row-collapsed > .row-summary {
         display: block;
-        grid-column: 1 / -1;
         padding: 0.45rem 1rem;
-        color: var(--muted);
-        font: inherit;
-        font-size: 0.9rem;
-        text-align: left;
-        cursor: pointer;
+    }
+}
+
+@media (min-width: 1280px) and (pointer: fine) {
+    .container-fluid {
+        padding-left: calc(var(--gap) + 22px);
     }
 
-    .row-collapsed > .row-summary:hover {
-        border-color: var(--accent);
-        color: var(--text);
+    .rows > .row-toggle {
+        left: -30px;
+        width: 26px;
+        height: 26px;
+        font-size: 1.2rem;
     }
 }
 

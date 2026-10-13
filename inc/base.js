@@ -502,9 +502,8 @@ var objLayout = {
     button.setAttribute("aria-expanded", String(!collapsed));
     objLayout.updateRowLabel(row);
   },
-  // Rij in- of uitklappen; werkt los van de bewerkstand, maar alleen op desktop
+  // Rij in- of uitklappen; werkt los van de bewerkstand, op desktop en op mobiel
   toggleRow: function (rowId) {
-    if (!objLayout.canEdit()) return;
     var row = document.getElementById(rowId);
     var collapsed = !row.classList.contains("row-collapsed");
     objLayout.collapsedRows = objLayout.collapsedRows.filter(function (id) {

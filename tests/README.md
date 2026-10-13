@@ -34,7 +34,7 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 | `regressions.spec.js` | Eén test per opgeloste bug of exploit, met de commit erbij |
 | `layout.spec.js` | Opmaak en bediening: menu, meldingen, mobiel, donker thema, kaartbreedte, brede kaarten met twee helften, geen externe requests |
 | `flows.spec.js` | Productieketen: lijnen alleen tussen vrijgespeelde kaarten, op de juiste kaartzijde, looplicht bij actieve stromen, aanwijzen, ⚡-poortjes, aan/uit, minder beweging, mobiel |
-| `layout-edit.spec.js` | Indeling bewerken: inklappen, verplaatsen binnen een rij (pijlen en slepen), rijen inklappen, bewaren, save-code, herstellen, alleen op desktop |
+| `layout-edit.spec.js` | Indeling bewerken: inklappen, verplaatsen binnen een rij (pijlen en slepen), bewaren, save-code, herstellen, alleen op desktop. Rijen inklappen, op desktop en mobiel |
 | `help.spec.js` | ?-knoppen met uitleg per kaart |
 | `info.spec.js` | Informatiepagina: ingeklapte levels zonder spoilers, drempels gelijk aan het spel |
 | `known-issues.spec.js` | Bekende, nog niet opgeloste problemen (zie hieronder) |
