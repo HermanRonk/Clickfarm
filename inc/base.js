@@ -135,6 +135,7 @@ var Display = {
     document.querySelectorAll(".rows").forEach(function (row) {
       var filled = false;
       Array.from(row.children).forEach(function (child) {
+        if (child.classList.contains("row-ui")) return;
         var text = child.textContent;
         child.querySelectorAll(".help-ui, .card-ui").forEach(function (help) {
           text = text.replace(help.textContent, "");
@@ -144,6 +145,7 @@ var Display = {
         if (hasContent && child.style.display !== "none") filled = true;
       });
       toggle(row, "row-empty", !filled);
+      if (typeof objLayout !== "undefined") objLayout.updateRowLabel(row);
     });
     // Productieketen alleen opnieuw tekenen als er een kaart of rij verschijnt of verdwijnt;
     // groottewijzigingen vangt de ResizeObserver in objFlows al op
@@ -367,6 +369,7 @@ function initHelp() {
 var objLayout = {
   editing: false,
   collapsed: [],
+  collapsedRows: [],
   defaultOrder: {},
   dragging: null,
   canEdit: function () {
@@ -383,6 +386,12 @@ var objLayout = {
   },
   rows: function () {
     return Array.from(document.querySelectorAll(".rows[id]"));
+  },
+  // Rijen die ingeklapt kunnen worden (de verkooptab heeft een eigen knop in het menu)
+  collapsibleRows: function () {
+    return objLayout.rows().filter(function (row) {
+      return row.id !== "sellMenu";
+    });
   },
   childIds: function (row) {
     return Array.from(row.children)
@@ -414,9 +423,10 @@ var objLayout = {
         order:
           saved.order && typeof saved.order === "object" ? saved.order : {},
         collapsed: Array.isArray(saved.collapsed) ? saved.collapsed : [],
+        rows: Array.isArray(saved.rows) ? saved.rows : [],
       };
     } catch (error) {
-      return { order: {}, collapsed: [] };
+      return { order: {}, collapsed: [], rows: [] };
     }
   },
   save: function () {
@@ -426,7 +436,11 @@ var objLayout = {
     });
     localStorage.setItem(
       "layout",
-      JSON.stringify({ order: order, collapsed: objLayout.collapsed })
+      JSON.stringify({
+        order: order,
+        collapsed: objLayout.collapsed,
+        rows: objLayout.collapsedRows,
+      })
     );
     objFlows.schedule();
   },
@@ -453,6 +467,69 @@ var objLayout = {
     objLayout.save();
     Display.updateRows();
   },
+  // Namen van de zichtbare kaarten in een rij, voor de ingeklapte rij en de knop
+  rowTitles: function (row) {
+    return Array.from(row.children)
+      .filter(function (child) {
+        return (
+          helpTexts[child.id] &&
+          child.style.display !== "none" &&
+          !child.classList.contains("col-empty")
+        );
+      })
+      .map(function (child) {
+        return helpTexts[child.id][0];
+      });
+  },
+  updateRowLabel: function (row) {
+    var button = row.querySelector(":scope > .row-toggle");
+    if (!button) return;
+    var collapsed = row.classList.contains("row-collapsed");
+    var titles = objLayout.rowTitles(row);
+    var label =
+      (collapsed ? "Klap rij uit: " : "Klap rij in: ") + titles.join(", ");
+    if (button.getAttribute("aria-label") !== label) {
+      button.setAttribute("aria-label", label);
+      button.title = collapsed ? "Rij uitklappen" : "Rij inklappen";
+      row.querySelector(":scope > .row-summary").textContent =
+        titles.join(" · ");
+    }
+  },
+  setRowCollapsed: function (row, collapsed) {
+    row.classList.toggle("row-collapsed", collapsed);
+    var button = row.querySelector(":scope > .row-toggle");
+    button.textContent = collapsed ? "+" : "\u2212";
+    button.setAttribute("aria-expanded", String(!collapsed));
+    objLayout.updateRowLabel(row);
+  },
+  // Rij in- of uitklappen; werkt los van de bewerkstand, maar alleen op desktop
+  toggleRow: function (rowId) {
+    if (!objLayout.canEdit()) return;
+    var row = document.getElementById(rowId);
+    var collapsed = !row.classList.contains("row-collapsed");
+    objLayout.collapsedRows = objLayout.collapsedRows.filter(function (id) {
+      return id !== rowId;
+    });
+    if (collapsed) objLayout.collapsedRows.push(rowId);
+    objLayout.setRowCollapsed(row, collapsed);
+    objLayout.save();
+  },
+  addRowTools: function (row) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "row-toggle row-ui";
+    var summary = document.createElement("button");
+    summary.type = "button";
+    summary.className = "row-summary row-ui";
+    summary.tabIndex = -1;
+    row.prepend(summary);
+    row.prepend(button);
+    [button, summary].forEach(function (el) {
+      el.addEventListener("click", function () {
+        objLayout.toggleRow(row.id);
+      });
+    });
+  },
   // Schuif een kaart één zichtbare plek naar links (-1) of rechts (+1) binnen zijn rij
   move: function (cardId, direction) {
     if (!objLayout.editing) return;
@@ -476,6 +553,10 @@ var objLayout = {
     objLayout.collapsed = [];
     objLayout.cards().forEach(function (card) {
       objLayout.setCollapsed(card, false);
+    });
+    objLayout.collapsedRows = [];
+    objLayout.collapsibleRows().forEach(function (row) {
+      objLayout.setRowCollapsed(row, false);
     });
     localStorage.removeItem("layout");
     Display.updateRows();
@@ -594,6 +675,19 @@ var objLayout = {
     objLayout.cards().forEach(function (card) {
       objLayout.addTools(card);
       objLayout.setCollapsed(card, objLayout.collapsed.indexOf(card.id) !== -1);
+    });
+    var rowIds = objLayout.collapsibleRows().map(function (row) {
+      return row.id;
+    });
+    objLayout.collapsedRows = saved.rows.filter(function (id) {
+      return rowIds.indexOf(id) !== -1;
+    });
+    objLayout.collapsibleRows().forEach(function (row) {
+      objLayout.addRowTools(row);
+      objLayout.setRowCollapsed(
+        row,
+        objLayout.collapsedRows.indexOf(row.id) !== -1
+      );
     });
     objLayout.initDragAndDrop();
 
