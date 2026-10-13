@@ -24,7 +24,7 @@ test.describe("Indeling bewerken", () => {
     expect(await page.locator("#grain-col").getAttribute("draggable")).not.toBe("true");
     await game(page, () => objLayout.toggleCollapse("grain-col"));
     await game(page, () => objLayout.move("grain-col", -1));
-    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col", "graanopbrengst-col"]);
     await expect(page.locator("#grain-col")).not.toHaveClass(/card-collapsed/);
   });
 
@@ -32,12 +32,12 @@ test.describe("Indeling bewerken", () => {
     await startGame(page, { state: level(2) });
     await openEditMode(page);
     await page.getByRole("button", { name: "Graan naar links" }).click();
-    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "landbouw-col", "flour-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "landbouw-col", "flour-col", "graanopbrengst-col"]);
     await page.getByRole("button", { name: "Landbouw naar rechts" }).click();
-    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "flour-col", "landbouw-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "flour-col", "landbouw-col", "graanopbrengst-col"]);
 
     await reload(page);
-    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "flour-col", "landbouw-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "flour-col", "landbouw-col", "graanopbrengst-col"]);
     // Na herladen speel je weer gewoon, de bewerkstand staat uit
     await expect(page.locator("#editBar")).toBeHidden();
   });
@@ -47,21 +47,21 @@ test.describe("Indeling bewerken", () => {
     await startGame(page, { state: level(1) });
     await openEditMode(page);
     await page.getByRole("button", { name: "Graan naar rechts" }).click();
-    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col", "graanopbrengst-col"]);
   });
 
   test("slepen werkt binnen een rij, maar niet naar een andere rij", async ({ page }) => {
     await startGame(page, { state: level(6) });
     await openEditMode(page);
     await page.locator("#flour-col .drag-handle").dragTo(page.locator("#landbouw-col"));
-    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col", "graanopbrengst-col"]);
 
     await page.locator("#windmills-col .drag-handle").dragTo(page.locator("#grain-col"));
-    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col", "graanopbrengst-col"]);
     expect(await rowOrder(page, "automation-row")).toEqual(["farmland-automation", "windmills-col", "WindmillController"]);
 
     await reload(page);
-    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col", "graanopbrengst-col"]);
   });
 
   test("inklappen toont alleen de titel, ook buiten de bewerkstand en na herladen", async ({ page }) => {
@@ -101,7 +101,7 @@ test.describe("Indeling bewerken", () => {
     await page.getByRole("button", { name: "Graan naar links" }).click();
     await page.getByRole("button", { name: "Klap Bloem in" }).click();
     await page.getByRole("button", { name: "Standaardindeling herstellen" }).click();
-    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col", "graanopbrengst-col"]);
     await expect(page.locator("#flour-col")).not.toHaveClass(/card-collapsed/);
     expect(await storage(page, "layout")).toBeNull();
   });
@@ -124,7 +124,7 @@ test.describe("Indeling bewerken", () => {
     await page.locator("#navbarOptionDropdown").click();
     await page.getByRole("button", { name: "Importeer save-code" }).click();
     await expect(page.locator("#currentlevel dd")).toHaveText("2");
-    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "landbouw-col", "flour-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["grain-col", "landbouw-col", "flour-col", "graanopbrengst-col"]);
     await expect(page.locator("#flour-col")).toHaveClass(/card-collapsed/);
   });
 
@@ -153,7 +153,7 @@ test.describe("Indeling bewerken", () => {
 
   test("een kapotte of gemanipuleerde indeling geeft de standaardindeling", async ({ page }) => {
     const { pageErrors } = await startGame(page, { state: level(6, { layout: "{kapot" }) });
-    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["landbouw-col", "grain-col", "flour-col", "graanopbrengst-col"]);
     expect(pageErrors).toEqual([]);
   });
 
@@ -163,8 +163,21 @@ test.describe("Indeling bewerken", () => {
         layout: JSON.stringify({ order: { "tier1-row": ["windmills-col", "flour-col", "landbouw-col"] }, collapsed: [] }),
       }),
     });
-    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col", "graanopbrengst-col"]);
     expect(await rowOrder(page, "automation-row")).toContain("windmills-col");
+  });
+
+  test("een oude indeling met Onderzoek in de onderzoeksrij blijft werken", async ({ page }) => {
+    // Onderzoek stond vroeger naast de salescomputer en staat nu in de rij met landbouw
+    const { pageErrors } = await startGame(page, {
+      state: level(7, {
+        layout: JSON.stringify({ order: { "onderzoek-row": ["AutoSell-col", "graanopbrengst-col"] }, collapsed: [] }),
+      }),
+    });
+    expect(await rowOrder(page, "tier1-row")).toContain("graanopbrengst-col");
+    expect(await rowOrder(page, "onderzoek-row")).toEqual(["AutoSell-col"]);
+    expect(await isShown(page, "graanopbrengst-col")).toBe(true);
+    expect(pageErrors).toEqual([]);
   });
 });
 
@@ -177,7 +190,7 @@ test.describe("Indeling bewerken op mobiel", () => {
     });
     await page.locator("#navbarOptionDropdown").click();
     await expect(page.locator("#editLayoutBTN")).toBeHidden();
-    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col"]);
+    expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col", "graanopbrengst-col"]);
     await expect(page.locator("#grain-col .collapsed-title")).toBeVisible();
   });
 });

@@ -169,6 +169,13 @@ for (const width of [1440, 1920]) {
       expect(far).toEqual([]);
     });
 
+    test("onderzoek staat naast de landbouwkaarten", async ({ page }) => {
+      await startGame(page, { state: { PlayerLevel: 7, NextLevel: threshold(7) } });
+      const landbouw = await page.locator("#landbouw-col").boundingBox();
+      const research = await page.locator("#graanopbrengst-col").boundingBox();
+      expect(Math.round(research.y)).toBe(Math.round(landbouw.y));
+    });
+
     test("de salescomputer is één lage kaart over de hele rij", async ({ page }) => {
       await startGame(page, { state: { PlayerLevel: 7, NextLevel: threshold(7) } });
       const card = await page.locator("#AutoSell-col").boundingBox();

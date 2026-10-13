@@ -185,6 +185,25 @@
                     <button type="button" class="btn btn-primary" onClick="objFlourSilo.add();">Koop bloemsilo</button>
                 </div>
             </div>
+            <div class="container col-sm" id="graanopbrengst-col">
+                <h2>Onderzoek</h2>
+                <h3>Graanveredeling</h3>
+                <div id="GrainResearchCost"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objFarmland.research();" id="GRButton">Start onderzoek</button>
+                </div>
+                <div id="GrainResearchTimer" class="timer"></div>
+
+                <div id="MiningResearch-col">
+                    <h3>Mijnbouw</h3>
+                    <div id="MiningLevel"></div>
+                    <div id="ResDesc"></div>
+                    <div class="actions">
+                        <button type="button" class="btn btn-primary" onClick="objResearch.doResearch(this);" id="MiningResearch">Start onderzoek</button>
+                    </div>
+                    <div id="ResearchTimer" class="timer"></div>
+                </div>
+            </div>
         </div>
         <div class="row rows" id="automation-row">
             <div class="container col-sm" id="farmland-automation">
@@ -348,25 +367,6 @@
             </div>
         </div>
         <div class="row rows" id="onderzoek-row">
-            <div class="container col-sm" id="graanopbrengst-col">
-                <h2>Onderzoek</h2>
-                <h3>Graanveredeling</h3>
-                <div id="GrainResearchCost"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onClick="objFarmland.research();" id="GRButton">Start onderzoek</button>
-                </div>
-                <div id="GrainResearchTimer" class="timer"></div>
-
-                <div id="MiningResearch-col">
-                    <h3>Mijnbouw</h3>
-                    <div id="MiningLevel"></div>
-                    <div id="ResDesc"></div>
-                    <div class="actions">
-                        <button type="button" class="btn btn-primary" onClick="objResearch.doResearch(this);" id="MiningResearch">Start onderzoek</button>
-                    </div>
-                    <div id="ResearchTimer" class="timer"></div>
-                </div>
-            </div>
             <div class="container col-sm" id="AutoSell-col">
                 <h2>Salescomputer</h2>
                 <div class="autosell-grid">
