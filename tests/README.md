@@ -32,7 +32,7 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 | `gameplay.spec.js` | Spelen: land bewerken, graan verkopen, level 2 halen door te spelen, malen, olie, energie, pasta, kippen, pauzeren, verkooptab |
 | `persistence.spec.js` | Herladen, exporteren/importeren van de save-code, resetten, instellingen |
 | `regressions.spec.js` | Eén test per opgeloste bug of exploit, met de commit erbij |
-| `layout.spec.js` | Opmaak en bediening: menu, meldingen, mobiel, donker thema, kaartbreedte, geen externe requests |
+| `layout.spec.js` | Opmaak en bediening: menu, meldingen, mobiel, donker thema, kaartbreedte, brede kaarten met twee helften, geen externe requests |
 | `flows.spec.js` | Productieketen: lijnen alleen tussen vrijgespeelde kaarten, op de juiste kaartzijde, looplicht bij actieve stromen, aanwijzen, ⚡-poortjes, aan/uit, minder beweging, mobiel |
 | `layout-edit.spec.js` | Indeling bewerken: inklappen, verplaatsen binnen een rij (pijlen en slepen), rijen inklappen, bewaren, save-code, herstellen, alleen op desktop |
 | `help.spec.js` | ?-knoppen met uitleg per kaart |

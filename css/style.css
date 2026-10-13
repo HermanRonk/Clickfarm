@@ -567,6 +567,43 @@ kbd2 {
     }
 }
 
+/* Brede kaarten: op desktop twee kolommen breed, met hun onderdelen in twee helften naast elkaar
+   zodra de kaart daar breed genoeg voor is (anders onder elkaar, zoals op mobiel) */
+.card-wide {
+    container-type: inline-size;
+}
+
+@media (min-width: 1024px) {
+    .rows:has(> .card-wide) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@container (min-width: 640px) {
+    .card-split {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 1.5rem;
+    }
+
+    .card-half + .card-half {
+        /* scheidingslijn midden in de tussenruimte */
+        margin-left: -0.75rem;
+        padding-left: 0.75rem;
+        border-left: 1px solid var(--border);
+    }
+
+    .card-half > h3:first-child {
+        margin-top: 0;
+    }
+
+    /* Kaarten waarvan de kop in de linkerhelft wordt opgebouwd (mijnen, hoogovens, staal):
+       rechts pas onder de kop beginnen, net als bij een kop over de volle breedte */
+    .card-wide:not(:has(> h2)) .card-half + .card-half {
+        margin-top: calc(1.15rem * 1.25 + 0.5rem);
+    }
+}
+
 /* Uitleg per kaart ("?"-knop, zie initHelp in inc/base.js) */
 .rows > * {
     position: relative;

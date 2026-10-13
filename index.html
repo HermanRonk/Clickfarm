@@ -321,49 +321,61 @@
             </div>
         </div>
         <div class="row rows" id="productie-row">
-            <div class="container col-sm" id="chicken-col">
+            <div class="container col-sm card-wide" id="chicken-col">
                 <h2>Eieren</h2>
-                <div id="eggStock"></div>
-                <div id="eggs"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-danger" onClick="objEgg.sell('Alles','-')">Verkoop alle eieren</button>
-                </div>
-                <h3>Kippen</h3>
-                <div id="Chickens"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" id="CickenAnd1" onclick="objChicken.add(1);">+1</button>
-                    <button type="button" class="btn btn-primary" id="CickenAnd10" onclick="objChicken.add(10);">+10</button>
-                    <button type="button" class="btn btn-primary" id="CickenAnd100" onclick="objChicken.add(100);">+100</button>
-                    <button type="button" class="btn btn-primary" id="CickenAnd1000" onclick="objChicken.add(1000);">+1.000</button>
-                    <button type="button" class="btn btn-primary" id="CickenAnd10000" onclick="objChicken.add(10000);">+10.000</button>
-                    <button type="button" class="btn btn-primary" id="CickenAnd100000" onclick="objChicken.add(100000);">+100.000</button>
-                </div>
-                <h3>Kippenboerderijen</h3>
-                <div id="ChickenFarm"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onclick="objChickenFarm.add();" id="purchaseChickenFarm">Bouw kippenboerderij</button>
-                    <button type="button" class="btn btn-primary" onclick="objEgg.addStorageUnit();" id="purchaseEggStorage">Bouw eieropslag</button>
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="eggStock"></div>
+                        <div id="eggs"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-danger" onClick="objEgg.sell('Alles','-')">Verkoop alle eieren</button>
+                        </div>
+                        <h3>Kippen</h3>
+                        <div id="Chickens"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" id="CickenAnd1" onclick="objChicken.add(1);">+1</button>
+                            <button type="button" class="btn btn-primary" id="CickenAnd10" onclick="objChicken.add(10);">+10</button>
+                            <button type="button" class="btn btn-primary" id="CickenAnd100" onclick="objChicken.add(100);">+100</button>
+                            <button type="button" class="btn btn-primary" id="CickenAnd1000" onclick="objChicken.add(1000);">+1.000</button>
+                            <button type="button" class="btn btn-primary" id="CickenAnd10000" onclick="objChicken.add(10000);">+10.000</button>
+                            <button type="button" class="btn btn-primary" id="CickenAnd100000" onclick="objChicken.add(100000);">+100.000</button>
+                        </div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Kippenboerderijen</h3>
+                        <div id="ChickenFarm"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" onclick="objChickenFarm.add();" id="purchaseChickenFarm">Bouw kippenboerderij</button>
+                            <button type="button" class="btn btn-primary" onclick="objEgg.addStorageUnit();" id="purchaseEggStorage">Bouw eieropslag</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="container col-sm" id="pasta-col">
+            <div class="container col-sm card-wide" id="pasta-col">
                 <h2>Pasta</h2>
-                <div id="StorehousePasta"></div>
-                <div id="SellPasta"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-danger" onClick="objPasta.sell('Reguliere verkoop Pasta')">Verkoop pasta</button>
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="StorehousePasta"></div>
+                        <div id="SellPasta"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-danger" onClick="objPasta.sell('Reguliere verkoop Pasta')">Verkoop pasta</button>
+                        </div>
+                        <h3>Pasta maken</h3>
+                        <div id="PastaInstruction"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-success" onClick="objPastaFactory.produce('manual');">Maak pasta</button>
+                        </div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Pastafabrieken</h3>
+                        <div id="PastaFactory"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" onClick="objPastaFactory.add();">Bouw pastafabriek</button>
+                            <button type="button" class="btn btn-warning" onClick="objPastaFactory.sell();">Verkoop pastafabriek</button>
+                        </div>
+                        <div id="pastaHelperDiv"></div>
+                    </div>
                 </div>
-                <h3>Pasta maken</h3>
-                <div id="PastaInstruction"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-success" onClick="objPastaFactory.produce('manual');">Maak pasta</button>
-                </div>
-                <h3>Pastafabrieken</h3>
-                <div id="PastaFactory"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onClick="objPastaFactory.add();">Bouw pastafabriek</button>
-                    <button type="button" class="btn btn-warning" onClick="objPastaFactory.sell();">Verkoop pastafabriek</button>
-                </div>
-                <div id="pastaHelperDiv"></div>
             </div>
         </div>
         <div class="row rows" id="onderzoek-row">
@@ -401,34 +413,46 @@
             </div>
         </div>
         <div class="row rows" id="plastic-row">
-            <div class="container col-sm" id="platicFactory-col">
+            <div class="container col-sm card-wide" id="platicFactory-col">
                 <h2>Kunststoffabrieken</h2>
-                <div id="pFactory1"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addFactory(1);" id="addPlasticFactory">Bouw kunststoffabriek</button>
-                </div>
-                <div id="pFactory2"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-success" onClick="objPlasticFactory.produce(0);" id="makePlastic">Maak kunststof</button>
-                </div>
-                <h3>Medewerkers</h3>
-                <div id="plasticAuto"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addWorker(1);" id="hireWorker">Neem medewerker aan</button>
-                    <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(0);" id="fireWorker">Ontsla medewerker</button>
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="pFactory1"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addFactory(1);" id="addPlasticFactory">Bouw kunststoffabriek</button>
+                        </div>
+                        <div id="pFactory2"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-success" onClick="objPlasticFactory.produce(0);" id="makePlastic">Maak kunststof</button>
+                        </div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Medewerkers</h3>
+                        <div id="plasticAuto"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" onClick="objPlasticFactory.addWorker(1);" id="hireWorker">Neem medewerker aan</button>
+                            <button type="button" class="btn btn-danger" onClick="objPlasticFactory.addWorker(0);" id="fireWorker">Ontsla medewerker</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="container col-sm" id="plasticStorage-col">
+            <div class="container col-sm card-wide" id="plasticStorage-col">
                 <h2>Kunststof</h2>
-                <div id="plasticStorage"></div>
-                <div id="plasticPrice"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0, 'Handmatige verkoop kunststof');" id="sellPlastic">Verkoop kunststof</button>
-                </div>
-                <h3>Opslag</h3>
-                <div id="plasticStoragePrice"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onClick="objPlastic.addStorage();" id="addPlasticStorage">Bouw kunststofopslag</button>
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="plasticStorage"></div>
+                        <div id="plasticPrice"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-danger" onClick="objPlastic.sell(0, 'Handmatige verkoop kunststof');" id="sellPlastic">Verkoop kunststof</button>
+                        </div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Opslag</h3>
+                        <div id="plasticStoragePrice"></div>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" onClick="objPlastic.addStorage();" id="addPlasticStorage">Bouw kunststofopslag</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -448,15 +472,27 @@
             </div>
         </div>
         <div class="row rows" id="mijnen-row">
-            <div id="Coal-col" class="container col-sm">
-                <div id="coal-mines"></div>
-                <h3>Steenkool</h3>
-                <div id="coalMine"></div>
+            <div id="Coal-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="coal-mines"></div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Steenkool</h3>
+                        <div id="coalMine"></div>
+                    </div>
+                </div>
             </div>
-            <div id="Iron-col" class="container col-sm">
-                <div id="iron-mines"></div>
-                <h3>IJzererts</h3>
-                <div id="IronMine"></div>
+            <div id="Iron-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="iron-mines"></div>
+                    </div>
+                    <div class="card-half">
+                        <h3>IJzererts</h3>
+                        <div id="IronMine"></div>
+                    </div>
+                </div>
             </div>
             <div id="Gold-col" class="container col-sm">
                 <div id="gold-mines"></div>
@@ -467,26 +503,44 @@
         </div>
 
         <div class="row rows" id="production2-row">
-            <div id="SteelProduction-col" class="container col-sm">
-                <div id="steelProduction"></div>
-                <div id="steelProductionStats"></div>
+            <div id="SteelProduction-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="steelProduction"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="steelProductionStats"></div>
+                    </div>
+                </div>
             </div>
-            <div id="SteelInfo-col" class="container col-sm">
-                <div id="Steel"></div>
-                <div id="steelPrice"></div>
-                <div id="steelStats"></div>
-                <div id="steelStorage"></div>
+            <div id="SteelInfo-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="Steel"></div>
+                        <div id="steelPrice"></div>
+                        <div id="steelStats"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="steelStorage"></div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="row rows" id="mijnen-row2">
-            <div id="Uranium-col" class="container col-sm">
-                <div id="uranium-mines"></div>
-                <h3>Uranium</h3>
-                <div id="UraniumMine1"></div>
-                <div id="UraniumMine"></div>
-                <div class="actions">
-                    <button type='button' class='btn btn-danger' onClick='objUraniumOre.sell(0)' id='sellUraniumButton'>Verkoop uranium</button>
-                    <button type='button' class='btn btn-primary' onClick='objUraniumOre.addSilo();' id='uraniumOreSiloButton'>Bouw uranium-silo</button>
+            <div id="Uranium-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="uranium-mines"></div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Uranium</h3>
+                        <div id="UraniumMine1"></div>
+                        <div id="UraniumMine"></div>
+                        <div class="actions">
+                            <button type='button' class='btn btn-danger' onClick='objUraniumOre.sell(0)' id='sellUraniumButton'>Verkoop uranium</button>
+                            <button type='button' class='btn btn-primary' onClick='objUraniumOre.addSilo();' id='uraniumOreSiloButton'>Bouw uranium-silo</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="Copper-col" class="container col-sm">
