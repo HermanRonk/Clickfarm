@@ -1045,3 +1045,22 @@ body:has(.rows > .dragging) .flow-layer {
     border-radius: 2px;
     background: currentColor;
 }
+
+/* Footer met donatielink */
+.site-footer {
+    max-width: 640px;
+    margin: 1rem auto 2.5rem;
+    padding: 0 var(--gap);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.site-footer p {
+    margin: 0 0 0.6rem;
+}
+
+.site-footer .btn {
+    margin: 0;
+    text-decoration: none;
+}
