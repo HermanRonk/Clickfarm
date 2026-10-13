@@ -1,4 +1,4 @@
-// Indeling bewerken: kaarten inklappen en verplaatsen (alleen op desktop, alleen in de bewerkstand).
+// Indeling bewerken: kaarten inklappen en verplaatsen (alleen op desktop, alleen in de bewerkstand), en rijen inklappen (desktop en mobiel).
 const { test, expect } = require("@playwright/test");
 const { startGame, reload, tick, game, isShown, stat, storage } = require("./helpers/game");
 const { threshold } = require("./levels.data");
@@ -212,6 +212,19 @@ test.describe("Rijen inklappen", () => {
     expect(button.x + button.width).toBeLessThanOrEqual(row.x);
     expect(button.x).toBeGreaterThanOrEqual(0);
     expect(Math.abs(button.y + button.height / 2 - (row.y + row.height / 2))).toBeLessThan(2);
+    // Goed zichtbaar: niet doorzichtig en niet te klein
+    expect(button.width).toBeGreaterThanOrEqual(24);
+    expect(await toggle(page, "tier1-row").evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+  });
+
+  test("op een smallere desktop staat het knopje helemaal naast de rij", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await startGame(page, { state: level(4) });
+    const row = await page.locator("#tier1-row").boundingBox();
+    const button = await toggle(page, "tier1-row").boundingBox();
+    expect(button.x).toBeGreaterThanOrEqual(0);
+    expect(button.x + button.width).toBeLessThanOrEqual(row.x);
+    expect(button.width).toBeGreaterThanOrEqual(20);
   });
 
   test("ingeklapte rijen blijven bewaard en gaan mee in de indeling", async ({ page }) => {
@@ -284,14 +297,37 @@ test.describe("Indeling bewerken op mobiel", () => {
     await expect(page.locator("#grain-col .collapsed-title")).toBeVisible();
   });
 
-  test("rijen inklappen kan niet op mobiel, een bewaarde ingeklapte rij blijft open", async ({ page }) => {
+  test("een rij klapt in met het knopje in de kopregel boven de rij", async ({ page }) => {
+    await startGame(page, { state: level(4) });
+    const button = page.locator("#tier2-row > .row-toggle");
+    const header = page.locator("#tier2-row > .row-summary");
+    await expect(header).toHaveText("Olie · Oliepompen · Oliecentrales");
+
+    // De kopregel staat boven de eerste kaart, het knopje is groot genoeg om aan te tikken
+    const box = await button.boundingBox();
+    const card = await page.locator("#olie-col").boundingBox();
+    expect(box.width).toBeGreaterThanOrEqual(28);
+    expect(box.y + box.height).toBeLessThanOrEqual(card.y);
+
+    await button.click();
+    await expect(button).toHaveText("+");
+    expect(await isShown(page, "olie-col")).toBe(false);
+    expect(JSON.parse(await storage(page, "layout")).rows).toEqual(["tier2-row"]);
+
+    // Tikken op de kaartnamen klapt de rij weer uit
+    await header.click();
+    expect(await isShown(page, "olie-col")).toBe(true);
+    await expect(button).toHaveText("\u2212");
+  });
+
+  test("een op desktop ingeklapte rij is ook op mobiel ingeklapt", async ({ page }) => {
     await startGame(page, {
       state: level(4, { layout: JSON.stringify({ order: {}, collapsed: [], rows: ["tier2-row"] }) }),
     });
-    await expect(page.locator("#tier2-row > .row-toggle")).toBeHidden();
-    await expect(page.locator("#tier2-row > .row-summary")).toBeHidden();
-    expect(await isShown(page, "olie-col")).toBe(true);
-    await game(page, () => objLayout.toggleRow("tier1-row"));
-    await expect(page.locator("#tier1-row")).not.toHaveClass(/row-collapsed/);
+    expect(await isShown(page, "olie-col")).toBe(false);
+    await expect(page.locator("#tier2-row > .row-summary")).toBeVisible();
+    expect(await isShown(page, "landbouw-col")).toBe(true);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
   });
 });
