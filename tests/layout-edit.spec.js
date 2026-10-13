@@ -12,7 +12,7 @@ async function openEditMode(page) {
 }
 
 function rowOrder(page, rowId) {
-  return page.evaluate((rowId) => [...document.getElementById(rowId).children].map((c) => c.id), rowId);
+  return page.evaluate((rowId) => [...document.getElementById(rowId).children].map((c) => c.id).filter(Boolean), rowId);
 }
 
 test.describe("Indeling bewerken", () => {
@@ -181,6 +181,96 @@ test.describe("Indeling bewerken", () => {
   });
 });
 
+test.describe("Rijen inklappen", () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  const toggle = (page, rowId) => page.locator(`#${rowId} > .row-toggle`);
+  const summary = (page, rowId) => page.locator(`#${rowId} > .row-summary`);
+
+  test("een rij klapt in tot een balk met de kaartnamen, ook buiten de bewerkstand", async ({ page }) => {
+    await startGame(page, { state: level(4) });
+    await expect(toggle(page, "tier2-row")).toHaveAttribute("aria-expanded", "true");
+    await toggle(page, "tier2-row").click();
+
+    await expect(toggle(page, "tier2-row")).toHaveAttribute("aria-expanded", "false");
+    await expect(toggle(page, "tier2-row")).toHaveText("+");
+    await expect(summary(page, "tier2-row")).toHaveText("Olie · Oliepompen · Oliecentrales");
+    for (const id of ["olie-col", "pomp-col", "energieproductie-col"]) expect(await isShown(page, id)).toBe(false);
+    // De andere rijen blijven open
+    expect(await isShown(page, "landbouw-col")).toBe(true);
+
+    // Klikken op de balk klapt de rij weer uit
+    await summary(page, "tier2-row").click();
+    expect(await isShown(page, "olie-col")).toBe(true);
+    await expect(summary(page, "tier2-row")).toBeHidden();
+  });
+
+  test("het knopje staat links naast de rij, verticaal in het midden", async ({ page }) => {
+    await startGame(page, { state: level(4) });
+    const row = await page.locator("#tier1-row").boundingBox();
+    const button = await toggle(page, "tier1-row").boundingBox();
+    expect(button.x + button.width).toBeLessThanOrEqual(row.x);
+    expect(button.x).toBeGreaterThanOrEqual(0);
+    expect(Math.abs(button.y + button.height / 2 - (row.y + row.height / 2))).toBeLessThan(2);
+  });
+
+  test("ingeklapte rijen blijven bewaard en gaan mee in de indeling", async ({ page }) => {
+    await startGame(page, { state: level(4) });
+    await toggle(page, "tier2-row").click();
+    expect(JSON.parse(await storage(page, "layout")).rows).toEqual(["tier2-row"]);
+
+    await reload(page);
+    expect(await isShown(page, "olie-col")).toBe(false);
+    await expect(summary(page, "tier2-row")).toBeVisible();
+
+    await openEditMode(page);
+    await page.getByRole("button", { name: "Standaardindeling herstellen" }).click();
+    expect(await isShown(page, "olie-col")).toBe(true);
+    expect(await storage(page, "layout")).toBeNull();
+  });
+
+  test("een nieuw vrijgespeelde kaart verschijnt in de balk van een ingeklapte rij", async ({ page }) => {
+    await startGame(page, { state: level(3) });
+    await toggle(page, "tier2-row").click();
+    await expect(summary(page, "tier2-row")).toHaveText("Olie");
+
+    await game(page, () => objMoney.add(+objPlayerInfo.nextlevel, "test"));
+    await tick(page, 1);
+    expect(await game(page, () => +objPlayerInfo.level)).toBe(4);
+    await expect(summary(page, "tier2-row")).toHaveText("Olie · Oliepompen · Oliecentrales");
+    expect(await isShown(page, "pomp-col")).toBe(false);
+  });
+
+  test("lege rijen blijven verborgen, ook met het knopje erin", async ({ page }) => {
+    await startGame(page, { state: level(1) });
+    expect(await isShown(page, "automation-row")).toBe(false);
+    expect(await isShown(page, "tier2-row")).toBe(false);
+    expect(await isShown(page, "tier1-row")).toBe(true);
+  });
+
+  test("lijnen naar kaarten in een ingeklapte rij verdwijnen", async ({ page }) => {
+    await startGame(page, { state: level(4) });
+    const pumps = page.locator('.flow[data-from="pomp-col"][data-to="olie-col"]');
+    await tick(page, 1);
+    await expect(pumps).toBeVisible();
+    await toggle(page, "tier2-row").click();
+    await tick(page, 1);
+    await expect(pumps).toBeHidden();
+  });
+
+  test("een gemanipuleerde indeling kan de verkooptab of onbekende rijen niet inklappen", async ({ page }) => {
+    const { pageErrors } = await startGame(page, {
+      state: level(9, { layout: JSON.stringify({ order: {}, collapsed: [], rows: ["sellMenu", "bestaat-niet", 5] }) }),
+    });
+    expect(await page.locator(".row-collapsed").count()).toBe(0);
+    expect(await page.locator("#sellMenu > .row-toggle").count()).toBe(0);
+    // Bij de volgende keer bewaren zijn de ongeldige rijen weg
+    await toggle(page, "tier1-row").click();
+    expect(JSON.parse(await storage(page, "layout")).rows).toEqual(["tier1-row"]);
+    expect(pageErrors).toEqual([]);
+  });
+});
+
 test.describe("Indeling bewerken op mobiel", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
@@ -192,5 +282,16 @@ test.describe("Indeling bewerken op mobiel", () => {
     await expect(page.locator("#editLayoutBTN")).toBeHidden();
     expect(await rowOrder(page, "tier1-row")).toEqual(["flour-col", "landbouw-col", "grain-col", "graanopbrengst-col"]);
     await expect(page.locator("#grain-col .collapsed-title")).toBeVisible();
+  });
+
+  test("rijen inklappen kan niet op mobiel, een bewaarde ingeklapte rij blijft open", async ({ page }) => {
+    await startGame(page, {
+      state: level(4, { layout: JSON.stringify({ order: {}, collapsed: [], rows: ["tier2-row"] }) }),
+    });
+    await expect(page.locator("#tier2-row > .row-toggle")).toBeHidden();
+    await expect(page.locator("#tier2-row > .row-summary")).toBeHidden();
+    expect(await isShown(page, "olie-col")).toBe(true);
+    await game(page, () => objLayout.toggleRow("tier1-row"));
+    await expect(page.locator("#tier1-row")).not.toHaveClass(/row-collapsed/);
   });
 });

@@ -749,6 +749,77 @@ kbd2 {
     outline-offset: 2px;
 }
 
+/* Rijen inklappen (alleen desktop): knopje links naast de rij, ingeklapt een smalle balk met de kaartnamen */
+.row-ui {
+    display: none;
+}
+
+@media (min-width: 1024px) and (pointer: fine) {
+    .container-fluid {
+        /* net genoeg ruimte voor het knopje, zonder op 1024 px een kolom kaarten te verliezen */
+        padding-left: calc(var(--gap) + 8px);
+    }
+
+    .rows {
+        position: relative;
+    }
+
+    .rows > .row-toggle {
+        position: absolute;
+        top: 50%;
+        left: -19px;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        transform: translateY(-50%);
+        border: 1px solid var(--border);
+        border-radius: 50%;
+        background: var(--surface);
+        box-shadow: none;
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .rows:hover > .row-toggle,
+    .rows > .row-toggle:focus-visible,
+    .row-collapsed > .row-toggle {
+        opacity: 1;
+    }
+
+    .rows > .row-toggle:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .row-collapsed > :not(.row-ui) {
+        display: none !important;
+    }
+
+    .row-collapsed > .row-summary {
+        display: block;
+        grid-column: 1 / -1;
+        padding: 0.45rem 1rem;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.9rem;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .row-collapsed > .row-summary:hover {
+        border-color: var(--accent);
+        color: var(--text);
+    }
+}
+
 /* Ingeklapte kaart: alleen de titel, en niet zo hoog als de buren in de rij */
 .rows > .card-collapsed {
     align-self: start;
