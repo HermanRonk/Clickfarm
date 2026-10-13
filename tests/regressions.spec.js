@@ -380,6 +380,14 @@ test.describe("Personeel en besturing per gebouw", () => {
     await expect(buy).toBeEnabled();
   });
 
+  test("een high-tech oliepomp verkopen levert 75% op, net als andere gebouwen", async ({ page }) => {
+    await startGame(page, { state: atLevel(10, { Money: 1, oilPumpAmount: 2 }) });
+    await expect(stat(page, "#pomp-col", "Verkoopwaarde").last()).toHaveText("€ 750.000,00");
+    await page.locator("#o2sell").click();
+    expect(await game(page, () => +objOilPumpAdv.amount)).toBe(1);
+    expect(await game(page, () => objMoney.amount)).toBe(750001);
+  });
+
   test("oude save met te veel farmrobots gebruikt alleen energie voor robots met werk", async ({ page }) => {
     await startGame(page, { state: atLevel(5, { Farmland: 5, FarmRobots: 4, EnergyAvailable: 1000 }) });
     expect(await game(page, () => objFarmRobot.activeRobots)).toBe(1);

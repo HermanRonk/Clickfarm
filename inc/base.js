@@ -6001,7 +6001,8 @@ var objOilPumpAdv = {
   },
   sell: function () {
     if (+objOilPumpAdv.amount > 0) {
-      objMoney.add(+objOilPumpAdv.price, "Verkoop oliepomp", 19, 1);
+      // Net als andere gebouwen levert verkopen 75% van de prijs op (het staal komt niet terug)
+      objMoney.add(+objOilPumpAdv.price * 0.75, "Verkoop oliepomp", 19, 1);
       objOilPumpAdv.amount = +objOilPumpAdv.amount - 1;
       localStorage.setItem("oilPumpAmount", objOilPumpAdv.amount);
       objOilPumpAdv.show();
@@ -6043,6 +6044,7 @@ var objOilPumpAdv = {
         ["Energie per pomp", FixNumber(objOilPumpAdv.energy) + " per tick"],
         ["Prijs per pomp", FixMoney(objOilPumpAdv.price)],
         ["Staal per pomp", FixUnit(objOilPumpAdv.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(+objOilPumpAdv.price * 0.75)],
       ]);
     if (+objOilPump.amount > 0) {
       document.getElementById("o2upgrade").innerHTML = renderHint(
