@@ -168,5 +168,33 @@ for (const width of [1440, 1920]) {
       );
       expect(far).toEqual([]);
     });
+
+    test("de salescomputer is één lage kaart over de hele rij", async ({ page }) => {
+      await startGame(page, { state: { PlayerLevel: 7, NextLevel: threshold(7) } });
+      const card = await page.locator("#AutoSell-col").boundingBox();
+      const row = await page.locator("#onderzoek-row").boundingBox();
+      expect(card.width).toBeGreaterThan(row.width - 2);
+      expect(card.height).toBeLessThan(300);
+      // CPU's en de vier producten staan naast elkaar
+      const tops = await page
+        .locator("#AutoSell-col .autosell-grid > *")
+        .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+      expect(new Set(tops).size).toBe(1);
+    });
   });
 }
+
+test.describe("Smallere desktop (1024 px)", () => {
+  test.use({ viewport: { width: 1024, height: 900 } });
+
+  test("de salescomputer zet de producten in vier kolommen onder de CPU's", async ({ page }) => {
+    await startGame(page, { state: { PlayerLevel: 7, NextLevel: threshold(7) } });
+    const tops = await page
+      .locator("#AutoSell-col .autosell-item")
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().top)));
+    expect(tops).toHaveLength(4);
+    expect(new Set(tops).size).toBe(1);
+    const cpu = await page.locator("#AutoSell-col .autosell-cpu").boundingBox();
+    expect(cpu.y + cpu.height).toBeLessThanOrEqual(tops[0]);
+  });
+});
