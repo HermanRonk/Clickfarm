@@ -205,3 +205,16 @@ test.describe("Smallere desktop (1024 px)", () => {
     expect(cpu.y + cpu.height).toBeLessThanOrEqual(tops[0]);
   });
 });
+
+test.describe("Footer", () => {
+  for (const path of ["/", "/info.html"]) {
+    test(`donatielink onderaan ${path}`, async ({ page }) => {
+      if (path === "/") await startGame(page);
+      else await page.goto(path);
+      const link = page.locator(".site-footer").getByRole("link", { name: "Buy me a coffee" });
+      await expect(link).toHaveAttribute("href", "https://buymeacoffee.com/hermanronk");
+      await expect(link).toHaveAttribute("target", "_blank");
+      await expect(page.locator(".site-footer")).toContainText("Heb je plezier beleefd aan deze game?");
+    });
+  }
+});
