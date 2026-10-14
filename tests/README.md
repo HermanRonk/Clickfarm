@@ -53,3 +53,19 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 ## Bekende problemen
 
 Tests in `known-issues.spec.js` beschrijven het gewenste gedrag en zijn gemarkeerd met `test.fail()`. Ze zijn groen zolang de bug bestaat. Wordt een bug opgelost, dan wordt de test rood met *"expected to fail, but passed"*: haal dan de `test.fail()`-regel weg, dan draait de test voortaan mee als regressietest.
+
+## Balanssimulator
+
+`npm run balance` speelt het echte spel met een bot en meet hoe lang ieder level duurt. Hij draait los van `npm test` (eigen config: `playwright.balance.config.js`) en duurt een paar minuten per uur speeltijd.
+
+- `tests/balance/start.js`: de startsituatie (een speler die net level 8 heeft gehaald).
+- `tests/balance/bot.js`: de bot. Draait in de pagina en gebruikt dezelfde functies als de knoppen; iedere aanroep telt als een klik. Twee speelstijlen: *optimaal* (handelt elke tick) en *casual* (eens per 30 ticks).
+- `tests/balance/report.js`: zet de resultaten in `test-results/balance.md`: duur per level, klikken per minuut, stroom, gebouwen, knelpunten en wanneer een keten voor het eerst iets opleverde.
+
+Instellen via omgevingsvariabelen:
+
+```bash
+BALANCE_PROFILES=optimaal BALANCE_SEEDS=3 BALANCE_HOURS=10 BALANCE_UNTIL=15 npm run balance
+```
+
+De bot is geen perfecte speler, maar wel een vaste maatstaf: draai hem voor en na een balanswijziging en vergelijk.
