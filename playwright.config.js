@@ -8,6 +8,8 @@ const port = 8081;
 
 module.exports = defineConfig({
   testDir: "./tests",
+  // De balanssimulator draait apart (npm run balance), zie playwright.balance.config.js
+  testIgnore: "**/balance/**",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
