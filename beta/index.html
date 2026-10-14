@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="nl">
+
+<head>
+    <title>Beta - Clickfarm.nl</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <header class="topbar">
+        <a class="brand" href="/">Clickfarm.nl <span class="beta-badge">beta</span></a>
+        <a class="back-link" href="/">Terug naar het gewone spel</a>
+    </header>
+
+    <main class="info">
+        <section class="info-card">
+            <h1>Clickfarm beta</h1>
+            <p>In de beta probeer je nieuwe onderdelen en balanswijzigingen uit voordat ze in het gewone spel komen. Je beta-spel wordt los bewaard: wat je hier doet, verandert niets aan je gewone spel, en andersom.</p>
+            <div class="beta-choices">
+                <button type="button" class="btn btn-success" id="betaContinue" hidden>Ga verder met je beta-spel</button>
+                <button type="button" class="btn btn-primary" id="betaCopy">Neem mijn huidige spel mee</button>
+                <button type="button" class="btn btn-primary" id="betaNew">Begin een nieuw beta-spel</button>
+            </div>
+            <p class="hint" id="betaStatus"></p>
+        </section>
+
+        <section class="info-card">
+            <h2>Nieuw in de beta</h2>
+            <ul>
+                <li><strong>Goedkoper prospecten:</strong> € 10 miljoen op level 8, € 25 miljoen op level 9 en € 50 miljoen vanaf level 10.</li>
+                <li><strong>Kernenergie:</strong> de splijtstoffabriek en de uraniummijnen gebruiken hun stroom per tick in plaats van in één keer. Zo komen ze ook op gang als je stroom bijna helemaal wordt gebruikt.</li>
+                <li><strong>Uraniummijnen:</strong> het personeel eet een tiende van de pasta die het eerst at.</li>
+            </ul>
+            <p>Feedback is welkom op <a href="https://github.com/HermanRonk/Clickfarm/issues" target="_blank" rel="noopener">GitHub</a> of in het topic op Tweakers.</p>
+        </section>
+    </main>
+
+    <script>
+        // Het gewone spel bewaart zijn sleutels zonder voorvoegsel, de beta met "beta:" (zie store in inc/base.js)
+        (function () {
+            var PREFIX = "beta:";
+            var keys = Object.keys(localStorage);
+            var betaKeys = keys.filter(function (k) { return k.indexOf(PREFIX) === 0; });
+            var mainKeys = keys.filter(function (k) { return k.indexOf(PREFIX) !== 0; });
+            var betaLevel = localStorage.getItem(PREFIX + "PlayerLevel");
+            var mainLevel = localStorage.getItem("PlayerLevel");
+
+            var continueBtn = document.getElementById("betaContinue");
+            var copyBtn = document.getElementById("betaCopy");
+            var status = document.getElementById("betaStatus");
+
+            if (betaLevel) {
+                continueBtn.hidden = false;
+                continueBtn.textContent = "Ga verder met je beta-spel (level " + betaLevel + ")";
+            }
+            if (mainLevel) {
+                copyBtn.textContent = "Neem mijn huidige spel mee (level " + mainLevel + ")";
+            } else {
+                copyBtn.disabled = true;
+                status.textContent = "Je hebt in deze browser nog geen gewoon spel om mee te nemen.";
+            }
+
+            function play() {
+                location.href = "/beta/spel.html";
+            }
+            function clearBeta() {
+                betaKeys.forEach(function (k) { localStorage.removeItem(k); });
+            }
+            function confirmOverwrite() {
+                return !betaLevel || confirm("Je beta-spel (level " + betaLevel + ") wordt overschreven. Doorgaan?");
+            }
+
+            continueBtn.addEventListener("click", play);
+            copyBtn.addEventListener("click", function () {
+                if (!confirmOverwrite()) return;
+                clearBeta();
+                mainKeys.forEach(function (k) {
+                    localStorage.setItem(PREFIX + k, localStorage.getItem(k));
+                });
+                play();
+            });
+            document.getElementById("betaNew").addEventListener("click", function () {
+                if (!confirmOverwrite()) return;
+                clearBeta();
+                play();
+            });
+        })();
+    </script>
+</body>
+
+</html>

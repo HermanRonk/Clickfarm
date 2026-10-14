@@ -27,10 +27,21 @@ test.describe("Container", () => {
     expect(await res.text()).toContain("Spelinformatie");
   });
 
+  test("de beta wordt meegeleverd: keuzepagina en spel", async ({ request }) => {
+    const choice = await request.get("/beta/");
+    expect(choice.status()).toBe(200);
+    expect(await choice.text()).toContain("Clickfarm beta");
+    const game = await request.get("/beta/spel.html");
+    expect(game.status()).toBe(200);
+    expect(await game.text()).toContain('id="FirstTab"');
+    expect(game.headers()["content-type"]).toContain("text/html");
+  });
+
   test("test- en buildbestanden zitten niet in de container", async ({ request }) => {
     for (const path of [
       "/package.json",
       "/playwright.config.js",
+      "/playwright.balance.config.js",
       "/tests/levels.data.js",
       "/tests/helpers/game.js",
       "/Dockerfile",

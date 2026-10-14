@@ -9,8 +9,10 @@ const START_TIME = new Date("2026-01-01T12:00:00Z").getTime();
  *
  * De savegame wordt alleen bij de eerste paginalading gezet: bij een reload (of een
  * import/reset die zelf herlaadt) blijft de toestand van het spel staan.
+ *
+ * Met beta: true start de beta (/beta/spel.html) en komt de savegame onder "beta:".
  */
-async function startGame(page, { state = {}, seed = 42, errors = true } = {}) {
+async function startGame(page, { state = {}, seed = 42, errors = true, beta = false } = {}) {
   const pageErrors = [];
   if (errors) {
     page.on("pageerror", (err) => pageErrors.push(err.message));
@@ -24,7 +26,7 @@ async function startGame(page, { state = {}, seed = 42, errors = true } = {}) {
   await page.clock.install({ time: START_TIME });
   await page.clock.pauseAt(START_TIME + 1000);
   await page.addInitScript(
-    ({ state, seed }) => {
+    ({ state, seed, prefix }) => {
       // Deterministische Math.random (mulberry32)
       let s = seed >>> 0;
       Math.random = function () {
@@ -39,14 +41,14 @@ async function startGame(page, { state = {}, seed = 42, errors = true } = {}) {
         sessionStorage.setItem("__clickfarmSeeded", "1");
         localStorage.clear();
         for (const [key, value] of Object.entries(state)) {
-          localStorage.setItem(key, String(value));
+          localStorage.setItem(prefix + key, String(value));
         }
       }
     },
-    { state, seed }
+    { state, seed, prefix: beta ? "beta:" : "" }
   );
 
-  await page.goto("/");
+  await page.goto(beta ? "/beta/spel.html" : "/");
   await waitForInit(page);
   return { pageErrors };
 }
