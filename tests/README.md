@@ -37,8 +37,11 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 | `layout-edit.spec.js` | Indeling bewerken: inklappen, verplaatsen binnen een rij (pijlen en slepen), bewaren, save-code, herstellen, alleen op desktop. Rijen inklappen, op desktop en mobiel |
 | `help.spec.js` | ?-knoppen met uitleg per kaart |
 | `info.spec.js` | Informatiepagina: ingeklapte levels zonder spoilers, drempels gelijk aan het spel |
+| `beta.spec.js` | Beta (`/beta/`): label en menu, gescheiden saves (`beta:`), reset en save-code alleen voor het eigen spel, keuzepagina (meenemen, opnieuw beginnen, verder), en de balanswijzigingen naast het gewone spel |
 | `known-issues.spec.js` | Bekende, nog niet opgeloste problemen (zie hieronder) |
-| `container.spec.js` | Alleen tegen de container: health check, beveiligingsheaders, CSP, en dat testbestanden niet worden meegeleverd |
+| `container.spec.js` | Alleen tegen de container: health check, beveiligingsheaders, CSP, de beta-pagina's, en dat testbestanden niet worden meegeleverd |
+
+Met `startGame(page, { beta: true })` start een test de beta; de begintoestand komt dan onder `beta:` in de opslag.
 
 `levels.data.js` bevat per level de drempel en de onderdelen die vrijkomen. Wordt de balans aangepast, dan hoeft alleen die tabel bijgewerkt te worden.
 
@@ -67,5 +70,7 @@ Instellen via omgevingsvariabelen:
 ```bash
 BALANCE_PROFILES=optimaal BALANCE_SEEDS=3 BALANCE_HOURS=10 BALANCE_UNTIL=15 npm run balance
 ```
+
+Met `BALANCE_BETA=1` speelt de bot de beta. De resultaten blijven tussen runs staan (`test-results/balance/`), zodat het rapport de beta en het gewone spel naast elkaar zet. Let op: `npm test` leegt `test-results/` en daarmee ook deze resultaten.
 
 De bot is geen perfecte speler, maar wel een vaste maatstaf: draai hem voor en na een balanswijziging en vergelijk.

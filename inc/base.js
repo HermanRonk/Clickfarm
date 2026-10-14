@@ -1,7 +1,44 @@
-var spend = parseInt(localStorage.getItem("spend")) || 10;
-var made = parseInt(localStorage.getItem("made")) || 0;
+// Beta: dezelfde code, maar met de wijzigingen die eerst getest worden (zie /beta/).
+// De beta bewaart zijn spel los van het gewone spel, met "beta:" voor iedere sleutel.
+var BETA = /^\/beta\//.test(location.pathname);
+
+// Opslag van het spel. Alleen de eigen sleutels tellen mee: een reset of save-code
+// in het gewone spel raakt de beta niet, en andersom.
+var store = {
+  prefix: BETA ? "beta:" : "",
+  own: function (fullKey) {
+    var isBeta = fullKey.indexOf("beta:") === 0;
+    return BETA ? isBeta : !isBeta;
+  },
+  getItem: function (key) {
+    return localStorage.getItem(store.prefix + key);
+  },
+  setItem: function (key, value) {
+    localStorage.setItem(store.prefix + key, value);
+  },
+  removeItem: function (key) {
+    localStorage.removeItem(store.prefix + key);
+  },
+  keys: function () {
+    return Object.keys(localStorage)
+      .filter(store.own)
+      .map(function (fullKey) {
+        return fullKey.slice(store.prefix.length);
+      });
+  },
+  clear: function () {
+    Object.keys(localStorage)
+      .filter(store.own)
+      .forEach(function (fullKey) {
+        localStorage.removeItem(fullKey);
+      });
+  },
+};
+
+var spend = parseInt(store.getItem("spend")) || 10;
+var made = parseInt(store.getItem("made")) || 0;
 var PriceFactor = 25;
-var debug = parseInt(localStorage.getItem("debug")) || 0;
+var debug = parseInt(store.getItem("debug")) || 0;
 var CSStransitionEnd = whichTransitionEvent();
 
 // voorbereiding voor debug mogelijkheden.
@@ -9,7 +46,7 @@ function turnDebug(inputDB) {
   var eldebugBTN = document.getElementById("debugBTN");
   if (inputDB === 1) debug = 1 - debug;
 
-  localStorage.setItem("debug", debug);
+  store.setItem("debug", debug);
   if (debug === 1) {
     eldebugBTN.innerHTML = icon("check-square") + " Zet debug uit";
   } else {
@@ -17,10 +54,23 @@ function turnDebug(inputDB) {
   }
 }
 
+// In de beta: label bij de naam, en in het menu de weg terug naar het gewone spel
+function showBeta() {
+  if (!BETA) return;
+  document.title = "Clickfarm.nl (beta)";
+  var badge = document.createElement("span");
+  badge.className = "beta-badge";
+  badge.textContent = "beta";
+  document.querySelector(".topbar .brand").append(" ", badge);
+  var betaLink = document.getElementById("betaLink");
+  betaLink.lastChild.textContent = " Beta: spel meenemen of opnieuw beginnen";
+  document.getElementById("mainGameLink").hidden = false;
+}
+
 // Opruimen sleutels van de oude online koppeling (er is geen backend meer)
 function cleanupLegacyKeys() {
   ["onlineUserID", "newUser", "guid"].forEach((storageKey) =>
-    localStorage.removeItem(storageKey)
+    store.removeItem(storageKey)
   );
 }
 
@@ -55,6 +105,7 @@ window.onload = function () {
     "EnergyStats",
   ]);
   cleanupLegacyKeys();
+  showBeta();
   initHelp();
   objLayout.init();
   objFlows.init();
@@ -281,7 +332,9 @@ var helpTexts = {
   ],
   "Prospecting-col": [
     "Prospecting",
-    "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
+    BETA
+      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen."
+      : "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
   ],
   "MiningSites-col": [
     "Mijnlocaties",
@@ -305,11 +358,15 @@ var helpTexts = {
   ],
   "Uranium-col": [
     "Uranium",
-    "Een uraniummijn levert iedere 10 ticks 100 ton uranium voor 2.500 energie. Het personeel eet pasta. Uranium is de grondstof voor splijtstofstaven.",
+    BETA
+      ? "Een uraniummijn levert iedere tick 10 ton uranium voor 250 energie. Het personeel eet 2 dozen pasta per tick. Uranium is de grondstof voor splijtstofstaven."
+      : "Een uraniummijn levert iedere 10 ticks 100 ton uranium voor 2.500 energie. Het personeel eet pasta. Uranium is de grondstof voor splijtstofstaven.",
   ],
   fuelRodFactory: [
     "Splijtstofstaven",
-    "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium, 1.000 ton staal en 150.000 energie; alles wordt bij de start van een run afgeschreven. Fabrieken draaien altijd door.",
+    BETA
+      ? "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium en 1.000 ton staal (bij de start van een run afgeschreven) en 150.000 energie: 1.500 per tick. Is er een tick te weinig stroom, dan wacht de fabriek. Fabrieken draaien altijd door."
+      : "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium, 1.000 ton staal en 150.000 energie; alles wordt bij de start van een run afgeschreven. Fabrieken draaien altijd door.",
   ],
   fuelRodStorage: [
     "Opslag en afval",
@@ -418,7 +475,7 @@ var objLayout = {
   },
   load: function () {
     try {
-      var saved = JSON.parse(localStorage.getItem("layout") || "{}") || {};
+      var saved = JSON.parse(store.getItem("layout") || "{}") || {};
       return {
         order:
           saved.order && typeof saved.order === "object" ? saved.order : {},
@@ -434,7 +491,7 @@ var objLayout = {
     objLayout.rows().forEach(function (row) {
       order[row.id] = objLayout.childIds(row);
     });
-    localStorage.setItem(
+    store.setItem(
       "layout",
       JSON.stringify({
         order: order,
@@ -557,7 +614,7 @@ var objLayout = {
     objLayout.collapsibleRows().forEach(function (row) {
       objLayout.setRowCollapsed(row, false);
     });
-    localStorage.removeItem("layout");
+    store.removeItem("layout");
     Display.updateRows();
   },
   toggleEdit: function () {
@@ -1326,7 +1383,7 @@ var objFlows = {
   },
   toggle: function () {
     objFlows.enabled = !objFlows.enabled;
-    localStorage.setItem("showFlows", objFlows.enabled ? 1 : 0);
+    store.setItem("showFlows", objFlows.enabled ? 1 : 0);
     objFlows.showMenu();
     objFlows.schedule();
   },
@@ -1338,7 +1395,7 @@ var objFlows = {
     button.style.display = objFlows.canShow() ? "" : "none";
   },
   init: function () {
-    objFlows.enabled = localStorage.getItem("showFlows") !== "0";
+    objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
     Object.keys(objFlows.energyUsers).forEach(function (cardId) {
       var card = document.getElementById(cardId);
@@ -1478,9 +1535,9 @@ function AfrondenGewicht(InputGewicht) {
 
 // Player object
 var objPlayerInfo = {
-  level: localStorage.getItem("PlayerLevel") || 1,
+  level: store.getItem("PlayerLevel") || 1,
   level_multiplier: [0, 5, 5, 5, 5, 4, 3, 4, 5, 5, 5, 5, 5, 5],
-  nextlevel: localStorage.getItem("NextLevel") || 3000,
+  nextlevel: store.getItem("NextLevel") || 3000,
   show: function () {
     document.getElementById("currentlevel").innerHTML = renderStats([
       ["Level", objPlayerInfo.level],
@@ -1503,7 +1560,7 @@ var objPlayerInfo = {
         this.level_multiplier[
           Math.min(objPlayerInfo.level, this.level_multiplier.length - 1)
         ];
-      localStorage.setItem("NextLevel", objPlayerInfo.nextlevel);
+      store.setItem("NextLevel", objPlayerInfo.nextlevel);
     }
 
     // Verkooptab is pas vanaf level 9 beschikbaar
@@ -1566,7 +1623,7 @@ var objPlayerInfo = {
   levelup: function () {
     if (+objMoney.amount >= +objPlayerInfo.nextlevel) {
       +objPlayerInfo.level++;
-      localStorage.setItem("PlayerLevel", objPlayerInfo.level);
+      store.setItem("PlayerLevel", objPlayerInfo.level);
       objPlayerInfo.proceslevel("levelup");
       notificationOverlay(
         "Levelup! je bent nu level: " + objPlayerInfo.level,
@@ -1591,7 +1648,7 @@ var objMoney = {
     objMoney.show();
     objMoney.showUpdate(description, moneyProfit);
     made = +made + +moneyProfit;
-    localStorage.setItem("made", made);
+    store.setItem("made", made);
     if (quickSell === 1) {
       quickSellMenu();
     }
@@ -1600,7 +1657,7 @@ var objMoney = {
     moneyUsed = parseFloat(moneyUsed);
     objMoney.amount = +objMoney.amount - +moneyUsed;
     spend = +spend + +moneyUsed;
-    localStorage.setItem("spend", spend);
+    store.setItem("spend", spend);
     objMoney.show();
   },
   show: function () {
@@ -1610,14 +1667,14 @@ var objMoney = {
     ]);
     document.getElementById("MoneyTop").innerHTML =
       "Vermogen: <kbd2>" + FixMoney(MoneyRound) + "</kbd2>";
-    localStorage.setItem("Money", +MoneyRound);
+    store.setItem("Money", +MoneyRound);
   },
   showUpdate: function (description, moneyProfit) {
     profitRound = Math.round(+moneyProfit * 100) / 100;
     showHistory(description, FixMoney(profitRound));
   },
   init: function () {
-    objMoney.amount = parseFloat(localStorage.getItem("Money")) || 2000;
+    objMoney.amount = parseFloat(store.getItem("Money")) || 2000;
     objMoney.show();
   },
 };
@@ -1653,7 +1710,7 @@ function getPrice() {
 
 //Oil object
 var objOil = {
-  price: localStorage.getItem("OilPrice") || 10,
+  price: store.getItem("OilPrice") || 10,
   tempUsage: 0,
   sellOil: function () {
     var amount = +objOilTank.contents - +objPowerPlant.amount * 5;
@@ -1690,10 +1747,10 @@ var objOil = {
   },
   priceCalc: function () {
     objOil.price = +objPrijslijst.Oil;
-    localStorage.setItem("OilPrice", objOil.price);
+    store.setItem("OilPrice", objOil.price);
   },
   init: function () {
-    objOil.price = localStorage.getItem("OilPrice") || 10;
+    objOil.price = store.getItem("OilPrice") || 10;
   },
 };
 
@@ -1728,8 +1785,8 @@ var objFarmRobot = {
         objFarmland.automatedAmount =
           +objFarmRobot.robotCap * +objFarmRobot.robots;
       }
-      localStorage.setItem("FarmRobots", objFarmRobot.robots);
-      localStorage.setItem("AutomatedFarms", objFarmland.automatedAmount);
+      store.setItem("FarmRobots", objFarmRobot.robots);
+      store.setItem("AutomatedFarms", objFarmland.automatedAmount);
       objFarmRobot.show();
       if (objFarmRobot.robots === 1) {
         objFarmRobot.work();
@@ -1749,8 +1806,8 @@ var objFarmRobot = {
         objFarmland.automatedAmount =
           +objFarmRobot.robotCap * +objFarmRobot.robots;
       }
-      localStorage.setItem("FarmRobots", objFarmRobot.robots);
-      localStorage.setItem("AutomatedFarms", objFarmland.automatedAmount);
+      store.setItem("FarmRobots", objFarmRobot.robots);
+      store.setItem("AutomatedFarms", objFarmland.automatedAmount);
       objFarmRobot.show();
       objEnergy.show();
     }
@@ -1821,7 +1878,7 @@ var objFarmRobot = {
     objFarmland.manualFarm();
   },
   init: function () {
-    objFarmRobot.robots = parseInt(localStorage.getItem("FarmRobots")) || 0;
+    objFarmRobot.robots = parseInt(store.getItem("FarmRobots")) || 0;
     objFarmRobot.show();
     if (+objFarmRobot.robotCap * +objFarmRobot.robots >= objFarmland.amount) {
       objFarmland.automatedAmount = objFarmland.amount;
@@ -1846,8 +1903,8 @@ var objGrainSilo = {
       objGrainSilo.amount++;
       objGrainSilo.price *= 1.01;
       objGrainSilo.price = Math.round(objGrainSilo.price * 100) / 100;
-      localStorage.setItem("GrainSiloAmount", objGrainSilo.amount);
-      localStorage.setItem("GrainSiloPrice", objGrainSilo.price);
+      store.setItem("GrainSiloAmount", objGrainSilo.amount);
+      store.setItem("GrainSiloPrice", objGrainSilo.price);
       objGrainSilo.show();
     }
   },
@@ -1905,7 +1962,7 @@ var objGrainSilo = {
     document.getElementById("GrainAmount").innerHTML = renderStats([
       ["Voorraad", FixUnit(objGrainSilo.contents, "kg")],
     ]);
-    localStorage.setItem("GrainSiloContents", objGrainSilo.contents);
+    store.setItem("GrainSiloContents", objGrainSilo.contents);
     document.getElementById("GrainSiloPrice").innerHTML = renderStats([
       ["Prijs per silo", FixMoney(objGrainSilo.price)],
       ["Capaciteit per silo", FixUnit(objGrainSilo.cap, "kg")],
@@ -1919,10 +1976,10 @@ var objGrainSilo = {
     objGrainSilo.visual();
   },
   init: function () {
-    objGrainSilo.amount = localStorage.getItem("GrainSiloAmount") || 1;
-    objGrainSilo.cap = localStorage.getItem("GrainSiloCap") || 5000;
-    objGrainSilo.price = localStorage.getItem("GrainSiloPrice") || 2000;
-    objGrainSilo.contents = localStorage.getItem("GrainSiloContents") || 0;
+    objGrainSilo.amount = store.getItem("GrainSiloAmount") || 1;
+    objGrainSilo.cap = store.getItem("GrainSiloCap") || 5000;
+    objGrainSilo.price = store.getItem("GrainSiloPrice") || 2000;
+    objGrainSilo.contents = store.getItem("GrainSiloContents") || 0;
     objGrainSilo.show();
   },
 };
@@ -1940,8 +1997,8 @@ var objFlourSilo = {
       objFlourSilo.price *= 1.01;
       objFlourSilo.price = Math.round(objFlourSilo.price * 100) / 100;
       objFlourSilo.show();
-      localStorage.setItem("FlourSiloAmount", objFlourSilo.amount);
-      localStorage.setItem("FlourSiloPrice", objFlourSilo.price);
+      store.setItem("FlourSiloAmount", objFlourSilo.amount);
+      store.setItem("FlourSiloPrice", objFlourSilo.price);
     }
   },
   fill: function (InputAmount) {
@@ -1987,7 +2044,7 @@ var objFlourSilo = {
         ["Vrije ruimte", FixUnit(TempCap, "kg")],
       ]) +
       renderHint("Wat niet past wordt verkocht voor 80% van de marktprijs.");
-    localStorage.setItem("FlourSiloContents", objFlourSilo.contents);
+    store.setItem("FlourSiloContents", objFlourSilo.contents);
     document.getElementById("FlourSiloPrice").innerHTML = renderStats([
       ["Prijs per silo", FixMoney(objFlourSilo.price)],
       ["Capaciteit per silo", FixUnit(objFlourSilo.cap, "kg")],
@@ -2001,10 +2058,10 @@ var objFlourSilo = {
     objFlourSilo.visual();
   },
   init: function () {
-    objFlourSilo.amount = localStorage.getItem("FlourSiloAmount") || 1;
-    objFlourSilo.contents = localStorage.getItem("FlourSiloContents") || 0;
-    objFlourSilo.cap = localStorage.getItem("FlourSiloCap") || 10000;
-    objFlourSilo.price = localStorage.getItem("FlourSiloPrice") || 5000;
+    objFlourSilo.amount = store.getItem("FlourSiloAmount") || 1;
+    objFlourSilo.contents = store.getItem("FlourSiloContents") || 0;
+    objFlourSilo.cap = store.getItem("FlourSiloCap") || 10000;
+    objFlourSilo.price = store.getItem("FlourSiloPrice") || 5000;
     objFlourSilo.show();
   },
 };
@@ -2040,12 +2097,12 @@ var objOilTank = {
       objOilTank.amount = +objOilTank.amount - 1;
       objMoney.add(+objOilTank.price * 0.5, "Verkoop olietank", 20, 1);
       objOilTank.price = +objOilTank.price / 1.01;
-      localStorage.setItem("OilTankPrice", objOilTank.price);
-      localStorage.setItem("OilTankAmount", objOilTank.amount);
+      store.setItem("OilTankPrice", objOilTank.price);
+      store.setItem("OilTankAmount", objOilTank.amount);
       objOilTank.totalCap =
         +(+objOilTank.amount * +objOilTank.cap) +
         +(+objOilTank.amountBig * +objOilTank.capBig);
-      localStorage.setItem("OilTankCapTotal", objOilTank.totalCap);
+      store.setItem("OilTankCapTotal", objOilTank.totalCap);
       objOilTank.show();
     } else {
       notificationOverlay(
@@ -2060,13 +2117,13 @@ var objOilTank = {
       if (+objMoney.amount > +objOilTank.price) {
         objMoney.use(objOilTank.price);
         objOilTank.price = +objOilTank.price * 1.01;
-        localStorage.setItem("OilTankPrice", objOilTank.price);
+        store.setItem("OilTankPrice", objOilTank.price);
         objOilTank.amount = +objOilTank.amount + 1;
-        localStorage.setItem("OilTankAmount", objOilTank.amount);
+        store.setItem("OilTankAmount", objOilTank.amount);
         objOilTank.totalCap =
           +(+objOilTank.amount * +objOilTank.cap) +
           +(+objOilTank.amountBig * +objOilTank.capBig);
-        localStorage.setItem("OilTankCapTotal", objOilTank.totalCap);
+        store.setItem("OilTankCapTotal", objOilTank.totalCap);
         objOilTank.show();
       } else {
         notificationOverlay("Niet genoeg doekoe!", "Olietank", "fa-euro-sign");
@@ -2075,13 +2132,13 @@ var objOilTank = {
       if (+objMoney.amount > +objOilTank.priceBig) {
         objMoney.use(objOilTank.priceBig);
         objOilTank.priceBig = +objOilTank.priceBig * 1.01;
-        localStorage.setItem("OilTankPriceBig", objOilTank.priceBig);
+        store.setItem("OilTankPriceBig", objOilTank.priceBig);
         objOilTank.amountBig = +objOilTank.amountBig + 1;
-        localStorage.setItem("OilTankAmountBig", objOilTank.amountBig);
+        store.setItem("OilTankAmountBig", objOilTank.amountBig);
         objOilTank.totalCap =
           +(+objOilTank.amount * +objOilTank.cap) +
           +(+objOilTank.amountBig * +objOilTank.capBig);
-        localStorage.setItem("OilTankCapTotal", objOilTank.totalCap);
+        store.setItem("OilTankCapTotal", objOilTank.totalCap);
         objOilTank.show();
       } else {
         notificationOverlay("Niet genoeg doekoe!", "Olietank", "fa-euro-sign");
@@ -2115,7 +2172,7 @@ var objOilTank = {
     }
   },
   saveAmount: function () {
-    localStorage.setItem("Oil", Math.round(objOilTank.contents * 100) / 100);
+    store.setItem("Oil", Math.round(objOilTank.contents * 100) / 100);
   },
   visual: function () {
     var percentageFilled = (+objOilTank.contents / +objOilTank.totalCap) * 100;
@@ -2172,12 +2229,12 @@ var objOilTank = {
     objOilTank.visual();
   },
   init: function () {
-    objOilTank.contents = localStorage.getItem("Oil") || 1;
-    objOilTank.amount = localStorage.getItem("OilTankAmount") || 1;
-    objOilTank.cap = localStorage.getItem("OilTankCap") || 1000;
-    objOilTank.price = localStorage.getItem("OilTankPrice") || 1000;
-    objOilTank.priceBig = localStorage.getItem("OilTankPriceBig") || 1000000;
-    objOilTank.amountBig = localStorage.getItem("OilTankAmountBig") || 0;
+    objOilTank.contents = store.getItem("Oil") || 1;
+    objOilTank.amount = store.getItem("OilTankAmount") || 1;
+    objOilTank.cap = store.getItem("OilTankCap") || 1000;
+    objOilTank.price = store.getItem("OilTankPrice") || 1000;
+    objOilTank.priceBig = store.getItem("OilTankPriceBig") || 1000000;
+    objOilTank.amountBig = store.getItem("OilTankAmountBig") || 0;
     objOilTank.totalCap =
       +objOilTank.amount * +objOilTank.cap +
       +objOilTank.amountBig * +objOilTank.capBig;
@@ -2238,8 +2295,8 @@ var objFarmland = {
     document.getElementById("FarmHarvestPerField").innerHTML = renderStats([
       ["Opbrengst per veld", FixUnit(objFarmland.harvest, "kg")],
     ]);
-    localStorage.setItem("FarmlandCost", objFarmland.cost);
-    localStorage.setItem("Harvest", objFarmland.harvest);
+    store.setItem("FarmlandCost", objFarmland.cost);
+    store.setItem("Harvest", objFarmland.harvest);
   },
   calcPrice: function () {
     objFarmland.cost = objFarmland.cost * 1.05;
@@ -2249,7 +2306,7 @@ var objFarmland = {
     document.getElementById("Farmland").innerHTML = renderStats([
       ["Velden", FixNumber(objFarmland.amount)],
     ]);
-    localStorage.setItem("Farmland", objFarmland.amount);
+    store.setItem("Farmland", objFarmland.amount);
     objFarmland.manualFarm();
   },
   work: function () {
@@ -2274,10 +2331,7 @@ var objFarmland = {
       document.getElementById("GRButton").disabled = true;
       objMoney.use(objFarmland.GrainResearchCostVar);
       objFarmland.GrainResearchTimer = objFarmland.GrainResearchDuration;
-      localStorage.setItem(
-        "GrainResearchTimerCount",
-        objFarmland.GrainResearchTimer
-      );
+      store.setItem("GrainResearchTimerCount", objFarmland.GrainResearchTimer);
     } else {
       notificationOverlay(
         "Niet genoeg doekoe!",
@@ -2288,10 +2342,7 @@ var objFarmland = {
   },
   research_loop: function () {
     objFarmland.GrainResearchTimer--;
-    localStorage.setItem(
-      "GrainResearchTimerCount",
-      objFarmland.GrainResearchTimer
-    );
+    store.setItem("GrainResearchTimerCount", objFarmland.GrainResearchTimer);
     document.getElementById("GrainResearchTimer").innerHTML =
       "Onderzoek klaar over " + objFarmland.GrainResearchTimer + " seconden";
     if (objFarmland.GrainResearchTimer < 1) {
@@ -2310,22 +2361,10 @@ var objFarmland = {
       objFarmland.GrainResearchProfit =
         Math.round(objFarmland.GrainResearchProfit * 0.99 * 100) / 100;
       objFarmland.GrainResearchLevel++;
-      localStorage.setItem(
-        "GrainResearchLevel",
-        objFarmland.GrainResearchLevel
-      );
-      localStorage.setItem(
-        "GrainResearchProfit",
-        objFarmland.GrainResearchProfit
-      );
-      localStorage.setItem(
-        "GrainResearchCostVar",
-        objFarmland.GrainResearchCostVar
-      );
-      localStorage.setItem(
-        "GrainResearchDuration",
-        objFarmland.GrainResearchDuration
-      );
+      store.setItem("GrainResearchLevel", objFarmland.GrainResearchLevel);
+      store.setItem("GrainResearchProfit", objFarmland.GrainResearchProfit);
+      store.setItem("GrainResearchCostVar", objFarmland.GrainResearchCostVar);
+      store.setItem("GrainResearchDuration", objFarmland.GrainResearchDuration);
       objFarmland.showResearch();
       objFarmRobot.show();
       objFarmland.showPrice();
@@ -2346,21 +2385,21 @@ var objFarmland = {
     ]);
   },
   init: function () {
-    objFarmland.amount = parseInt(localStorage.getItem("Farmland")) || 1;
-    objFarmland.cost = parseFloat(localStorage.getItem("FarmlandCost")) || 10;
-    objFarmland.harvest = parseFloat(localStorage.getItem("Harvest")) || 100;
+    objFarmland.amount = parseInt(store.getItem("Farmland")) || 1;
+    objFarmland.cost = parseFloat(store.getItem("FarmlandCost")) || 10;
+    objFarmland.harvest = parseFloat(store.getItem("Harvest")) || 100;
     objFarmland.GrainResearchCostVar =
-      parseInt(localStorage.getItem("GrainResearchCostVar")) || 5000;
+      parseInt(store.getItem("GrainResearchCostVar")) || 5000;
     objFarmland.GrainResearchDuration =
-      parseInt(localStorage.getItem("GrainResearchDuration")) || 60;
+      parseInt(store.getItem("GrainResearchDuration")) || 60;
     objFarmland.GrainResearchProfit =
-      parseFloat(localStorage.getItem("GrainResearchProfit")) || 10;
+      parseFloat(store.getItem("GrainResearchProfit")) || 10;
     objFarmland.automatedAmount =
-      parseInt(localStorage.getItem("AutomatedFarms")) || 0;
+      parseInt(store.getItem("AutomatedFarms")) || 0;
     objFarmland.GrainResearchLevel =
-      parseInt(localStorage.getItem("GrainResearchLevel")) || 1;
+      parseInt(store.getItem("GrainResearchLevel")) || 1;
     objFarmland.GrainResearchTimer = parseInt(
-      localStorage.getItem("GrainResearchTimerCount")
+      store.getItem("GrainResearchTimerCount")
     );
     if (objFarmland.GrainResearchTimer > 0) {
       document.getElementById("GRButton").disabled = true;
@@ -2391,7 +2430,7 @@ var objWindmill = {
       objWindmill.amount++;
       objFarmland.showPrice();
       objWindmill.show();
-      localStorage.setItem("WindmillAmount", objWindmill.amount);
+      store.setItem("WindmillAmount", objWindmill.amount);
     }
   },
   grind_buttonstate: function () {
@@ -2569,9 +2608,9 @@ var objWindmill = {
     objWindmillController.show();
   },
   init: function () {
-    objWindmill.amount = parseInt(localStorage.getItem("WindmillAmount")) || 1;
+    objWindmill.amount = parseInt(store.getItem("WindmillAmount")) || 1;
     objWindmill.amountAutomated =
-      parseInt(localStorage.getItem("WindmillAutomated")) || 0;
+      parseInt(store.getItem("WindmillAutomated")) || 0;
     if (objWindmillController.amount >= 1) objWindmill.autogrind();
     objWindmill.show();
   },
@@ -2598,11 +2637,8 @@ var objWindmillController = {
       objWindmillController.amount++;
       objWindmill.amountAutomated =
         objWindmillController.amount * objWindmillController.cap;
-      localStorage.setItem("WindmillAutomated", objWindmill.amountAutomated);
-      localStorage.setItem(
-        "WindmillControllerAmount",
-        objWindmillController.amount
-      );
+      store.setItem("WindmillAutomated", objWindmill.amountAutomated);
+      store.setItem("WindmillControllerAmount", objWindmillController.amount);
       objWindmillController.show();
       if (objWindmillController.amount === 1 && objWindmill.running === 0)
         objWindmill.autogrind();
@@ -2615,11 +2651,8 @@ var objWindmillController = {
       objMoney.add(SellWMCProfit, "Verkoop windmolencontroller", 3, 1);
       objWindmill.amountAutomated =
         objWindmillController.amount * objWindmillController.cap;
-      localStorage.setItem("WindmillAutomated", objWindmill.amountAutomated);
-      localStorage.setItem(
-        "WindmillControllerAmount",
-        objWindmillController.amount
-      );
+      store.setItem("WindmillAutomated", objWindmill.amountAutomated);
+      store.setItem("WindmillControllerAmount", objWindmillController.amount);
       objWindmillController.show();
     } else {
       notificationOverlay(
@@ -2656,7 +2689,7 @@ var objWindmillController = {
   },
   init: function () {
     objWindmillController.amount =
-      localStorage.getItem("WindmillControllerAmount") || 0;
+      store.getItem("WindmillControllerAmount") || 0;
     objWindmillController.show();
   },
 };
@@ -2718,7 +2751,7 @@ function resetGame() {
   ) {
     return;
   }
-  localStorage.clear();
+  store.clear();
   location.reload();
 }
 
@@ -2733,7 +2766,7 @@ var objOilPump = {
       objMoney.use(objOilPump.price);
       objOilPump.amount++;
       objOilPump.priceCalc();
-      localStorage.setItem("Factory", objOilPump.amount);
+      store.setItem("Factory", objOilPump.amount);
       objOilPump.show();
       objEnergy.show();
     } else {
@@ -2743,17 +2776,17 @@ var objOilPump = {
   remove: function (amount) {
     if (objOilPump.amount > 0) {
       objOilPump.amount = +objOilPump.amount - +amount;
-      localStorage.setItem("Factory", objOilPump.amount);
+      store.setItem("Factory", objOilPump.amount);
       objMoney.add(objOilPump.price * 0.75, "Verkoop oliepomp", 99, +amount);
       objOilPump.price = Math.round((+objOilPump.price / 1.1) * 100) / 100;
-      localStorage.setItem("FactoryCost", objOilPump.price);
+      store.setItem("FactoryCost", objOilPump.price);
       objOilPump.show();
     }
   },
   priceCalc: function () {
     objOilPump.price = +objOilPump.price * 1.1;
     objOilPump.price = Math.round(objOilPump.price * 100) / 100;
-    localStorage.setItem("FactoryCost", objOilPump.price);
+    store.setItem("FactoryCost", objOilPump.price);
   },
   show: function () {
     if (+objOilPump.amount == 0) {
@@ -2769,11 +2802,11 @@ var objOilPump = {
       ["Prijs per pomp", FixMoney(objOilPump.price)],
     ]);
     objOilPumpAdv.show();
-    localStorage.setItem("FactoryCost", objOilPump.price);
+    store.setItem("FactoryCost", objOilPump.price);
   },
   init: function () {
-    objOilPump.amount = localStorage.getItem("Factory") || 0;
-    objOilPump.price = localStorage.getItem("FactoryCost") || 10;
+    objOilPump.amount = store.getItem("Factory") || 0;
+    objOilPump.price = store.getItem("FactoryCost") || 10;
     objOilPump.show();
   },
 };
@@ -2788,7 +2821,7 @@ var objEnergy = {
     if (+objMoney.amount >= +objEnergy.capaCost * +amount) {
       objMoney.use(+objEnergy.capaCost * +amount);
       objEnergy.capacitors = +objEnergy.capacitors + +amount;
-      localStorage.setItem("Capacitors", objEnergy.capacitors);
+      store.setItem("Capacitors", objEnergy.capacitors);
       objOilPump.show();
       objEnergy.show();
     } else {
@@ -2803,7 +2836,7 @@ var objEnergy = {
     showMessage(reason, requestedAmount);
     if (+requestedAmount <= +objEnergy.available) {
       objEnergy.available = +objEnergy.available - +requestedAmount;
-      localStorage.setItem("EnergyAvailable", +objEnergy.available);
+      store.setItem("EnergyAvailable", +objEnergy.available);
       objEnergy.show();
       return +requestedAmount;
     }
@@ -2852,7 +2885,7 @@ var objEnergy = {
           "Energiecentrales - Productie groter dan restcap"
         );
         objEnergy.available = +objEnergy.available + +capLeft;
-        localStorage.setItem("EnergyAvailable", +objEnergy.available);
+        store.setItem("EnergyAvailable", +objEnergy.available);
         objEnergy.show();
       }
     } else {
@@ -2861,7 +2894,7 @@ var objEnergy = {
         +activePlants,
         "Energiecentrales - Productie kleiner dan restcap"
       );
-      localStorage.setItem("EnergyAvailable", +objEnergy.available);
+      store.setItem("EnergyAvailable", +objEnergy.available);
       objEnergy.show();
     }
     // Steenkool
@@ -2904,7 +2937,7 @@ var objEnergy = {
       objEnergy.available = +objEnergy.available + +producedAmount;
     }
 
-    localStorage.setItem("EnergyAvailable", +objEnergy.available);
+    store.setItem("EnergyAvailable", +objEnergy.available);
     objEnergy.show();
   },
   show: function () {
@@ -2965,12 +2998,16 @@ var objEnergy = {
       +objMines.coalAmountActive * +objCoalMine.energy +
       +objMines.uraniumAmountActive * +objUraniumMine.energy +
       +objOilPumpAdv.amount * +objOilPumpAdv.energy +
-      +objMines.ironAmountActive * +objIronMine.energy
+      +objMines.ironAmountActive * +objIronMine.energy +
+      // In de beta gebruiken splijtstoffabrieken hun stroom per tick
+      (BETA
+        ? +objFuelCellFactory.amount * objFuelCellFactory.energyPerTick()
+        : 0)
     );
   },
   init: function () {
-    objEnergy.available = localStorage.getItem("EnergyAvailable") || 0;
-    objEnergy.capacitors = localStorage.getItem("Capacitors") || 10;
+    objEnergy.available = store.getItem("EnergyAvailable") || 0;
+    objEnergy.capacitors = store.getItem("Capacitors") || 10;
     objEnergy.show();
   },
 };
@@ -2991,7 +3028,7 @@ var objChicken = {
         var gotten = +gotten + +restGotten;
       }
       objChicken.amount = Math.round(+gotten / +objChicken.foodIntake);
-      localStorage.setItem("Chickens", objChicken.amount);
+      store.setItem("Chickens", objChicken.amount);
     }
     objChickenFarm.show();
   },
@@ -3010,7 +3047,7 @@ var objChicken = {
     ) {
       objMoney.use(+aantal * +objChicken.cost);
       objChicken.amount = +objChicken.amount + +aantal;
-      localStorage.setItem("Chickens", objChicken.amount);
+      store.setItem("Chickens", objChicken.amount);
       objChicken.show();
       objChickenFarm.show();
     } else {
@@ -3044,7 +3081,7 @@ var objChicken = {
     ]);
   },
   init: function () {
-    objChicken.amount = Math.round(localStorage.getItem("Chickens")) || 0;
+    objChicken.amount = Math.round(store.getItem("Chickens")) || 0;
     objChicken.show();
   },
 };
@@ -3065,15 +3102,15 @@ var objChickenFarm = {
       if (+amount > +objChickenFarm.grainReserve) {
         var beschikbaar = +objChickenFarm.grainReserve;
         objChickenFarm.grainReserve = 0;
-        localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
+        store.setItem("GrainReserve", objChickenFarm.grainReserve);
         return +beschikbaar;
       }
 
       objChickenFarm.grainReserve = +objChickenFarm.grainReserve - +amount;
-      localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
+      store.setItem("GrainReserve", objChickenFarm.grainReserve);
       return +amount;
     }
-    localStorage.setItem("GrainReserve", objChickenFarm.grainReserve);
+    store.setItem("GrainReserve", objChickenFarm.grainReserve);
     objChickenFarm.show();
     objChicken.show();
   },
@@ -3081,7 +3118,7 @@ var objChickenFarm = {
     if (+objMoney.amount >= +objChickenFarm.cost) {
       objMoney.use(objChickenFarm.cost);
       objChickenFarm.amount++;
-      localStorage.setItem("ChickenFarms", objChickenFarm.amount);
+      store.setItem("ChickenFarms", objChickenFarm.amount);
       objChickenFarm.show();
     } else {
       notificationOverlay(
@@ -3161,8 +3198,8 @@ var objChickenFarm = {
     }
   },
   init: function () {
-    objChickenFarm.grainReserve = localStorage.getItem("GrainReserve") || 0;
-    objChickenFarm.amount = localStorage.getItem("ChickenFarms") || 0;
+    objChickenFarm.grainReserve = store.getItem("GrainReserve") || 0;
+    objChickenFarm.amount = store.getItem("ChickenFarms") || 0;
     objChickenFarm.show();
   },
 };
@@ -3186,7 +3223,7 @@ var objEgg = {
     } else {
       objEgg.amount = +eieren + +aantal;
     }
-    localStorage.setItem("eggs", objEgg.amount);
+    store.setItem("eggs", objEgg.amount);
     objEgg.show();
   },
   use: function (amountEggs) {
@@ -3194,7 +3231,7 @@ var objEgg = {
       amountEggs = +objEgg.amount;
     }
     objEgg.amount = +objEgg.amount - +amountEggs;
-    localStorage.setItem("eggs", objEgg.amount);
+    store.setItem("eggs", objEgg.amount);
     objEgg.show();
     return +amountEggs;
   },
@@ -3203,7 +3240,7 @@ var objEgg = {
       aantal = +objEgg.amount;
       reden = "Reguliere verkoop eieren";
       objEgg.amount = +objEgg.amount - +aantal;
-      localStorage.setItem("eggs", objEgg.amount);
+      store.setItem("eggs", objEgg.amount);
       objEgg.show();
     }
     var Profit = +aantal * +objEgg.price;
@@ -3213,7 +3250,7 @@ var objEgg = {
     if (+objMoney.amount >= +objEgg.storageUnitCost) {
       objMoney.use(objEgg.storageUnitCost);
       objEgg.storageUnits++;
-      localStorage.setItem("EggStorage", objEgg.storageUnits);
+      store.setItem("EggStorage", objEgg.storageUnits);
       objEgg.show();
       objChickenFarm.show();
     } else {
@@ -3244,8 +3281,8 @@ var objEgg = {
     objEgg.visual();
   },
   init: function () {
-    objEgg.amount = localStorage.getItem("eggs") || 0;
-    objEgg.storageUnits = localStorage.getItem("EggStorage") || 1;
+    objEgg.amount = store.getItem("eggs") || 0;
+    objEgg.storageUnits = store.getItem("EggStorage") || 1;
     objEgg.show();
     objChickenFarm.show();
   },
@@ -3263,7 +3300,7 @@ var objPastaFactory = {
     if (+objMoney.amount >= +objPastaFactory.cost) {
       objMoney.use(objPastaFactory.cost);
       objPastaFactory.amount++;
-      localStorage.setItem("PastaFactoryAmount", objPastaFactory.amount);
+      store.setItem("PastaFactoryAmount", objPastaFactory.amount);
       objPastaFactory.show();
       objEnergy.show();
     } else {
@@ -3284,7 +3321,7 @@ var objPastaFactory = {
     } else if (+objPastaFactory.amount > 0) {
       objMoney.add(objPastaFactory.cost * 0.75, "Verkoop pastafabriek", 7, 1);
       objPastaFactory.amount--;
-      localStorage.setItem("PastaFactoryAmount", objPastaFactory.amount);
+      store.setItem("PastaFactoryAmount", objPastaFactory.amount);
       objPastaFactory.show();
       objEnergy.show();
     } else {
@@ -3433,11 +3470,11 @@ var objPastaFactory = {
     objPastaHelper.show();
   },
   init: function () {
-    objPastaFactory.amount = localStorage.getItem("PastaFactoryAmount") || 0;
+    objPastaFactory.amount = store.getItem("PastaFactoryAmount") || 0;
     objPastaFactory.amountAutomated =
-      localStorage.getItem("PastaFactoryAmountAutomated") || 0;
-    objPastaFactory.cost = localStorage.getItem("PastaFactoryCost") || 50000;
-    objPastaFactory.cap = localStorage.getItem("PastaFactoryCap") || 2000;
+      store.getItem("PastaFactoryAmountAutomated") || 0;
+    objPastaFactory.cost = store.getItem("PastaFactoryCost") || 50000;
+    objPastaFactory.cap = store.getItem("PastaFactoryCap") || 2000;
     objPastaFactory.show();
   },
 };
@@ -3492,9 +3529,9 @@ var objPastaHelper = {
       if (+objMoney.amount >= +objPastaHelper.cost) {
         objMoney.use(objPastaHelper.cost);
         objPastaHelper.amount++;
-        localStorage.setItem("pastaHelper", objPastaHelper.amount);
+        store.setItem("pastaHelper", objPastaHelper.amount);
         objPastaFactory.amountAutomated++;
-        localStorage.setItem(
+        store.setItem(
           "PastaFactoryAmountAutomated",
           objPastaFactory.amountAutomated
         );
@@ -3510,9 +3547,9 @@ var objPastaHelper = {
       }
     } else if (+objPastaHelper.amount > 0) {
       objPastaHelper.amount--;
-      localStorage.setItem("pastaHelper", objPastaHelper.amount);
+      store.setItem("pastaHelper", objPastaHelper.amount);
       objPastaFactory.amountAutomated--;
-      localStorage.setItem(
+      store.setItem(
         "PastaFactoryAmountAutomated",
         objPastaFactory.amountAutomated
       );
@@ -3558,7 +3595,7 @@ var objPastaHelper = {
     }
   },
   init: function () {
-    objPastaHelper.amount = localStorage.getItem("pastaHelper") || 0;
+    objPastaHelper.amount = store.getItem("pastaHelper") || 0;
     objPastaHelper.show();
   },
 };
@@ -3571,12 +3608,12 @@ var objStorehouse = {
   addPasta: function (pasta) {
     objStorehouse.pasta = +objStorehouse.pasta + +pasta;
     objStorehouse.show();
-    localStorage.setItem("Pasta", objStorehouse.pasta);
+    store.setItem("Pasta", objStorehouse.pasta);
   },
   removePasta: function (pasta) {
     objStorehouse.pasta = +objStorehouse.pasta - +pasta;
     objStorehouse.show();
-    localStorage.setItem("Pasta", objStorehouse.pasta);
+    store.setItem("Pasta", objStorehouse.pasta);
   },
   show: function () {
     document.getElementById("StorehousePasta").innerHTML = renderStats([
@@ -3584,8 +3621,8 @@ var objStorehouse = {
     ]);
   },
   init: function () {
-    objStorehouse.amount = localStorage.getItem("Storehouses") || 0;
-    objStorehouse.pasta = localStorage.getItem("Pasta") || 0;
+    objStorehouse.amount = store.getItem("Storehouses") || 0;
+    objStorehouse.pasta = store.getItem("Pasta") || 0;
     objStorehouse.show();
   },
 };
@@ -3599,7 +3636,7 @@ var objPowerPlant = {
     if (+objMoney.amount > +objPowerPlant.price) {
       objMoney.use(+objPowerPlant.price);
       objPowerPlant.amount++;
-      localStorage.setItem("PowerPlants", objPowerPlant.amount);
+      store.setItem("PowerPlants", objPowerPlant.amount);
       objPowerPlant.priceCalc();
       objPowerPlant.show();
     } else {
@@ -3621,8 +3658,8 @@ var objPowerPlant = {
         9,
         1
       );
-      localStorage.setItem("PowerPlants", objPowerPlant.amount);
-      localStorage.setItem("PowerPlantPrice", objPowerPlant.price);
+      store.setItem("PowerPlants", objPowerPlant.amount);
+      store.setItem("PowerPlantPrice", objPowerPlant.price);
       objPowerPlant.show();
     } else {
       notificationOverlay(
@@ -3635,7 +3672,7 @@ var objPowerPlant = {
   priceCalc: function () {
     objPowerPlant.price = +objPowerPlant.price * 1.1;
     objPowerPlant.price = Math.round(+objPowerPlant.price * 100) / 100;
-    localStorage.setItem("PowerPlantPrice", objPowerPlant.price);
+    store.setItem("PowerPlantPrice", objPowerPlant.price);
     objPowerPlant.show();
   },
   show: function () {
@@ -3651,8 +3688,8 @@ var objPowerPlant = {
     objEnergy.show();
   },
   init: function () {
-    objPowerPlant.price = localStorage.getItem("PowerPlantPrice") || 100;
-    objPowerPlant.amount = localStorage.getItem("PowerPlants") || 0;
+    objPowerPlant.price = store.getItem("PowerPlantPrice") || 100;
+    objPowerPlant.amount = store.getItem("PowerPlants") || 0;
     objPowerPlant.show();
   },
 };
@@ -3666,7 +3703,7 @@ var objCoalPowerPlant = {
     if (+objMoney.amount > +objCoalPowerPlant.price) {
       objMoney.use(+objCoalPowerPlant.price);
       objCoalPowerPlant.amount++;
-      localStorage.setItem("CoalPowerPlants", objCoalPowerPlant.amount);
+      store.setItem("CoalPowerPlants", objCoalPowerPlant.amount);
       objCoalPowerPlant.priceCalc();
       objCoalPowerPlant.show();
     } else {
@@ -3689,8 +3726,8 @@ var objCoalPowerPlant = {
         10,
         1
       );
-      localStorage.setItem("CoalPowerPlants", objCoalPowerPlant.amount);
-      localStorage.setItem("CoalPowerPlantPrice", objCoalPowerPlant.price);
+      store.setItem("CoalPowerPlants", objCoalPowerPlant.amount);
+      store.setItem("CoalPowerPlantPrice", objCoalPowerPlant.price);
       objCoalPowerPlant.show();
     } else {
       notificationOverlay(
@@ -3703,7 +3740,7 @@ var objCoalPowerPlant = {
   priceCalc: function () {
     objCoalPowerPlant.price = +objCoalPowerPlant.price * 1.05;
     objCoalPowerPlant.price = Math.round(+objCoalPowerPlant.price * 100) / 100;
-    localStorage.setItem("CoalPowerPlantPrice", objCoalPowerPlant.price);
+    store.setItem("CoalPowerPlantPrice", objCoalPowerPlant.price);
     objCoalPowerPlant.show();
   },
 
@@ -3737,12 +3774,11 @@ var objCoalPowerPlant = {
     }
   },
   init: function () {
-    if (localStorage.getItem("CoalPowerPlantPrice") < 50000000) {
-      localStorage.setItem("CoalPowerPlantPrice", 50000000);
+    if (store.getItem("CoalPowerPlantPrice") < 50000000) {
+      store.setItem("CoalPowerPlantPrice", 50000000);
     }
-    objCoalPowerPlant.price =
-      localStorage.getItem("CoalPowerPlantPrice") || 50000000;
-    objCoalPowerPlant.amount = localStorage.getItem("CoalPowerPlants") || 0;
+    objCoalPowerPlant.price = store.getItem("CoalPowerPlantPrice") || 50000000;
+    objCoalPowerPlant.amount = store.getItem("CoalPowerPlants") || 0;
     objCoalPowerPlant.show();
   },
 };
@@ -3765,7 +3801,7 @@ var objSalesComputer = {
       objMoney.use(+objSalesComputer.cpuCost);
       objSalesComputer.cpu++;
       objSalesComputer.cpuCost *= 1;
-      localStorage.setItem("scCPU", objSalesComputer.cpu);
+      store.setItem("scCPU", objSalesComputer.cpu);
       objSalesComputer.show();
     } else {
       notificationOverlay(
@@ -3780,7 +3816,7 @@ var objSalesComputer = {
       objSalesComputer.cpuCost /= 1;
       objMoney.add(+objSalesComputer.cpuCost * 0.75, "Verkoop CPU", 11, 1);
       objSalesComputer.cpu--;
-      localStorage.setItem("scCPU", objSalesComputer.cpu);
+      store.setItem("scCPU", objSalesComputer.cpu);
       objSalesComputer.show();
     } else {
       notificationOverlay(
@@ -3844,7 +3880,7 @@ var objSalesComputer = {
     objSalesComputer.showKunststof(inputKunststof);
   },
   showOil: function (inputwaarde) {
-    localStorage.setItem("autoOil", inputwaarde);
+    store.setItem("autoOil", inputwaarde);
     objSalesComputer.oilValue = inputwaarde;
     document.getElementById("autoSellOil").innerHTML = renderAutoSell(
       "Olie",
@@ -3854,7 +3890,7 @@ var objSalesComputer = {
     );
   },
   showFlour: function (inputwaarde) {
-    localStorage.setItem("autoFlour", inputwaarde);
+    store.setItem("autoFlour", inputwaarde);
     objSalesComputer.flourValue = inputwaarde;
     document.getElementById("autoSellFlour").innerHTML = renderAutoSell(
       "Bloem",
@@ -3864,7 +3900,7 @@ var objSalesComputer = {
     );
   },
   showPasta: function (inputwaarde) {
-    localStorage.setItem("autoPasta", inputwaarde);
+    store.setItem("autoPasta", inputwaarde);
     objSalesComputer.pastaValue = inputwaarde;
     document.getElementById("autoSellPasta").innerHTML = renderAutoSell(
       "Pasta",
@@ -3874,7 +3910,7 @@ var objSalesComputer = {
     );
   },
   showKunststof: function (inputwaarde) {
-    localStorage.setItem("autoKunststof", inputwaarde);
+    store.setItem("autoKunststof", inputwaarde);
     objSalesComputer.kunststofValue = inputwaarde;
     document.getElementById("autoSellKunststof").innerHTML = renderAutoSell(
       "Kunststof",
@@ -3884,34 +3920,30 @@ var objSalesComputer = {
     );
   },
   checkOil: function (checkState) {
-    localStorage.setItem("autoOilCheck", checkState);
-    objSalesComputer.autoSellOil = JSON.parse(
-      localStorage.getItem("autoOilCheck")
-    );
-    objSalesComputer.showOil(parseInt(localStorage.getItem("autoOil")));
+    store.setItem("autoOilCheck", checkState);
+    objSalesComputer.autoSellOil = JSON.parse(store.getItem("autoOilCheck"));
+    objSalesComputer.showOil(parseInt(store.getItem("autoOil")));
   },
   checkFlour: function (checkState) {
-    localStorage.setItem("autoFlourCheck", checkState);
+    store.setItem("autoFlourCheck", checkState);
     objSalesComputer.autoSellFlour = JSON.parse(
-      localStorage.getItem("autoFlourCheck")
+      store.getItem("autoFlourCheck")
     );
-    objSalesComputer.showFlour(parseInt(localStorage.getItem("autoFlour")));
+    objSalesComputer.showFlour(parseInt(store.getItem("autoFlour")));
   },
   checkPasta: function (checkState) {
-    localStorage.setItem("autoPastaCheck", checkState);
+    store.setItem("autoPastaCheck", checkState);
     objSalesComputer.autoSellPasta = JSON.parse(
-      localStorage.getItem("autoPastaCheck")
+      store.getItem("autoPastaCheck")
     );
-    objSalesComputer.showPasta(parseInt(localStorage.getItem("autoPasta")));
+    objSalesComputer.showPasta(parseInt(store.getItem("autoPasta")));
   },
   checkKunststof: function (checkState) {
-    localStorage.setItem("autoKunststofCheck", checkState);
+    store.setItem("autoKunststofCheck", checkState);
     objSalesComputer.autoSellKunststof = JSON.parse(
-      localStorage.getItem("autoKunststofCheck")
+      store.getItem("autoKunststofCheck")
     );
-    objSalesComputer.showKunststof(
-      parseInt(localStorage.getItem("autoKunststof"))
-    );
+    objSalesComputer.showKunststof(parseInt(store.getItem("autoKunststof")));
   },
   autoSell: function () {
     if (objSalesComputer.autoSellOil == true && +objSalesComputer.cpu > 0) {
@@ -3960,39 +3992,37 @@ var objSalesComputer = {
     }
   },
   init: function () {
-    objSalesComputer.cpu = localStorage.getItem("scCPU") || 0;
+    objSalesComputer.cpu = store.getItem("scCPU") || 0;
 
     //olie
-    objSalesComputer.oilValue = parseInt(localStorage.getItem("autoOil")) || 20;
+    objSalesComputer.oilValue = parseInt(store.getItem("autoOil")) || 20;
     objSalesComputer.autoSellOil =
-      JSON.parse(localStorage.getItem("autoOilCheck")) || false;
+      JSON.parse(store.getItem("autoOilCheck")) || false;
     document.getElementById("autoOilCheck").checked =
       objSalesComputer.autoSellOil;
     document.getElementById("SliderOil").value = +objSalesComputer.oilValue;
 
     //bloem
-    objSalesComputer.flourValue =
-      parseInt(localStorage.getItem("autoFlour")) || 875;
+    objSalesComputer.flourValue = parseInt(store.getItem("autoFlour")) || 875;
     objSalesComputer.autoSellFlour =
-      JSON.parse(localStorage.getItem("autoFlourCheck")) || false;
+      JSON.parse(store.getItem("autoFlourCheck")) || false;
     document.getElementById("autoFlourCheck").checked =
       objSalesComputer.autoSellFlour;
     document.getElementById("SliderFlour").value = +objSalesComputer.flourValue;
 
     //Pasta
-    objSalesComputer.pastaValue =
-      parseInt(localStorage.getItem("autoPasta")) || 450;
+    objSalesComputer.pastaValue = parseInt(store.getItem("autoPasta")) || 450;
     objSalesComputer.autoSellPasta =
-      JSON.parse(localStorage.getItem("autoPastaCheck")) || false;
+      JSON.parse(store.getItem("autoPastaCheck")) || false;
     document.getElementById("autoPastaCheck").checked =
       objSalesComputer.autoSellPasta;
     document.getElementById("SliderPasta").value = +objSalesComputer.pastaValue;
 
     //Kunststof
     objSalesComputer.kunststofValue =
-      parseInt(localStorage.getItem("autoKunststof")) || 240;
+      parseInt(store.getItem("autoKunststof")) || 240;
     objSalesComputer.autoSellKunststof =
-      JSON.parse(localStorage.getItem("autoKunststofCheck")) || false;
+      JSON.parse(store.getItem("autoKunststofCheck")) || false;
     document.getElementById("autoKunststofCheck").checked =
       objSalesComputer.autoSellKunststof;
     document.getElementById("SliderKunststof").value =
@@ -4064,22 +4094,22 @@ var objResearch = {
     }
     document.getElementById("MiningResearch").disabled = true;
     objResearch.running = 1;
-    localStorage.setItem("Rrunning", objResearch.running);
+    store.setItem("Rrunning", objResearch.running);
     document.getElementById("ResearchTimer").style.display = "";
   },
   Research_loop: function () {
     objResearch.timer--;
-    localStorage.setItem("rTimer", objResearch.timer);
+    store.setItem("rTimer", objResearch.timer);
     document.getElementById("ResearchTimer").innerHTML =
       "Onderzoek klaar over " + objResearch.timer + " seconden";
     if (objResearch.timer < 1 && objResearch.running === 1) {
       objResearch.level++;
-      localStorage.setItem("Rlevel", objResearch.level);
+      store.setItem("Rlevel", objResearch.level);
       document.getElementById("MiningResearch").disabled = false;
       objResearch.show();
       objResearch.running = 0;
-      localStorage.setItem("rTimer", objResearch.timer);
-      localStorage.setItem("Rrunning", objResearch.running);
+      store.setItem("rTimer", objResearch.timer);
+      store.setItem("Rrunning", objResearch.running);
       document.getElementById("ResearchTimer").style.display = "none";
     }
   },
@@ -4120,12 +4150,12 @@ var objResearch = {
     objMines.showMining();
   },
   init: function () {
-    objResearch.level = parseInt(localStorage.getItem("Rlevel")) || 1;
-    objResearch.running = parseInt(localStorage.getItem("Rrunning")) || 0;
+    objResearch.level = parseInt(store.getItem("Rlevel")) || 1;
+    objResearch.running = parseInt(store.getItem("Rrunning")) || 0;
     objResearch.show();
     if (+objPlayerInfo.level > 7) {
       if (+objResearch.running === 1) {
-        objResearch.timer = parseInt(localStorage.getItem("rTimer"));
+        objResearch.timer = parseInt(store.getItem("rTimer"));
         showMessage("Research timer", objResearch.timer);
         document.getElementById("ResearchTimer").innerHTML =
           "Onderzoek klaar over " + objResearch.timer + " seconden";
@@ -4160,6 +4190,13 @@ var objMines = {
   goldMineCost: 600000000,
   diamondMineCost: 600000000,
   prospectCost: 50000000,
+  // Beta: goedkoper beginnen met mijnbouw (10 mln op level 8, 25 mln op level 9)
+  prospectPrice: function () {
+    if (!BETA) return +objMines.prospectCost;
+    if (+objPlayerInfo.level <= 8) return 10000000;
+    if (+objPlayerInfo.level === 9) return 25000000;
+    return +objMines.prospectCost;
+  },
   prospectTimer: 15,
   prospectTimerActive: 0,
   prospecting: 0,
@@ -4169,7 +4206,7 @@ var objMines = {
   prospect: function () {
     // Eerst bepalen of er al een prospecting actie liep
     if (+objMines.prospecting !== 1) {
-      if (+objMoney.amount < +objMines.prospectCost) {
+      if (+objMoney.amount < objMines.prospectPrice()) {
         notificationOverlay(
           "Niet genoeg doekoe!",
           "Prospecting",
@@ -4177,7 +4214,7 @@ var objMines = {
         );
         return 0;
       } else {
-        objMoney.use(+objMines.prospectCost);
+        objMoney.use(objMines.prospectPrice());
       }
       objMines.prospectTimerActive = parseInt(objMines.prospectTimer);
       objMines.prospecting = 1;
@@ -4185,12 +4222,12 @@ var objMines = {
     document.getElementById("ProspectingButton").disabled = true;
     // prospect loop
 
-    localStorage.setItem("prospecting", objMines.prospecting);
+    store.setItem("prospecting", objMines.prospecting);
     document.getElementById("ProspectingProgress").style.display = "";
   },
   prospect_loop: function () {
     objMines.prospectTimerActive--;
-    localStorage.setItem("pTimer", objMines.prospectTimerActive);
+    store.setItem("pTimer", objMines.prospectTimerActive);
     document.getElementById("ProspectingProgress").innerHTML =
       "Zoeken klaar over " + objMines.prospectTimerActive + " seconden";
     if (objMines.prospectTimerActive < 1) {
@@ -4204,23 +4241,17 @@ var objMines = {
       switch (selectedItem) {
         case 1:
           objMines.ironAmountProspected++;
-          localStorage.setItem(
-            "ironAmountProspected",
-            objMines.ironAmountProspected
-          );
+          store.setItem("ironAmountProspected", objMines.ironAmountProspected);
           selectedItem = "Ijzer";
           break;
         case 2:
           objMines.coalAmountProspected++;
-          localStorage.setItem(
-            "coalAmountProspected",
-            objMines.coalAmountProspected
-          );
+          store.setItem("coalAmountProspected", objMines.coalAmountProspected);
           selectedItem = "Steenkool";
           break;
         case 3:
           objMines.uraniumAmountProspected++;
-          localStorage.setItem(
+          store.setItem(
             "uraniumAmountProspected",
             objMines.uraniumAmountProspected
           );
@@ -4228,7 +4259,7 @@ var objMines = {
           break;
         case 4:
           objMines.copperAmountProspected++;
-          localStorage.setItem(
+          store.setItem(
             "copperAmountProspected",
             objMines.copperAmountProspected
           );
@@ -4236,15 +4267,12 @@ var objMines = {
           break;
         case 5:
           objMines.goldAmountProspected++;
-          localStorage.setItem(
-            "goldAmountProspected",
-            objMines.goldAmountProspected
-          );
+          store.setItem("goldAmountProspected", objMines.goldAmountProspected);
           selectedItem = "Goud";
           break;
         case 6:
           objMines.diamondAmountProspected++;
-          localStorage.setItem(
+          store.setItem(
             "diamondAmountProspected",
             objMines.diamondAmountProspected
           );
@@ -4252,7 +4280,7 @@ var objMines = {
           break;
       }
       objMines.prospecting = 0;
-      localStorage.setItem("prospecting", objMines.prospecting);
+      store.setItem("prospecting", objMines.prospecting);
       document.getElementById("ProspectingProgress").style.display = "none";
       document.getElementById("ProspectingButton").disabled = false;
       document.getElementById("ProspectingResult").innerHTML = renderStats([
@@ -4273,7 +4301,7 @@ var objMines = {
     }
     document.getElementById("Prospecting").innerHTML =
       renderStats([
-        ["Kosten", FixMoney(+objMines.prospectCost)],
+        ["Kosten", FixMoney(objMines.prospectPrice())],
         ["Duur", FixNumber(objMines.prospectTimer) + " seconden"],
       ]) +
       renderHint(
@@ -4334,10 +4362,10 @@ var objMines = {
         objMines[mCost] = +objMines[mCost] / +objMines.priceFactor;
       }
 
-      localStorage.setItem(mCost, objMines[mCost]);
+      store.setItem(mCost, objMines[mCost]);
 
       //Aantal actieve mijnen opslaan in LS en weergeven
-      localStorage.setItem(mActive, objMines[mActive]);
+      store.setItem(mActive, objMines[mActive]);
       objMines.showAll();
     }
     // switch voor bepalen welke mijn er toegevoegd wordt.
@@ -4484,44 +4512,43 @@ var objMines = {
   },
   init: function () {
     objMines.ironAmountProspected =
-      parseInt(localStorage.getItem("ironAmountProspected")) || 0;
+      parseInt(store.getItem("ironAmountProspected")) || 0;
     objMines.coalAmountProspected =
-      parseInt(localStorage.getItem("coalAmountProspected")) || 0;
+      parseInt(store.getItem("coalAmountProspected")) || 0;
     objMines.uraniumAmountProspected =
-      parseInt(localStorage.getItem("uraniumAmountProspected")) || 0;
+      parseInt(store.getItem("uraniumAmountProspected")) || 0;
     objMines.copperAmountProspected =
-      parseInt(localStorage.getItem("copperAmountProspected")) || 0;
+      parseInt(store.getItem("copperAmountProspected")) || 0;
     objMines.goldAmountProspected =
-      parseInt(localStorage.getItem("goldAmountProspected")) || 0;
+      parseInt(store.getItem("goldAmountProspected")) || 0;
     objMines.diamondAmountProspected =
-      parseInt(localStorage.getItem("diamondAmountProspected")) || 0;
+      parseInt(store.getItem("diamondAmountProspected")) || 0;
     objMines.ironAmountActive =
-      parseInt(localStorage.getItem("ironAmountActive")) || 0;
+      parseInt(store.getItem("ironAmountActive")) || 0;
     objMines.coalAmountActive =
-      parseInt(localStorage.getItem("coalAmountActive")) || 0;
+      parseInt(store.getItem("coalAmountActive")) || 0;
     objMines.uraniumAmountActive =
-      parseInt(localStorage.getItem("uraniumAmountActive")) || 0;
+      parseInt(store.getItem("uraniumAmountActive")) || 0;
     objMines.copperAmountActive =
-      parseInt(localStorage.getItem("copperAmountActive")) || 0;
+      parseInt(store.getItem("copperAmountActive")) || 0;
     objMines.goldAmountActive =
-      parseInt(localStorage.getItem("goldAmountActive")) || 0;
+      parseInt(store.getItem("goldAmountActive")) || 0;
     objMines.diamondAmountActive =
-      parseInt(localStorage.getItem("diamondAmountActive")) || 0;
+      parseInt(store.getItem("diamondAmountActive")) || 0;
     objMines.ironMineCost =
-      parseInt(localStorage.getItem("ironMineCost")) || 100000000;
+      parseInt(store.getItem("ironMineCost")) || 100000000;
     objMines.coalMineCost =
-      parseInt(localStorage.getItem("coalMineCost")) || 125000000;
+      parseInt(store.getItem("coalMineCost")) || 125000000;
     objMines.uraniumMineCost =
-      parseInt(localStorage.getItem("uraniumMineCost")) || 200000000;
+      parseInt(store.getItem("uraniumMineCost")) || 200000000;
     objMines.copperMineCost =
-      parseInt(localStorage.getItem("copperMineCost")) || 150000000;
+      parseInt(store.getItem("copperMineCost")) || 150000000;
     objMines.goldMineCost =
-      parseInt(localStorage.getItem("goldMineCost")) || 600000000;
+      parseInt(store.getItem("goldMineCost")) || 600000000;
     objMines.diamondMineCost =
-      parseInt(localStorage.getItem("diamondMineCost")) || 600000000;
-    objMines.prospectTimerActive =
-      parseInt(localStorage.getItem("pTimer")) || 0;
-    objMines.prospecting = parseInt(localStorage.getItem("prospecting")) || 0;
+      parseInt(store.getItem("diamondMineCost")) || 600000000;
+    objMines.prospectTimerActive = parseInt(store.getItem("pTimer")) || 0;
+    objMines.prospecting = parseInt(store.getItem("prospecting")) || 0;
     document.getElementById("Prospecting-col").style.display = "none";
     if (+objMines.prospecting === 1) {
       document.getElementById("ProspectingButton").disabled = true;
@@ -4602,12 +4629,12 @@ var objCoal = {
     if (+amount >= +objCoal.amount) {
       delivered = objCoal.amount;
       objCoal.amount = 0;
-      localStorage.setItem("coalAmount", +objCoal.amount);
+      store.setItem("coalAmount", +objCoal.amount);
       objCoal.show();
       return delivered;
     }
     objCoal.amount = +objCoal.amount - +amount;
-    localStorage.setItem("coalAmount", +objCoal.amount);
+    store.setItem("coalAmount", +objCoal.amount);
     objCoal.show();
     return amount;
   },
@@ -4654,7 +4681,7 @@ var objCoal = {
     } else {
       objMoney.use(+objCoal.storagePrice);
       objCoal.storage++;
-      localStorage.setItem("coalSilos", +objCoal.storage);
+      store.setItem("coalSilos", +objCoal.storage);
       objCoal.show();
     }
   },
@@ -4672,9 +4699,9 @@ var objCoal = {
     }
   },
   init: function () {
-    objCoal.amount = localStorage.getItem("coalAmount") || 0;
-    objCoal.storage = localStorage.getItem("coalSilos") || 1;
-    objCoal.storageCap = localStorage.getItem("coalSiloCap") || 1000000;
+    objCoal.amount = store.getItem("coalAmount") || 0;
+    objCoal.storage = store.getItem("coalSilos") || 1;
+    objCoal.storageCap = store.getItem("coalSiloCap") || 1000000;
     objCoal.show();
   },
 };
@@ -4766,7 +4793,7 @@ var objIronOre = {
     } else {
       objMoney.use(+objIronOre.storagePrice);
       objIronOre.storage++;
-      localStorage.setItem("ironOreSilos", +objIronOre.storage);
+      store.setItem("ironOreSilos", +objIronOre.storage);
       objIronOre.show();
     }
   },
@@ -4774,9 +4801,9 @@ var objIronOre = {
     objIronMine.show();
   },
   init: function () {
-    objIronOre.amount = localStorage.getItem("ironOreAmount") || 0;
-    objIronOre.storage = localStorage.getItem("ironOreSilos") || 1;
-    objIronOre.storageCap = localStorage.getItem("ironOreSiloCap") || 1000000;
+    objIronOre.amount = store.getItem("ironOreAmount") || 0;
+    objIronOre.storage = store.getItem("ironOreSilos") || 1;
+    objIronOre.storageCap = store.getItem("ironOreSiloCap") || 1000000;
     objIronOre.show();
   },
 };
@@ -4809,7 +4836,7 @@ var objIronMelter = {
     } else {
       notificationOverlay("Niet genoeg doekoe!", "Hoogoven", "fa-euro-sign");
     }
-    localStorage.setItem("ironSmelters", objIronMelter.amount);
+    store.setItem("ironSmelters", objIronMelter.amount);
     objIronMelter.show();
     objSteel.show();
   },
@@ -4915,7 +4942,7 @@ var objIronMelter = {
     }
   },
   init: function () {
-    objIronMelter.amount = localStorage.getItem("ironSmelters") || 0;
+    objIronMelter.amount = store.getItem("ironSmelters") || 0;
     objIronMelter.show();
   },
 };
@@ -4933,7 +4960,7 @@ var objSteel = {
     } else {
       objMoney.use(+objSteel.storagePrice);
       objSteel.storage++;
-      localStorage.setItem("steelStorage", objSteel.storage);
+      store.setItem("steelStorage", objSteel.storage);
       objSteel.show();
     }
   },
@@ -4998,8 +5025,8 @@ var objSteel = {
     ]);
   },
   init: function () {
-    objSteel.amount = localStorage.getItem("steelAmount") || 0;
-    objSteel.storage = localStorage.getItem("steelStorage") || 1;
+    objSteel.amount = store.getItem("steelAmount") || 0;
+    objSteel.storage = store.getItem("steelStorage") || 1;
     if (+objIronMelter.amount < 1 && +objSteel.amount < 1) {
       return 0;
     }
@@ -5043,7 +5070,7 @@ var objPlasticFactory = {
         "fa-euro-sign"
       );
     }
-    localStorage.setItem("plasticFactories", objPlasticFactory.amount);
+    store.setItem("plasticFactories", objPlasticFactory.amount);
     objPlasticFactory.show();
   },
   addWorker: function (amount) {
@@ -5080,7 +5107,7 @@ var objPlasticFactory = {
         "fa-euro-sign"
       );
     }
-    localStorage.setItem("plasticWorkers", objPlasticFactory.workers);
+    store.setItem("plasticWorkers", objPlasticFactory.workers);
     objPlasticFactory.show();
   },
   produce: function (typeProduction) {
@@ -5256,8 +5283,8 @@ var objPlasticFactory = {
     document.getElementById("hireWorker").disabled = allStaffed;
   },
   init: function () {
-    objPlasticFactory.amount = localStorage.getItem("plasticFactories") || 0;
-    objPlasticFactory.workers = localStorage.getItem("plasticWorkers") || 0;
+    objPlasticFactory.amount = store.getItem("plasticFactories") || 0;
+    objPlasticFactory.workers = store.getItem("plasticWorkers") || 0;
     // objPlastic.init();
     objPlasticFactory.show();
   },
@@ -5280,7 +5307,7 @@ var objPlastic = {
     } else {
       objMoney.use(+objPlastic.storagePrice);
       objPlastic.storage++;
-      localStorage.setItem("plasticStorage", objPlastic.storage);
+      store.setItem("plasticStorage", objPlastic.storage);
       objPlastic.show();
     }
   },
@@ -5333,8 +5360,8 @@ var objPlastic = {
     ]);
   },
   init: function () {
-    objPlastic.amount = localStorage.getItem("plasticAmount") || 0;
-    objPlastic.storage = localStorage.getItem("plasticStorage") || 1;
+    objPlastic.amount = store.getItem("plasticAmount") || 0;
+    objPlastic.storage = store.getItem("plasticStorage") || 1;
     objPlastic.show();
     if (+objPlasticFactory.amount > 0 || +objPlastic.amount > 0) {
       objPlastic.showPrice();
@@ -5344,11 +5371,15 @@ var objPlastic = {
 
 // Uranium
 
+// Uraniummijn: draait eens per `period` ticks. In de beta iedere tick, met evenredig
+// minder productie en stroom per keer (geen grote stroomstoot), en het personeel eet een
+// tiende van de pasta.
 var objUraniumMine = {
-  production: 100,
-  energy: 2500,
+  period: BETA ? 1 : 10,
+  production: BETA ? 10 : 100,
+  energy: BETA ? 250 : 2500,
   workers: 20,
-  workerFood: 10,
+  workerFood: BETA ? 0.1 : 10,
   produce: function () {
     var activeMines = objMines.uraniumAmountActive;
     if (
@@ -5391,13 +5422,15 @@ var objUraniumMine = {
       amount: objUraniumOre.amount,
       production: +objMines.uraniumAmountActive * +objUraniumMine.production,
       energy: +objMines.uraniumAmountActive * +objUraniumMine.energy,
-      period: "10 ticks",
+      period: objUraniumMine.periodText(),
       extra: [
         "Pasta",
         FixNumber(
           +objUraniumMine.workerFood *
             (+objUraniumMine.workers * +objMines.uraniumAmountActive)
-        ) + " dozen per 10 ticks",
+        ) +
+          " dozen per " +
+          objUraniumMine.periodText(),
       ],
       price: objUraniumOre.price,
       silos: objUraniumOre.storage,
@@ -5406,11 +5439,18 @@ var objUraniumMine = {
       hint:
         "Een mijn levert " +
         FixUnit(objUraniumMine.production, "ton") +
-        " per 10 ticks voor " +
+        " per " +
+        objUraniumMine.periodText() +
+        " voor " +
         FixNumber(objUraniumMine.energy) +
         " energie; het personeel eet pasta. Is de opslag vol, dan stoppen de mijnen.",
     });
     document.getElementById("UraniumMine").innerHTML = "";
+  },
+  periodText: function () {
+    return objUraniumMine.period === 1
+      ? "tick"
+      : objUraniumMine.period + " ticks";
   },
 };
 
@@ -5450,7 +5490,7 @@ var objUraniumOre = {
     } else {
       objMoney.use(+objUraniumOre.storagePrice);
       objUraniumOre.storage++;
-      localStorage.setItem("uraniumOreSilos", +objUraniumOre.storage);
+      store.setItem("uraniumOreSilos", +objUraniumOre.storage);
       objUraniumOre.show();
     }
   },
@@ -5458,10 +5498,9 @@ var objUraniumOre = {
     objUraniumMine.show();
   },
   init: function () {
-    objUraniumOre.amount = localStorage.getItem("uraniumOreAmount") || 0;
-    objUraniumOre.storage = localStorage.getItem("uraniumOreSilos") || 1;
-    objUraniumOre.storageCap =
-      localStorage.getItem("uraniumOreSiloCap") || 100000;
+    objUraniumOre.amount = store.getItem("uraniumOreAmount") || 0;
+    objUraniumOre.storage = store.getItem("uraniumOreSilos") || 1;
+    objUraniumOre.storageCap = store.getItem("uraniumOreSiloCap") || 100000;
     objUraniumOre.show();
   },
 };
@@ -5477,6 +5516,9 @@ var objFuelCellFactory = {
   timeNeeded: 100,
   counter: 0,
   cost: 15000000000,
+  energyPerTick: function () {
+    return +objFuelCellFactory.energy / +objFuelCellFactory.timeNeeded;
+  },
   addFactory: function (actie) {
     if (+actie == 1) {
       if (moneyCheck(+objFuelCellFactory.cost) == 0) {
@@ -5489,7 +5531,7 @@ var objFuelCellFactory = {
       } else {
         objMoney.use(+objFuelCellFactory.cost);
         objFuelCellFactory.amount++;
-        localStorage.setItem("fuellCellFactory", objFuelCellFactory.amount);
+        store.setItem("fuellCellFactory", objFuelCellFactory.amount);
         objFuelRod.storage =
           +objFuelRod.storageFactor * +objFuelCellFactory.amount;
         objFuelCellFactory.show();
@@ -5502,7 +5544,7 @@ var objFuelCellFactory = {
         1
       );
       objFuelCellFactory.amount--;
-      localStorage.setItem("fuellCellFactory", objFuelCellFactory.amount);
+      store.setItem("fuellCellFactory", objFuelCellFactory.amount);
       objFuelRod.storage =
         +objFuelRod.storageFactor * +objFuelCellFactory.amount;
       if (+objFuelRod.amount > +objFuelRod.storage) {
@@ -5511,7 +5553,7 @@ var objFuelCellFactory = {
         objFuelRod.amount =
           +objFuelRod.storageFactor * +objFuelCellFactory.amount;
       }
-      localStorage.setItem("frAmount", +objFuelRod.amount);
+      store.setItem("frAmount", +objFuelRod.amount);
       objFuelCellFactory.show();
     }
   },
@@ -5533,7 +5575,7 @@ var objFuelCellFactory = {
           +availableSpace / +objFuelCellFactory.production
         );
         if (+objFuelCellFactory.activeFactories == 0) {
-          localStorage.setItem(
+          store.setItem(
             "fuellCellFactoryActive",
             objFuelCellFactory.activeFactories
           );
@@ -5542,16 +5584,19 @@ var objFuelCellFactory = {
         }
       }
 
-      // Beschikbaarheid energie bepalen
+      // Beschikbaarheid energie bepalen (in de beta: genoeg voor de eerste tick)
+      var batchEnergy = BETA
+        ? objFuelCellFactory.energyPerTick()
+        : +objFuelCellFactory.energy;
       if (
-        +objFuelCellFactory.activeFactories * +objFuelCellFactory.energy >
+        +objFuelCellFactory.activeFactories * batchEnergy >
         +objEnergy.available
       ) {
         objFuelCellFactory.activeFactories = Math.floor(
-          +objEnergy.available / +objFuelCellFactory.energy
+          +objEnergy.available / batchEnergy
         );
         if (+objFuelCellFactory.activeFactories == 0) {
-          localStorage.setItem(
+          store.setItem(
             "fuellCellFactoryActive",
             objFuelCellFactory.activeFactories
           );
@@ -5568,7 +5613,7 @@ var objFuelCellFactory = {
           +objSteel.amount / +objFuelCellFactory.steelNeeded
         );
         if (+objFuelCellFactory.activeFactories == 0) {
-          localStorage.setItem(
+          store.setItem(
             "fuellCellFactoryActive",
             objFuelCellFactory.activeFactories
           );
@@ -5586,7 +5631,7 @@ var objFuelCellFactory = {
           +objUraniumOre.amount / +objFuelCellFactory.urianiumOreNeeded
         );
         if (+objFuelCellFactory.activeFactories == 0) {
-          localStorage.setItem(
+          store.setItem(
             "fuellCellFactoryActive",
             objFuelCellFactory.activeFactories
           );
@@ -5594,7 +5639,7 @@ var objFuelCellFactory = {
           return 0;
         }
       }
-      localStorage.setItem(
+      store.setItem(
         "fuellCellFactoryActive",
         objFuelCellFactory.activeFactories
       );
@@ -5606,10 +5651,22 @@ var objFuelCellFactory = {
       var SN =
         +objFuelCellFactory.steelNeeded * +objFuelCellFactory.activeFactories;
 
-      // Werkelijk gebruiken resources
-      objEnergy.use(EN, "Fuelcellfactory");
+      // Werkelijk gebruiken resources (in de beta komt de stroom per tick, zie hieronder)
+      if (!BETA) objEnergy.use(EN, "Fuelcellfactory");
       objUraniumOre.use(UN);
       objSteel.use(SN);
+    }
+
+    // Beta: iedere tick een deel van de stroom; is die er niet, dan wacht de batch
+    if (BETA) {
+      var tickEnergy =
+        objFuelCellFactory.energyPerTick() *
+        +objFuelCellFactory.activeFactories;
+      if (objEnergy.use(tickEnergy, "Fuelcellfactory") !== tickEnergy) {
+        document.getElementById("fuelRodCounter").innerHTML =
+          "Wacht op stroom (" + FixNumber(tickEnergy) + " per tick)";
+        return 0;
+      }
     }
 
     // Aflopen productie timer
@@ -5620,7 +5677,7 @@ var objFuelCellFactory = {
       );
       objFuelCellFactory.counter = 0;
     }
-    localStorage.setItem("fcfCounter", +objFuelCellFactory.counter);
+    store.setItem("fcfCounter", +objFuelCellFactory.counter);
     document.getElementById("fuelRodCounter").innerHTML =
       "Productie klaar over " +
       FixNumber(100 - +objFuelCellFactory.counter) +
@@ -5643,7 +5700,9 @@ var objFuelCellFactory = {
         ["Opbrengst", "1 staaf"],
       ]) +
       renderHint(
-        "Fabrieken draaien altijd door; alle grondstoffen worden aan het begin van een run afgeschreven."
+        BETA
+          ? "Fabrieken draaien altijd door. Uranium en staal worden aan het begin van een run afgeschreven, de stroom per tick."
+          : "Fabrieken draaien altijd door; alle grondstoffen worden aan het begin van een run afgeschreven."
       );
     document.getElementById("fuelRod2").innerHTML =
       "<h3>Totaal per run</h3>" +
@@ -5675,10 +5734,10 @@ var objFuelCellFactory = {
     objFuelRod.show();
   },
   init: function () {
-    objFuelCellFactory.amount = localStorage.getItem("fuellCellFactory") || 0;
+    objFuelCellFactory.amount = store.getItem("fuellCellFactory") || 0;
     objFuelCellFactory.activeFactories =
-      localStorage.getItem("fuellCellFactoryActive") || 0;
-    objFuelCellFactory.counter = localStorage.getItem("fcfCounter") || 0;
+      store.getItem("fuellCellFactoryActive") || 0;
+    objFuelCellFactory.counter = store.getItem("fcfCounter") || 0;
     objFuelCellFactory.show();
     objFuelRod.init();
   },
@@ -5710,7 +5769,7 @@ var objFuelRod = {
       objMoney.use(+totalcost);
       var wasted = parseInt(objFuelRod.waste);
       objFuelRod.waste = 0;
-      localStorage.setItem("frWaste", objFuelRod.waste);
+      store.setItem("frWaste", objFuelRod.waste);
       objFuelRod.show();
     } else {
       notificationOverlay(
@@ -5727,7 +5786,7 @@ var objFuelRod = {
       objFuelRod.amount =
         +objFuelRod.storageFactor * +objFuelCellFactory.amount;
     }
-    localStorage.setItem("frAmount", +objFuelRod.amount);
+    store.setItem("frAmount", +objFuelRod.amount);
     objFuelRod.show();
   },
   remove: function (amount) {
@@ -5748,7 +5807,7 @@ var objFuelRod = {
   },
   wasteFunction: function (amount) {
     objFuelRod.waste = +objFuelRod.waste + +amount;
-    localStorage.setItem("frWaste", objFuelRod.waste);
+    store.setItem("frWaste", objFuelRod.waste);
     objFuelRod.show();
   },
   wastePayment: function () {
@@ -5787,15 +5846,15 @@ var objFuelRod = {
       );
   },
   init: function () {
-    objFuelRod.waste = localStorage.getItem("frWaste") || 0;
-    objFuelRod.amount = localStorage.getItem("frAmount") || 0;
+    objFuelRod.waste = store.getItem("frWaste") || 0;
+    objFuelRod.amount = store.getItem("frAmount") || 0;
     objFuelRod.storage = +objFuelRod.storageFactor * +objFuelCellFactory.amount;
     if (+objFuelRod.amount > +objFuelRod.storage) {
       var waste = +objFuelRod.amount - +objFuelRod.storage;
       objFuelRod.wasteFunction(+waste);
       objFuelRod.amount =
         +objFuelRod.storageFactor * +objFuelCellFactory.amount;
-      localStorage.setItem("frAmount", +objFuelRod.amount);
+      store.setItem("frAmount", +objFuelRod.amount);
     }
     objFuelRod.calculateWastePrice(50000, 99999);
     objFuelRod.show();
@@ -5836,7 +5895,7 @@ var objNuclearPowerPlant = {
     objSteel.use(objNuclearPowerPlant.plantSteelNeeded);
     objFlows.pulse("SteelInfo-col", "nuclearPower");
     objNuclearPowerPlant.amount++;
-    localStorage.setItem("nppAmount", objNuclearPowerPlant.amount);
+    store.setItem("nppAmount", objNuclearPowerPlant.amount);
     objNuclearPowerPlant.show();
     objNuclearPowerPlant.showUsage();
   },
@@ -5870,7 +5929,7 @@ var objNuclearPowerPlant = {
     objSteel.use(objNuclearPowerPlant.reactorSteelNeeded);
     objFlows.pulse("SteelInfo-col", "nuclearPower");
     objNuclearPowerPlant.reactors++;
-    localStorage.setItem("nrAmount", objNuclearPowerPlant.reactors);
+    store.setItem("nrAmount", objNuclearPowerPlant.reactors);
     objNuclearPowerPlant.show();
     objNuclearPowerPlant.showUsage();
   },
@@ -5889,11 +5948,8 @@ var objNuclearPowerPlant = {
       objNuclearPowerPlant.pelletsActive =
         +objNuclearPowerPlant.pelletsActive +
         +addedRods * +objNuclearPowerPlant.fuelRodPellets;
-      localStorage.setItem(
-        "pelletsActive",
-        +objNuclearPowerPlant.pelletsActive
-      );
-      localStorage.setItem("ppFuelRods", +objNuclearPowerPlant.fuelRods);
+      store.setItem("pelletsActive", +objNuclearPowerPlant.pelletsActive);
+      store.setItem("ppFuelRods", +objNuclearPowerPlant.fuelRods);
       objFuelRod.show();
       objNuclearPowerPlant.showUsage();
     }
@@ -5914,9 +5970,9 @@ var objNuclearPowerPlant = {
       objFuelRod.show();
       objNuclearPowerPlant.showUsage();
     }
-    localStorage.setItem("pelletsUsed", +objNuclearPowerPlant.pelletsUsed);
-    localStorage.setItem("pelletsActive", +objNuclearPowerPlant.pelletsActive);
-    localStorage.setItem("ppFuelRods", +objNuclearPowerPlant.fuelRods);
+    store.setItem("pelletsUsed", +objNuclearPowerPlant.pelletsUsed);
+    store.setItem("pelletsActive", +objNuclearPowerPlant.pelletsActive);
+    store.setItem("ppFuelRods", +objNuclearPowerPlant.fuelRods);
     objNuclearPowerPlant.show();
   },
   produce: function () {
@@ -6022,12 +6078,11 @@ var objNuclearPowerPlant = {
       ]);
   },
   init: function () {
-    objNuclearPowerPlant.fuelRods = localStorage.getItem("ppFuelRods") || 0;
-    objNuclearPowerPlant.amount = localStorage.getItem("nppAmount") || 0;
-    objNuclearPowerPlant.reactors = localStorage.getItem("nrAmount") || 0;
-    objNuclearPowerPlant.pelletsActive =
-      localStorage.getItem("pelletsActive") || 0;
-    objNuclearPowerPlant.pelletsUsed = localStorage.getItem("pelletsUsed") || 0;
+    objNuclearPowerPlant.fuelRods = store.getItem("ppFuelRods") || 0;
+    objNuclearPowerPlant.amount = store.getItem("nppAmount") || 0;
+    objNuclearPowerPlant.reactors = store.getItem("nrAmount") || 0;
+    objNuclearPowerPlant.pelletsActive = store.getItem("pelletsActive") || 0;
+    objNuclearPowerPlant.pelletsUsed = store.getItem("pelletsUsed") || 0;
     objNuclearPowerPlant.show();
   },
 };
@@ -6095,7 +6150,7 @@ var objOilPumpAdv = {
       objFlows.pulse("SteelInfo-col", "pomp-col");
       objOilPumpAdv.amount = +objOilPumpAdv.amount + +amount;
     }
-    localStorage.setItem("oilPumpAmount", objOilPumpAdv.amount);
+    store.setItem("oilPumpAmount", objOilPumpAdv.amount);
     objOilPumpAdv.show();
   },
   sell: function () {
@@ -6103,7 +6158,7 @@ var objOilPumpAdv = {
       // Net als andere gebouwen levert verkopen 75% van de prijs op (het staal komt niet terug)
       objMoney.add(+objOilPumpAdv.price * 0.75, "Verkoop oliepomp", 19, 1);
       objOilPumpAdv.amount = +objOilPumpAdv.amount - 1;
-      localStorage.setItem("oilPumpAmount", objOilPumpAdv.amount);
+      store.setItem("oilPumpAmount", objOilPumpAdv.amount);
       objOilPumpAdv.show();
     } else {
       document.getElementById("o2sell").disabled = true;
@@ -6175,7 +6230,7 @@ var objOilPumpAdv = {
     ]);
   },
   init: function () {
-    objOilPumpAdv.amount = localStorage.getItem("oilPumpAmount") || 0;
+    objOilPumpAdv.amount = store.getItem("oilPumpAmount") || 0;
   },
 };
 
@@ -6258,13 +6313,13 @@ function useResource(typeResource, amountUsed, lsValue) {
   if (+amountUsed >= +scope[typeResource].amount) {
     delivered = scope[typeResource].amount;
     scope[typeResource].amount = 0;
-    localStorage.setItem(lsValue, +scope[typeResource].amount);
+    store.setItem(lsValue, +scope[typeResource].amount);
     scope[typeResource].show();
     return delivered;
   }
   scope[typeResource].amount = +scope[typeResource].amount - +amountUsed;
 
-  localStorage.setItem(lsValue, +scope[typeResource].amount);
+  store.setItem(lsValue, +scope[typeResource].amount);
   scope[typeResource].show();
   return amountUsed;
 }
@@ -6282,13 +6337,13 @@ function fillStorage(typeStorage, amountAdded, lsValue) {
   } else {
     scope[typeStorage].amount = +scope[typeStorage].amount + +amountAdded;
   }
-  localStorage.setItem(lsValue, +scope[typeStorage].amount);
+  store.setItem(lsValue, +scope[typeStorage].amount);
   scope[typeStorage].show();
 }
 
 // Debug functie
 function showMessage(description, value) {
-  if (localStorage.getItem("debug") == 1) {
+  if (store.getItem("debug") == 1) {
     console.log(description + ": " + value);
   }
   return 0;
@@ -6297,8 +6352,8 @@ function showMessage(description, value) {
 // LS omzetten in base64 string
 function saveProgress() {
   let lsExport = [];
-  Object.keys(localStorage).forEach((storageKey) => {
-    lsExport.push(`${storageKey}:${localStorage.getItem(storageKey)}`);
+  store.keys().forEach((storageKey) => {
+    lsExport.push(`${storageKey}:${store.getItem(storageKey)}`);
   });
   return btoa(JSON.stringify(lsExport));
 }
@@ -6324,7 +6379,7 @@ function importFile() {
   if (code) getSaveGame(code.trim());
 }
 
-// Savegame-code terugzetten in localStorage
+// Savegame-code terugzetten in de opslag
 function getSaveGame(code) {
   let decodedFile;
   try {
@@ -6334,11 +6389,11 @@ function getSaveGame(code) {
     alert("Ongeldige save-code!");
     return;
   }
-  localStorage.clear();
+  store.clear();
   decodedFile.forEach((item) => {
     const split = item.indexOf(":");
     if (split > 0) {
-      localStorage.setItem(item.slice(0, split), item.slice(split + 1));
+      store.setItem(item.slice(0, split), item.slice(split + 1));
     }
   });
   location.reload();
@@ -6499,7 +6554,7 @@ var objMarket = {
 };
 
 // Verkoopmenu
-var quickSell = parseInt(localStorage.getItem("QS")) || 0;
+var quickSell = parseInt(store.getItem("QS")) || 0;
 
 function showQuickSell(inputQS) {
   var elverkooptabBTN = document.getElementById("verkooptabBTN");
@@ -6520,24 +6575,24 @@ function showQuickSell(inputQS) {
     document.getElementById("sellMenu").style.display = "";
     elverkooptabBTN.innerHTML =
       icon("check-square") + " Zet verkooptab uit (lvl9)";
-    localStorage.setItem("QS", quickSell);
+    store.setItem("QS", quickSell);
     quickSellMenu();
     quickSellButtons();
     Display.updateRows();
   } else {
     document.getElementById("sellMenu").style.display = "none";
     elverkooptabBTN.innerHTML = icon("square") + " Zet verkooptab aan (lvl9)";
-    localStorage.setItem("QS", quickSell);
+    store.setItem("QS", quickSell);
   }
 }
 
 // Auto sluit notificaties
 var closeNotifications =
-  parseInt(localStorage.getItem("notifications_autoclose")) || 0;
+  parseInt(store.getItem("notifications_autoclose")) || 0;
 
 function turnAutoClose(input) {
   if (input) closeNotifications = 1 - closeNotifications;
-  localStorage.setItem("notifications_autoclose", closeNotifications);
+  store.setItem("notifications_autoclose", closeNotifications);
 
   elAutoCloseBTN = document.getElementById("autocloseBTN");
   if (closeNotifications === 1) {
@@ -6730,17 +6785,20 @@ var loopsProduction = setInterval(function () {
       showPrice();
 
       if (+objSalesComputer.cpu > 0) {
-        objSalesComputer.showOil(localStorage.getItem("autoOil"));
-        objSalesComputer.showFlour(localStorage.getItem("autoFlour"));
-        objSalesComputer.showPasta(localStorage.getItem("autoPasta"));
-        objSalesComputer.showKunststof(localStorage.getItem("autoKunststof"));
+        objSalesComputer.showOil(store.getItem("autoOil"));
+        objSalesComputer.showFlour(store.getItem("autoFlour"));
+        objSalesComputer.showPasta(store.getItem("autoPasta"));
+        objSalesComputer.showKunststof(store.getItem("autoKunststof"));
       }
       if (objChicken.amount >= 1) objChicken.makeEggs();
       if (+objFuelCellFactory.amount > 0)
         objFuelRod.calculateWastePrice(50000, 99999);
     }
     if (+timerCounter % 10 === 0) getPrice();
-    if (+timerCounter % 10 === 0 && +objMines.uraniumAmountActive >= 1)
+    if (
+      +timerCounter % objUraniumMine.period === 0 &&
+      +objMines.uraniumAmountActive >= 1
+    )
       objUraniumMine.produce();
     if (+timerCounter % 15 === 0) {
       objPastaHelper.action();

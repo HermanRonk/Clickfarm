@@ -219,6 +219,10 @@ kbd2 {
     display: block;
 }
 
+.dropdown-item[hidden] {
+    display: none;
+}
+
 .dropdown-item {
     display: flex;
     align-items: center;
@@ -647,6 +651,36 @@ kbd2 {
 
 .help p {
     margin: 0;
+}
+
+/* Beta (zie /beta/ en store in inc/base.js) */
+.beta-badge {
+    display: inline-block;
+    margin-left: 0.15rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--surface);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    vertical-align: middle;
+}
+
+.beta-choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0 0.5rem;
+}
+
+.beta-choices .btn {
+    margin: 0;
+}
+
+.beta-choices .btn[hidden] {
+    display: none;
 }
 
 /* Informatiepagina (info.html) */

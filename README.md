@@ -21,12 +21,20 @@ Clickfarm draait volledig in de browser, er is geen backend of database (meer) n
 - Marktprijzen (olie, graan, meel) en de voorraad op de markt (eieren, staal, splijtstofstaven) worden in de browser bepaald.
 - Via *Game opties → Exporteer save-code* kopieer je je savegame naar het klembord. Met *Importeer save-code* zet je hem weer terug, ook in een andere browser.
 
+## Beta
+Nieuwe onderdelen en balanswijzigingen komen eerst in de beta (`/beta/`, via *Game opties → Probeer de beta*). Het is hetzelfde spel: `inc/base.js` herkent de beta aan het pad (`BETA`), en `/beta/spel.html` serveert gewoon `index.html` (zie `nginx.conf`).
+
+- De beta bewaart zijn spel los van het gewone spel: alle sleutels krijgen `beta:` ervoor (`store` in `inc/base.js`). Een reset of save-code raakt alleen het eigen spel.
+- Op de keuzepagina neem je je huidige spel mee (een kopie) of begin je opnieuw.
+- Wijzigingen staan achter `if (BETA)`. Gaat een wijziging naar het gewone spel, dan haal je die voorwaarde weg.
+
 De bestanden:
 
 | Pad | Inhoud |
 | --- | --- |
 | `index.html` | De pagina, inclusief de iconen (geen externe bibliotheken of CDN) |
 | `info.html` | Spelinformatie: hoe het spel werkt en wat ieder level brengt |
+| `beta/index.html` | Keuzepagina van de beta: je huidige spel meenemen of opnieuw beginnen |
 | `inc/base.js` | Alle spellogica |
 | `css/style.css` | Alle opmaak, met automatisch donker thema |
 | `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |

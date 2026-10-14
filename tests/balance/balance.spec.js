@@ -6,6 +6,7 @@
 //   BALANCE_SEEDS     3                 aantal willekeurige reeksen per speelstijl
 //   BALANCE_HOURS     10                maximale speeltijd in uren
 //   BALANCE_UNTIL     15                stoppen bij dit level
+//   BALANCE_BETA      1                 de beta spelen (/beta/spel.html) in plaats van het gewone spel
 const fs = require("fs");
 const path = require("path");
 const { test } = require("@playwright/test");
@@ -17,15 +18,18 @@ const SEEDS = +(process.env.BALANCE_SEEDS || 3);
 const HOURS = +(process.env.BALANCE_HOURS || 10);
 const UNTIL = +(process.env.BALANCE_UNTIL || 15);
 const OUT = path.join(__dirname, "..", "..", "test-results", "balance");
+const BETA = process.env.BALANCE_BETA === "1";
+const VARIANT = BETA ? "beta" : "gewoon";
 const CHUNK = 300; // seconden speltijd per stap
 
 for (const profile of PROFILES) {
   for (let seed = 1; seed <= SEEDS; seed++) {
-    test(`${profile}, reeks ${seed}`, async ({ page }) => {
+    test(`${VARIANT}, ${profile}, reeks ${seed}`, async ({ page }) => {
       test.setTimeout(HOURS * 3600 * 25 + 60000);
       const { pageErrors } = await startGame(page, {
         state: { ...LEVEL_8, showFlows: 0, notifications_autoclose: 1 },
         seed,
+        beta: BETA,
       });
       await page.addScriptTag({ path: path.join(__dirname, "bot.js") });
       await game(page, (profile) => (window.__bot.profile = profile), profile);
@@ -49,12 +53,13 @@ for (const profile of PROFILES) {
         if (result.level >= UNTIL) break;
       }
       result.profile = profile;
+      result.variant = VARIANT;
       result.seed = seed;
       result.startLevel = LEVEL_8.PlayerLevel;
       result.realSeconds = Math.round((Date.now() - started) / 1000);
       result.pageErrors = pageErrors.slice(0, 20);
       fs.mkdirSync(OUT, { recursive: true });
-      fs.writeFileSync(path.join(OUT, `${profile}-${seed}.json`), JSON.stringify(result, null, 2));
+      fs.writeFileSync(path.join(OUT, `${VARIANT}-${profile}-${seed}.json`), JSON.stringify(result, null, 2));
     });
   }
 }

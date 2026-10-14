@@ -8,6 +8,8 @@ module.exports = defineConfig({
   testDir: "./tests/balance",
   testIgnore: [],
   retries: 0,
+  // Eigen map voor Playwright, zodat test-results/balance (de resultaten) tussen runs blijft staan
+  outputDir: "test-results/balance-run",
   reporter: [["list"]],
   use: { ...base.use, trace: "off", screenshot: "off" },
 });

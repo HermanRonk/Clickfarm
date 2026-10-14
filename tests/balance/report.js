@@ -37,9 +37,10 @@ lines.push(
   ""
 );
 
-for (const profile of [...new Set(runs.map((r) => r.profile))]) {
-  const group = runs.filter((r) => r.profile === profile);
-  lines.push(`## ${profile} (${group.length} reeksen)`, "");
+const groups = [...new Set(runs.map((r) => `${r.variant || "gewoon"} ${r.profile}`))].sort();
+for (const name of groups) {
+  const group = runs.filter((r) => `${r.variant || "gewoon"} ${r.profile}` === name);
+  lines.push(`## ${name} (${group.length} reeksen)`, "");
 
   // Duur per level
   const levels = [...new Set(group.flatMap((r) => r.levels.map((l) => l.level)))].sort((a, b) => a - b);

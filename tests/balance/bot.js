@@ -89,8 +89,9 @@
       (+objPastaHelper.amount * +objPastaFactory.energy) / 15 +
       (+objPlasticFactory.workers * +objPlasticFactory.energy) / 15 +
       // Een splijtstoffabriek vraagt 150.000 stroom in één keer bij de start van een batch:
-      // reken met een buffer zodat de opslag zich daarvoor kan vullen
-      (+objFuelCellFactory.amount * +objFuelCellFactory.energy) / 20
+      // reken met een buffer zodat de opslag zich daarvoor kan vullen. In de beta zit die
+      // stroom al per tick in objEnergy.demand().
+      (window.BETA ? 0 : (+objFuelCellFactory.amount * +objFuelCellFactory.energy) / 20)
     );
   }
   function coalProduction() {
@@ -109,7 +110,7 @@
       (+objMines.uraniumAmountActive *
         +objUraniumMine.workers *
         +objUraniumMine.workerFood) /
-        10
+        (+objUraniumMine.period || 10)
     );
   }
   function free(type) {
@@ -154,8 +155,9 @@
       (free("iron") > 0 || (free("coal") > 0 && coalWanted()))
     )
       return;
-    if (money() - bot.reserve < +objMines.prospectCost * 1.05) return stall("geld (prospecting)");
-    if (saving() && money() < +objPlayerInfo.nextlevel + +objMines.prospectCost)
+    var cost = objMines.prospectPrice ? objMines.prospectPrice() : +objMines.prospectCost;
+    if (money() - bot.reserve < cost * 1.05) return stall("geld (prospecting)");
+    if (saving() && money() < +objPlayerInfo.nextlevel + cost)
       return;
     act("prospecting", function () {
       objMines.prospect();
@@ -165,7 +167,7 @@
   // Stroom die kernenergie nodig heeft om op gang te komen: een splijtstofbatch (150.000 per
   // fabriek) en de uraniummijnen (2.500 per mijn, eens per 10 ticks)
   function nuclearStartup() {
-    if (+objFuelCellFactory.amount === 0) return 0;
+    if (window.BETA || +objFuelCellFactory.amount === 0) return 0;
     if (fueledReactors() >= +objNuclearPowerPlant.reactors && +objFuelRod.amount > 0) return 0;
     return (
       +objFuelCellFactory.amount * +objFuelCellFactory.energy +
@@ -351,10 +353,10 @@
   function energy() {
     var production = energyProduction();
     var demand = energyDemand();
-    // Opslag: minimaal drie ticks productie (en de batch van een splijtstoffabriek)
+    // Opslag: minimaal drie ticks productie (en de batch van een splijtstoffabriek, niet in de beta)
     var storageNeeded = Math.max(
       production * 3,
-      +objFuelCellFactory.amount * +objFuelCellFactory.energy * 1.2
+      window.BETA ? 0 : +objFuelCellFactory.amount * +objFuelCellFactory.energy * 1.2
     );
     var capacitorsNeeded = Math.ceil(storageNeeded / +objEnergy.storageCap);
     var extra = capacitorsNeeded - +objEnergy.capacitors;
