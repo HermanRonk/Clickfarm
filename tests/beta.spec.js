@@ -1,7 +1,7 @@
 // Beta: dezelfde code onder /beta/, met eigen saves (voorvoegsel "beta:") en de balanswijzigingen
 // die eerst getest worden. Het gewone spel moet precies hetzelfde blijven.
 const { test, expect } = require("@playwright/test");
-const { startGame, tick, game, storage } = require("./helpers/game");
+const { startGame, tick, game, storage, reload } = require("./helpers/game");
 const { threshold } = require("./levels.data");
 
 const level = (n, extra = {}) => ({ PlayerLevel: n, NextLevel: threshold(n), ...extra });
@@ -185,5 +185,133 @@ test.describe("Beta: balans", () => {
     await startGame(page, { state: fuel });
     await tick(page, 50);
     expect(await game(page, () => [+objFuelCellFactory.counter, +objEnergy.available])).toEqual([0, 100000]);
+  });
+});
+
+test.describe("Beta: koper (level 12)", () => {
+  const copper = (extra = {}) =>
+    level(12, {
+      Rlevel: 4,
+      Money: 1e11,
+      copperAmountProspected: 3,
+      steelAmount: 500000,
+      Pasta: 10000,
+      Capacitors: 2000,
+      EnergyAvailable: 200000,
+      coalAmount: 100000,
+      ...extra,
+    });
+  const state = (page) =>
+    game(page, () => ({
+      mines: +objMines.copperAmountActive,
+      ore: +objCopperOre.amount,
+      copper: +objCopper.amount,
+      steel: +objSteel.amount,
+      pasta: +objStorehouse.pasta,
+    }));
+
+  test("kopermijnen zijn er alleen in de beta en vanaf level 12", async ({ page }) => {
+    await startGame(page, { state: copper() });
+    await game(page, () => objMines.addMine(4, 1));
+    expect(await game(page, () => +objMines.copperAmountActive)).toBe(0);
+    expect(await game(page, () => document.getElementById("Copper-col").checkVisibility())).toBe(false);
+    expect(await game(page, () => document.getElementById("koper-row").checkVisibility())).toBe(false);
+  });
+
+  test("op level 11 nog niet, ook niet in de beta", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ PlayerLevel: 11, NextLevel: threshold(11) }) });
+    await game(page, () => objMines.addMine(4, 1));
+    expect(await game(page, () => +objMines.copperAmountActive)).toBe(0);
+    expect(await game(page, () => document.getElementById("koper-row").checkVisibility())).toBe(false);
+  });
+
+  test("een kopermijn kost geld en staal, en zonder staal lukt het niet", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ steelAmount: 30000 }) });
+    await expect(page.locator("#Copper-col")).toContainText("Staal per mijn");
+    await page.locator("#copperMineButton").click();
+    let s = await state(page);
+    expect(s.mines).toBe(1);
+    expect(s.steel).toBe(5000);
+    expect(await game(page, () => +objMoney.amount)).toBe(1e11 - 150000000);
+
+    await page.locator("#copperMineButton").click();
+    expect((await state(page)).mines).toBe(1);
+    await expect(page.locator("#notif")).toContainText("Niet genoeg staal");
+  });
+
+  test("een mijn levert 1.000 ton erts per tick en het personeel eet 1 doos pasta per 5 ticks", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperAmountActive: 2 }) });
+    await tick(page, 5);
+    const s = await state(page);
+    expect(s.ore).toBe(10000);
+    expect(s.pasta).toBeCloseTo(10000 - 2, 6);
+  });
+
+  test("zonder pasta staan de mijnen stil", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperAmountActive: 2, Pasta: 0 }) });
+    await tick(page, 3);
+    expect((await state(page)).ore).toBe(0);
+  });
+
+  test("bij weinig pasta gaat het uraniumpersoneel voor", async ({ page }) => {
+    // Eén uraniummijn eet 2 dozen per tick: de kopermijnen laten 120 dozen (60 ticks) liggen
+    await startGame(page, {
+      beta: true,
+      state: copper({ copperAmountActive: 2, uraniumAmountProspected: 1, uraniumAmountActive: 1, Pasta: 100 }),
+    });
+    await tick(page, 3);
+    const s = await state(page);
+    expect(s.ore).toBe(0);
+    expect(await game(page, () => +objUraniumOre.amount)).toBe(30);
+    expect(s.pasta).toBeCloseTo(94, 6);
+  });
+
+  test("zonder stroom staan de mijnen stil", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperAmountActive: 2, EnergyAvailable: 0 }) });
+    await tick(page, 3);
+    expect((await state(page)).ore).toBe(0);
+  });
+
+  test("de smelterij maakt iedere tick koper van erts, steenkool en stroom", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperOreAmount: 5000 }) });
+    await page.locator("#buyCopperSmelter").click();
+    expect((await state(page)).steel).toBe(500000 - 25000);
+    const coal = await game(page, () => +objCoal.amount);
+    await tick(page, 3);
+    const s = await state(page);
+    // 5.000 ton erts is genoeg voor twee ticks
+    expect(s.copper).toBe(400);
+    expect(s.ore).toBe(1000);
+    expect(await game(page, () => +objCoal.amount)).toBe(coal - 400);
+    await expect(page.locator("#CopperSmelter-col")).toContainText("0 van 1");
+  });
+
+  test("koper verkopen levert de volle prijs op; wat niet past 20%", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperAmount: 1000 }) });
+    await page.locator("#sellCopper").click();
+    expect(await game(page, () => +objMoney.amount)).toBe(1e11 + 1000 * 40000);
+    expect((await state(page)).copper).toBe(0);
+
+    await game(page, () => objCopper.add(+objCopper.storageCap + 10));
+    expect((await state(page)).copper).toBe(100000);
+    expect(await game(page, () => +objMoney.amount)).toBe(1e11 + 1000 * 40000 + 10 * 40000 * 0.2);
+  });
+
+  test("de koperketen blijft staan na herladen", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperAmountActive: 2, copperSmelters: 1 }) });
+    await tick(page, 4);
+    const before = await state(page);
+    await reload(page);
+    expect(await state(page)).toEqual(before);
+    expect(await game(page, () => +objCopperSmelter.amount)).toBe(1);
+  });
+
+  test("de stromen van de koperketen verwijzen naar bestaande kaarten", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper() });
+    const unknown = await page.evaluate(() =>
+      objFlows.edges.flatMap((edge) => [edge[0], edge[1]]).filter((id) => !document.getElementById(id) || !helpTexts[id])
+    );
+    expect(unknown).toEqual([]);
+    expect(await game(page, () => objFlows.edges.some((e) => e[2] === "koper"))).toBe(true);
   });
 });

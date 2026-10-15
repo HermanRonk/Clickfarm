@@ -974,6 +974,7 @@ kbd2 {
     --flow-splijtstof: #18a88a;
     --flow-afval: #8b8f94;
     --flow-energie: #3b82f6;
+    --flow-koper: #b8733a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -991,6 +992,7 @@ kbd2 {
         --flow-splijtstof: #3fd1ae;
         --flow-afval: #a7abb0;
         --flow-energie: #6aa6ff;
+        --flow-koper: #e39a62;
     }
 }
 
@@ -1035,6 +1037,7 @@ body.flows-on {
 .flow-splijtstof { color: var(--flow-splijtstof); }
 .flow-afval { color: var(--flow-afval); }
 .flow-energie { color: var(--flow-energie); }
+.flow-koper { color: var(--flow-koper); }
 
 .flow-base,
 .flow-run {

@@ -134,6 +134,9 @@ window.onload = function () {
   objCoal.init();
   objIronOre.init();
   objUraniumOre.init();
+  objCopperOre.init();
+  objCopperSmelter.init();
+  objCopper.init();
   objIronMelter.init();
   objSteel.init();
   objCoalPowerPlant.init();
@@ -333,7 +336,7 @@ var helpTexts = {
   "Prospecting-col": [
     "Prospecting",
     BETA
-      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen."
+      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12; goud- en diamantmijnen kun je nog niet bouwen."
       : "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
   ],
   "MiningSites-col": [
@@ -389,6 +392,24 @@ var helpTexts = {
     "Je kunt afvalstaven opkopen voor de helft van de opruimprijs. Let op: ook voor dit afval betaal je opslagkosten.",
   ],
 };
+
+// Kaarten die alleen in de beta bestaan
+if (BETA) {
+  Object.assign(helpTexts, {
+    "Copper-col": [
+      "Koper",
+      "Een kopermijn kost geld en staal. Hij levert 1.000 ton kopererts per tick voor 600 energie, en het personeel eet 1 doos pasta per 5 ticks. Is de pasta bijna op, dan gaat het personeel van de uraniummijnen voor. Kopererts wordt in de smelterij koper.",
+    ],
+    "CopperSmelter-col": [
+      "Kopersmelterij",
+      "Een smelterij maakt iedere tick 200 ton koper van 2.000 ton kopererts, 200 ton steenkool en 2.000 energie. Hij draait vanzelf zolang alles er is.",
+    ],
+    "CopperInfo-col": [
+      "Koper",
+      "Koper wordt in loodsen opgeslagen en levert € 40.000 per ton op. Wat niet past, wordt verkocht voor 20% van de prijs.",
+    ],
+  });
+}
 
 // Voeg aan iedere kaart met uitleg een "?"-knop en een (verborgen) uitlegblok toe
 function initHelp() {
@@ -1035,6 +1056,57 @@ var objFlows = {
       },
     ],
   ],
+  // Stromen die alleen in de beta bestaan (zie init)
+  betaEdges: [
+    [
+      "Copper-col",
+      "CopperSmelter-col",
+      "koper",
+      function () {
+        return objCopperSmelter.active > 0;
+      },
+    ],
+    [
+      "Coal-col",
+      "CopperSmelter-col",
+      "steenkool",
+      function () {
+        return objCopperSmelter.active > 0;
+      },
+    ],
+    [
+      "CopperSmelter-col",
+      "CopperInfo-col",
+      "koper",
+      function () {
+        return objCopperSmelter.active > 0;
+      },
+    ],
+    [
+      "pasta-col",
+      "Copper-col",
+      "pasta",
+      function () {
+        return objCopperMine.activeMines > 0;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "Copper-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "CopperSmelter-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+  ],
   // Energieverbruikers: benodigde energie per tick/run (0 = staat stil)
   energyUsers: {
     "pomp-col": function () {
@@ -1068,6 +1140,12 @@ var objFlows = {
     },
     fuelRodFactory: function () {
       return +objFuelCellFactory.amount * +objFuelCellFactory.energy;
+    },
+    "Copper-col": function () {
+      return +objMines.copperAmountActive * objCopperMine.energy;
+    },
+    "CopperSmelter-col": function () {
+      return +objCopperSmelter.amount * objCopperSmelter.energy;
     },
   },
   key: function (edge) {
@@ -1395,6 +1473,7 @@ var objFlows = {
     button.style.display = objFlows.canShow() ? "" : "none";
   },
   init: function () {
+    if (BETA) objFlows.edges = objFlows.edges.concat(objFlows.betaEdges);
     objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
     Object.keys(objFlows.energyUsers).forEach(function (cardId) {
@@ -2999,6 +3078,8 @@ var objEnergy = {
       +objMines.uraniumAmountActive * +objUraniumMine.energy +
       +objOilPumpAdv.amount * +objOilPumpAdv.energy +
       +objMines.ironAmountActive * +objIronMine.energy +
+      +objMines.copperAmountActive * objCopperMine.energy +
+      +objCopperSmelter.amount * objCopperSmelter.energy +
       // In de beta gebruiken splijtstoffabrieken hun stroom per tick
       (BETA
         ? +objFuelCellFactory.amount * objFuelCellFactory.energyPerTick()
@@ -4351,10 +4432,25 @@ var objMines = {
         notificationOverlay("Niet genoeg doekoe!", "Mijnbouw", "fa-euro-sign");
         return 0;
       }
+      // Sommige mijnen kosten ook staal (dat komt bij verkopen niet terug)
+      var steel = objMines.steelNeeded(mineType);
+      if (+amountAdded == 1 && +objSteel.amount < steel) {
+        notificationOverlay(
+          "Niet genoeg staal! Een mijn kost " + FixUnit(steel, "ton") + ".",
+          "Mijnbouw",
+          "fa-box"
+        );
+        return 0;
+      }
 
       if (+amountAdded == 1) {
         objMines[mActive]++;
         objMoney.use(+objMines[mCost]);
+        if (steel > 0) {
+          objSteel.use(steel);
+          objSteel.show();
+          objFlows.pulse("SteelInfo-col", "Copper-col");
+        }
         objMines[mCost] = +objMines[mCost] * +objMines.priceFactor;
       } else {
         objMines[mActive] = +objMines[mActive] - 1;
@@ -4385,8 +4481,11 @@ var objMines = {
         addMineFunction(mineType, amount);
         break;
       case 4:
+        if (!objCopperMine.unlocked()) return 0;
         var mineType = "copper";
         addMineFunction(mineType, amount);
+        objCopperMine.show();
+        objCopperSmelter.show();
         break;
       case 5:
         var mineType = "gold";
@@ -4397,6 +4496,10 @@ var objMines = {
         addMineFunction(mineType, amount);
         break;
     }
+  },
+  // Staal dat een nieuwe mijn kost (in ton)
+  steelNeeded: function (mineType) {
+    return mineType === "copper" ? +objCopperMine.steelNeeded : 0;
   },
   showAll: function () {
     objMines.showProspecting();
@@ -4426,6 +4529,9 @@ var objMines = {
       mineButton,
       title
     ) {
+      var steel = objMines.steelNeeded(
+        typeMine.replace("AmountProspected", "")
+      );
       document.getElementById(htmlfield).innerHTML =
         "<h2>" +
         title +
@@ -4438,6 +4544,7 @@ var objMines = {
             FixNumber(+objMines[typeMine] - +objMines[active]),
           ],
           ["Prijs per mijn", FixMoney(objMines[mineCost])],
+          steel > 0 && ["Staal per mijn", FixUnit(steel, "ton")],
           ["Verkoopwaarde", FixMoney(objMines[mineCost] * 0.75)],
         ]) +
         "<div class='actions'>" +
@@ -4488,7 +4595,21 @@ var objMines = {
       "uraniumMineButton",
       "Uraniummijnen"
     );
-    //generateText("copper-mines", "copperAmountProspected", "copperMineCost","copperAmountActive", "kopermijn", 4, "copperMineButton);
+    // Kopermijnen: in de beta vanaf level 12
+    if (objCopperMine.unlocked()) {
+      generateText(
+        "copper-mines",
+        "copperAmountProspected",
+        "copperMineCost",
+        "copperAmountActive",
+        "kopermijn",
+        4,
+        "copperMineButton",
+        "Kopermijnen"
+      );
+    } else {
+      document.getElementById("copper-mines").innerHTML = "";
+    }
     //generateText("gold-mines", "goldAmountProspected", "goldMineCost","goldAmountActive", "goudmijn", 5, "goldMineButton");
     //generateText("diamond-mines", "diamondAmountProspected", "diamondMineCost","diamondAmountActive", "diamantmijn", 6, "diamondMineButton");
 
@@ -4505,8 +4626,8 @@ var objMines = {
       }
     };
 
-    //var mineTypes = ["iron","coal","uranium","copper","gold","diamond"];
     var mineTypes = ["iron", "coal", "uranium"];
+    if (objCopperMine.unlocked()) mineTypes.push("copper");
     updateMineButtons(mineTypes);
     Display.updateRows();
   },
@@ -5502,6 +5623,341 @@ var objUraniumOre = {
     objUraniumOre.storage = store.getItem("uraniumOreSilos") || 1;
     objUraniumOre.storageCap = store.getItem("uraniumOreSiloCap") || 100000;
     objUraniumOre.show();
+  },
+};
+
+// Koper (alleen in de beta, vanaf level 12): kopermijn -> kopererts -> kopersmelterij -> koper
+var objCopperMine = {
+  production: 1000,
+  energy: 600,
+  pasta: 0.2, // dozen per tick per mijn
+  steelNeeded: 25000,
+  activeMines: 0,
+  unlocked: function () {
+    return BETA && +objPlayerInfo.level >= 12 && +objResearch.level > 3;
+  },
+  // Pasta die de kopermijnen laten liggen: het uraniumpersoneel gaat voor (60 ticks voorraad),
+  // anders vallen bij een tekort de kerncentrales stil
+  pastaReserve: function () {
+    return (
+      ((+objMines.uraniumAmountActive *
+        +objUraniumMine.workers *
+        +objUraniumMine.workerFood) /
+        +objUraniumMine.period) *
+      60
+    );
+  },
+  produce: function () {
+    var pasta = Math.max(
+      0,
+      +objStorehouse.pasta - objCopperMine.pastaReserve()
+    );
+    var active = Math.min(
+      +objMines.copperAmountActive,
+      Math.floor(pasta / objCopperMine.pasta),
+      Math.floor(+objEnergy.available / objCopperMine.energy),
+      Math.floor(objCopperOre.space() / objCopperMine.production)
+    );
+    objCopperMine.activeMines = Math.max(0, active);
+    if (active < 1) return 0;
+    objEnergy.use(active * objCopperMine.energy, "Kopermijn");
+    objStorehouse.removePasta(active * objCopperMine.pasta);
+    objCopperOre.add(active * objCopperMine.production);
+  },
+  show: function () {
+    var el = document.getElementById("CopperMine");
+    if (!objCopperMine.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    var mines = +objMines.copperAmountActive;
+    el.innerHTML =
+      "<h3>Kopererts</h3>" +
+      renderResource({
+        amount: objCopperOre.amount,
+        production: mines * objCopperMine.production,
+        energy: mines * objCopperMine.energy,
+        period: "tick",
+        extra: [
+          "Pasta",
+          FixNumber(mines * objCopperMine.pasta) + " dozen per tick",
+        ],
+        price: objCopperOre.price,
+        silos: objCopperOre.storage,
+        siloCap: objCopperOre.storageCap,
+        siloPrice: objCopperOre.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objCopperMine.production, "ton") +
+          " erts per tick voor " +
+          FixNumber(objCopperMine.energy) +
+          " energie; het personeel eet 1 doos pasta per 5 ticks (het uraniumpersoneel gaat voor). Is de opslag vol, dan stoppen de mijnen.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objCopperOre.sell(0)' id='sellCopperOreButton'>Verkoop kopererts</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objCopperOre.addSilo();' id='copperOreSiloButton'>Bouw kopererts-silo</button>" +
+      "</div>";
+  },
+};
+
+var objCopperOre = {
+  amount: 0,
+  storage: 1,
+  storageCap: 1000000,
+  storagePrice: 1000000,
+  price: 250,
+  space: function () {
+    return (
+      +objCopperOre.storage * +objCopperOre.storageCap - +objCopperOre.amount
+    );
+  },
+  add: function (amountAdded) {
+    fillStorage("objCopperOre", amountAdded, "copperOreAmount");
+  },
+  use: function (amount) {
+    return useResource("objCopperOre", amount, "copperOreAmount");
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot kopererts";
+    var priceValue = +objCopperOre.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objCopperOre.amount;
+      if (amountSold <= 0) return 0;
+      objCopperOre.use(amountSold);
+      reason = "Handmatige verkoop kopererts";
+      priceValue = +objCopperOre.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 21, amountSold);
+  },
+  addSilo: function () {
+    if (moneyCheck(+objCopperOre.storagePrice) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Koperertsopslag",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    objMoney.use(+objCopperOre.storagePrice);
+    objCopperOre.storage++;
+    store.setItem("copperOreSilos", objCopperOre.storage);
+    objCopperOre.show();
+  },
+  show: function () {
+    objCopperMine.show();
+  },
+  init: function () {
+    objCopperOre.amount = +store.getItem("copperOreAmount") || 0;
+    objCopperOre.storage = +store.getItem("copperOreSilos") || 1;
+    objCopperOre.show();
+  },
+};
+
+var objCopperSmelter = {
+  amount: 0,
+  cost: 250000000,
+  steelNeeded: 25000,
+  oreNeeded: 2000,
+  coalNeeded: 200,
+  energy: 2000,
+  production: 200,
+  active: 0,
+  add: function (amount) {
+    if (+amount < 0) {
+      if (+objCopperSmelter.amount < 1) {
+        notificationOverlay(
+          "Geen smelterijen om te verkopen",
+          "Kopersmelterij",
+          "fa-industry"
+        );
+        return 0;
+      }
+      objCopperSmelter.amount--;
+      objMoney.add(
+        +objCopperSmelter.cost * 0.75,
+        "Verkoop kopersmelterij",
+        22,
+        1
+      );
+    } else {
+      if (moneyCheck(+objCopperSmelter.cost) == 0) {
+        notificationOverlay(
+          "Niet genoeg doekoe!",
+          "Kopersmelterij",
+          "fa-euro-sign"
+        );
+        return 0;
+      }
+      if (+objSteel.amount < +objCopperSmelter.steelNeeded) {
+        notificationOverlay("Niet genoeg staal!", "Kopersmelterij", "fa-box");
+        return 0;
+      }
+      objMoney.use(+objCopperSmelter.cost);
+      objSteel.use(+objCopperSmelter.steelNeeded);
+      objSteel.show();
+      objFlows.pulse("SteelInfo-col", "CopperSmelter-col");
+      objCopperSmelter.amount++;
+    }
+    store.setItem("copperSmelters", objCopperSmelter.amount);
+    objCopperSmelter.show();
+  },
+  // Draait iedere tick zolang er erts, steenkool, stroom en opslagruimte is
+  produce: function () {
+    var active = Math.min(
+      +objCopperSmelter.amount,
+      Math.floor(+objCopperOre.amount / objCopperSmelter.oreNeeded),
+      Math.floor(+objCoal.amount / objCopperSmelter.coalNeeded),
+      Math.floor(+objEnergy.available / objCopperSmelter.energy),
+      Math.floor(objCopper.space() / objCopperSmelter.production)
+    );
+    objCopperSmelter.active = Math.max(0, active);
+    if (active < 1) return 0;
+    objCopperOre.use(active * objCopperSmelter.oreNeeded);
+    objCoal.use(active * objCopperSmelter.coalNeeded);
+    objEnergy.use(active * objCopperSmelter.energy, "Kopersmelterij");
+    objCopper.add(active * objCopperSmelter.production);
+  },
+  show: function () {
+    var left = document.getElementById("copperSmelter");
+    var right = document.getElementById("copperSmelterStats");
+    if (!objCopperMine.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objCopperSmelter.amount;
+    left.innerHTML =
+      "<h2>Kopersmelterij</h2>" +
+      renderStats([
+        ["Smelterijen", FixNumber(n)],
+        ["Prijs per smelterij", FixMoney(objCopperSmelter.cost)],
+        ["Staal per smelterij", FixUnit(objCopperSmelter.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(objCopperSmelter.cost * 0.75)],
+      ]) +
+      "<h3>Per smelterij per tick</h3>" +
+      renderStats([
+        ["Kopererts", FixUnit(objCopperSmelter.oreNeeded, "ton")],
+        ["Steenkool", FixUnit(objCopperSmelter.coalNeeded, "ton")],
+        ["Energie", FixNumber(objCopperSmelter.energy)],
+        ["Koper", FixUnit(objCopperSmelter.production, "ton")],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objCopperSmelter.add(1);' id='buyCopperSmelter'>Bouw kopersmelterij</button> " +
+      "<button type='button' class='btn btn-danger' onClick='objCopperSmelter.add(-1);' id='sellCopperSmelter'>Verkoop kopersmelterij</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(objCopperSmelter.active) + " van " + FixNumber(n)],
+        [
+          "Koper",
+          FixUnit(
+            objCopperSmelter.active * objCopperSmelter.production,
+            "ton per tick"
+          ),
+        ],
+        [
+          "Kopererts",
+          FixUnit(
+            objCopperSmelter.active * objCopperSmelter.oreNeeded,
+            "ton per tick"
+          ),
+        ],
+        [
+          "Energie",
+          FixNumber(objCopperSmelter.active * objCopperSmelter.energy) +
+            " per tick",
+        ],
+      ]) +
+      renderHint(
+        "Een smelterij draait vanzelf iedere tick zolang er kopererts, steenkool, energie en ruimte in je koperopslag is."
+      );
+  },
+  init: function () {
+    objCopperSmelter.amount = +store.getItem("copperSmelters") || 0;
+    objCopperSmelter.show();
+  },
+};
+
+var objCopper = {
+  amount: 0,
+  price: 40000,
+  storage: 1,
+  storageCap: 100000,
+  storagePrice: 15000000,
+  space: function () {
+    return +objCopper.storage * +objCopper.storageCap - +objCopper.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objCopper", amountAdded, "copperAmount");
+  },
+  use: function (amount) {
+    return useResource("objCopper", amount, "copperAmount");
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot koper";
+    var priceValue = +objCopper.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objCopper.amount;
+      if (amountSold <= 0) return 0;
+      objCopper.use(amountSold);
+      reason = "Handmatige verkoop koper";
+      priceValue = +objCopper.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 23, amountSold);
+  },
+  addStorage: function () {
+    if (moneyCheck(+objCopper.storagePrice) == 0) {
+      notificationOverlay("Niet genoeg doekoe!", "Koperopslag", "fa-euro-sign");
+      return 0;
+    }
+    objMoney.use(+objCopper.storagePrice);
+    objCopper.storage++;
+    store.setItem("copperStorage", objCopper.storage);
+    objCopper.show();
+  },
+  show: function () {
+    var left = document.getElementById("Copper");
+    var right = document.getElementById("copperStorage");
+    if (!objCopperMine.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var capacity = +objCopper.storage * +objCopper.storageCap;
+    left.innerHTML =
+      "<h2>Koper</h2>" +
+      renderBar(
+        "Voorraad",
+        FixUnit(objCopper.amount, "ton"),
+        (+objCopper.amount / capacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixUnit(objCopper.space(), "ton")],
+        ["Prijs per ton", FixMoney(objCopper.price)],
+      ]) +
+      renderHint("Wat niet past wordt verkocht voor 20% van de prijs.") +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objCopper.sell(0)' id='sellCopper'>Verkoop koper</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
+        [
+          "Loodsen",
+          FixNumber(objCopper.storage) + " (" + FixUnit(capacity, "ton") + ")",
+        ],
+        ["Prijs extra loods", FixMoney(objCopper.storagePrice)],
+        ["Capaciteit per loods", FixUnit(objCopper.storageCap, "ton")],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objCopper.addStorage();' id='addCopperStorage'>Koop koperopslag</button>" +
+      "</div>";
+  },
+  init: function () {
+    objCopper.amount = +store.getItem("copperAmount") || 0;
+    objCopper.storage = +store.getItem("copperStorage") || 1;
+    objCopper.show();
   },
 };
 
@@ -6760,6 +7216,13 @@ var loopsProduction = setInterval(function () {
       objOil.produceOil();
     if (+objMines.coalAmountActive >= 1) objCoalMine.produce();
     if (+objMines.ironAmountActive >= 1) objIronMine.produce();
+    if (objCopperMine.unlocked()) {
+      objCopperMine.produce();
+      objCopperSmelter.produce();
+      objCopperMine.show();
+      objCopperSmelter.show();
+      objCopper.show();
+    }
 
     objEnergy.produce();
     if (objFarmRobot.robotTimer > 0) objFarmRobot.work_loop();

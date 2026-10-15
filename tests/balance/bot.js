@@ -100,7 +100,8 @@
   function coalUse() {
     return (
       +objCoalPowerPlant.amount * +objCoalPowerPlant.CoalUsageTons +
-      +objIronMelter.amount * +objIronMelter.coalNeeded
+      +objIronMelter.amount * +objIronMelter.coalNeeded +
+      (window.objCopperSmelter ? +objCopperSmelter.amount * objCopperSmelter.coalNeeded : 0)
     );
   }
   function pastaDemand() {
@@ -110,7 +111,8 @@
       (+objMines.uraniumAmountActive *
         +objUraniumMine.workers *
         +objUraniumMine.workerFood) /
-        (+objUraniumMine.period || 10)
+        (+objUraniumMine.period || 10) +
+      (window.objCopperMine ? +objMines.copperAmountActive * objCopperMine.pasta : 0)
     );
   }
   function free(type) {
@@ -202,6 +204,9 @@
     }
     if (+objFuelCellFactory.amount > 0)
       need += +objFuelCellFactory.amount * +objFuelCellFactory.steelNeeded * 2;
+    // Staal voor kopermijnen en -smelterijen (beta, vanaf level 12)
+    if (copperOn() && (free("copper") > 0 || smeltersWanted() > +objCopperSmelter.amount))
+      need += objCopperMine.steelNeeded;
     // Voor high-tech oliepompen (kunststof) een kleine voorraad aanhouden
     if (oilProduction() <= plasticOilUse() + 67) need += +objOilPumpAdv.steelNeeded;
     return need;
@@ -538,6 +543,53 @@
     }
   }
 
+  // Koper (beta, vanaf level 12): mijnen op koperlocaties, smelterijen erbij, koper verkopen
+  function copperOn() {
+    return !!(window.objCopperMine && objCopperMine.unlocked());
+  }
+  function smeltersWanted() {
+    return Math.ceil(
+      (+objMines.copperAmountActive * objCopperMine.production) / objCopperSmelter.oreNeeded
+    );
+  }
+  function copper() {
+    if (!copperOn()) return;
+    var energyShort = energyDemand() > energyProduction();
+    if (free("copper") > 0 && !energyShort) {
+      if (pastaProductionCapacity() < pastaDemand() + objCopperMine.pasta * 2) {
+        stall("pasta voor kopermijnen");
+      } else if (+objSteel.amount < objCopperMine.steelNeeded) {
+        stall("staal (koper)");
+      } else if (canSpend(+objMines.copperMineCost * 1.05)) {
+        act("kopermijn", function () {
+          objMines.addMine(4, 1);
+        });
+        first("koper");
+      } else {
+        stall("geld (mijnen)");
+        reserve(+objMines.copperMineCost * 1.05);
+      }
+    }
+    if (+objCopperSmelter.amount < smeltersWanted()) {
+      if (+objSteel.amount < objCopperSmelter.steelNeeded) stall("staal (koper)");
+      else if (canSpend(+objCopperSmelter.cost * 1.05)) {
+        act("kopersmelterij", function () {
+          objCopperSmelter.add(1);
+        });
+      } else reserve(+objCopperSmelter.cost * 1.05);
+    }
+    if (+objCopper.amount > 0 && (bot.tick % 60 === 0 || objCopper.space() < objCopper.storageCap * 0.3)) {
+      act("verkoop koper", function () {
+        objCopper.sell(0);
+      });
+    }
+    if (objCopperOre.space() < objCopperOre.storageCap * 0.2 && canSpend(+objCopperOre.storagePrice, 0.05)) {
+      act("kopererts-silo", function () {
+        objCopperOre.addSilo();
+      });
+    }
+  }
+
   function storage() {
     var silos = [
       [objCoal, "steenkoolsilo"],
@@ -669,6 +721,8 @@
         kerncentrales: +objNuclearPowerPlant.amount,
         reactoren: +objNuclearPowerPlant.reactors,
         splijtstoffabrieken: +objFuelCellFactory.amount,
+        kopermijnen: +objMines.copperAmountActive,
+        kopersmelterijen: window.objCopperSmelter ? +objCopperSmelter.amount : 0,
         landbouwgrond: +objFarmland.amount,
         kippen: +objChicken.amount,
         pastahelpers: +objPastaHelper.amount,
@@ -746,6 +800,7 @@
     nuclear();
     fuel();
     mines();
+    copper();
     prospect();
     plastic();
     storage();
