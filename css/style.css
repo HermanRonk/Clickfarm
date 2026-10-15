@@ -17,6 +17,7 @@
     --on-accent: #ffffff;
     --danger: #b3261e;
     --danger-soft: #fbe9e7;
+    --warning: #d99a12;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.05);
     --radius: 10px;
     --gap: 12px;
@@ -37,6 +38,7 @@
         --on-accent: #0f1a13;
         --danger: #f08a80;
         --danger-soft: #3a2220;
+        --warning: #e8b33f;
         --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
     }
 }
@@ -649,6 +651,59 @@ kbd2 {
     color: var(--accent);
 }
 
+/* Pauzeknop op energieverbruikers (beta, zie objPause in inc/base.js) */
+.pause-toggle {
+    position: absolute;
+    top: 0.75rem;
+    right: 2.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.65rem;
+    cursor: pointer;
+}
+
+.pause-toggle:hover,
+.pause-toggle:focus-visible {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.rows > .has-pause h2 {
+    padding-right: 4rem;
+}
+
+.rows > .card-paused {
+    border-color: var(--warning);
+    box-shadow: 0 0 0 1px var(--warning);
+}
+
+.rows > .card-paused::after {
+    content: "Gepauzeerd";
+    position: absolute;
+    top: -0.65rem;
+    right: 1rem;
+    padding: 0.05rem 0.5rem;
+    border-radius: 999px;
+    background: var(--warning);
+    color: #1d1d1d;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.card-paused > .pause-toggle {
+    border-color: var(--warning);
+    background: var(--warning);
+    color: #1d1d1d;
+}
+
 .help {
     margin: 0 0 0.75rem;
     padding: 0.6rem 0.8rem;
@@ -983,6 +1038,7 @@ kbd2 {
     --flow-splijtstof: #18a88a;
     --flow-afval: #8b8f94;
     --flow-energie: #3b82f6;
+    --flow-koper: #b8733a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1000,6 +1056,7 @@ kbd2 {
         --flow-splijtstof: #3fd1ae;
         --flow-afval: #a7abb0;
         --flow-energie: #6aa6ff;
+        --flow-koper: #e39a62;
     }
 }
 
@@ -1044,6 +1101,7 @@ body.flows-on {
 .flow-splijtstof { color: var(--flow-splijtstof); }
 .flow-afval { color: var(--flow-afval); }
 .flow-energie { color: var(--flow-energie); }
+.flow-koper { color: var(--flow-koper); }
 
 .flow-base,
 .flow-run {

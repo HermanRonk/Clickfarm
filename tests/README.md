@@ -36,8 +36,8 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 | `flows.spec.js` | Productieketen: lijnen alleen tussen vrijgespeelde kaarten, op de juiste kaartzijde, looplicht bij actieve stromen, aanwijzen, ⚡-poortjes, aan/uit, minder beweging, mobiel |
 | `layout-edit.spec.js` | Indeling bewerken: inklappen, verplaatsen binnen een rij (pijlen en slepen), bewaren, save-code, herstellen, alleen op desktop. Rijen inklappen, op desktop en mobiel |
 | `help.spec.js` | ?-knoppen met uitleg per kaart |
-| `info.spec.js` | Informatiepagina: ingeklapte levels zonder spoilers, drempels gelijk aan het spel |
-| `beta.spec.js` | Beta (`/beta/`): label en menu, gescheiden saves (`beta:`), reset en save-code alleen voor het eigen spel, keuzepagina (meenemen, opnieuw beginnen, verder), en de balanswijzigingen naast het gewone spel |
+| `info.spec.js` | Informatiepagina: ingeklapte levels zonder spoilers, drempels gelijk aan het spel, uitleg over pauzeren |
+| `beta.spec.js` | Beta (`/beta/`): label en menu, gescheiden saves (`beta:`), reset en save-code alleen voor het eigen spel, keuzepagina (meenemen, opnieuw beginnen, verder), de balanswijzigingen naast het gewone spel, de koperketen (level 12), en pauzeknoppen per energieverbruiker |
 | `known-issues.spec.js` | Bekende, nog niet opgeloste problemen (zie hieronder) |
 | `container.spec.js` | Alleen tegen de container: health check, beveiligingsheaders, CSP, de beta-pagina's, en dat testbestanden niet worden meegeleverd |
 

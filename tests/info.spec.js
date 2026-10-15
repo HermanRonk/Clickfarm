@@ -55,4 +55,12 @@ test.describe("Spelinformatie", () => {
     await expect(page.getByRole("link", { name: "Terug naar het spel" })).toHaveAttribute("href", "./");
     expect(external).toEqual([]);
   });
+
+  test("legt het pauzeren uit, met een link naar de beta", async ({ page }) => {
+    await page.goto("/info.html");
+    const item = page.locator(".info li", { hasText: "Pauzeren" });
+    await expect(item).toContainText("gebruikt geen energie");
+    await expect(item).toContainText("Pomp olie");
+    await expect(item.getByRole("link", { name: "beta" })).toHaveAttribute("href", "/beta/");
+  });
 });
