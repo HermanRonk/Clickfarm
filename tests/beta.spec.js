@@ -432,3 +432,92 @@ test.describe("Beta: pauzeren per kaart", () => {
     expect(await game(page, () => objPause.paused)).toEqual(["Coal-col"]);
   });
 });
+
+test.describe("Beta: feedback van spelers (#64-#67)", () => {
+  const mills = level(6, {
+    Capacitors: 1000,
+    EnergyAvailable: 100000,
+    GrainSiloAmount: 100,
+    GrainSiloContents: 400000,
+    WindmillAmount: 4,
+    WindmillControllerAmount: 4,
+    WindmillAutomated: 4,
+    FlourSiloAmount: 10,
+  });
+  const energyPerTick = async (page) => {
+    const before = await game(page, () => +objEnergy.available);
+    await tick(page, 20);
+    return (before - (await game(page, () => +objEnergy.available))) / 20;
+  };
+
+  test("#64 beta: een windmolencontroller kost 8 energie per maalrun", async ({ page }) => {
+    await startGame(page, { beta: true, state: mills });
+    expect(await energyPerTick(page)).toBeCloseTo(3.2, 6);
+    expect(await game(page, () => +objFlourSilo.contents)).toBe(4000 * 2);
+  });
+
+  test("#64 gewoon spel: nog 8 energie per tick", async ({ page }) => {
+    await startGame(page, { state: mills });
+    expect(await energyPerTick(page)).toBe(32);
+  });
+
+  test("#65 beta: de schuiven voor bloem en pasta volgen de prijzen vanaf level 4", async ({ page }) => {
+    await startGame(page, { beta: true, state: level(7, { scCPU: 4, autoFlour: 875 }) });
+    await expect(page.locator("#SliderFlour")).toHaveAttribute("max", "450");
+    await expect(page.locator("#SliderPasta")).toHaveAttribute("max", "225");
+    // Een te hoge bewaarde drempel wordt begrensd, de standaard is het maximum
+    expect(await game(page, () => [+objSalesComputer.flourValue, +objSalesComputer.pastaValue])).toEqual([450, 225]);
+  });
+
+  test("#65 gewoon spel: schuiven ongewijzigd", async ({ page }) => {
+    await startGame(page, { state: level(7, { scCPU: 4 }) });
+    await expect(page.locator("#SliderFlour")).toHaveAttribute("max", "875");
+    expect(await game(page, () => +objSalesComputer.flourValue)).toBe(875);
+  });
+
+  test("#66 beta: niets op voorraad levert geen verkoopregel op", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: level(7, {
+        scCPU: 4,
+        autoFlourCheck: "true",
+        autoFlour: 100,
+        autoKunststofCheck: "true",
+        autoKunststof: 100,
+        plasticFactories: 1,
+      }),
+    });
+    await tick(page, 12);
+    expect(await game(page, () => messages.filter((m) => /Computerverkoop/.test(m[0])))).toEqual([]);
+    // Met voorraad wordt er wel verkocht
+    await game(page, () => objPlastic.add(100));
+    await tick(page, 5);
+    expect(await game(page, () => messages.some((m) => m[0] === "Computerverkoop Plastic"))).toBe(true);
+  });
+
+  test("#67 beta: producten die nog op slot zitten zijn herkenbaar en hun schuif staat uit", async ({ page }) => {
+    await startGame(page, { beta: true, state: level(7, { scCPU: 1, Money: 1e7 }) });
+    const items = page.locator("#AutoSell-col .autosell-item");
+    await expect(items.nth(0)).not.toHaveClass(/autosell-locked/);
+    await expect(items.nth(1)).toHaveClass(/autosell-locked/);
+    await expect(items.nth(1)).toContainText("Vanaf 2 CPU's");
+    await expect(items.nth(3)).toContainText("Vanaf 4 CPU's");
+    await expect(page.locator("#SliderOil")).toBeEnabled();
+    await expect(page.locator("#SliderFlour")).toBeDisabled();
+
+    await game(page, () => {
+      objSalesComputer.add();
+      objSalesComputer.add();
+      objSalesComputer.add();
+    });
+    await expect(page.locator("#AutoSell-col .autosell-locked")).toHaveCount(0);
+    await expect(page.locator("#SliderKunststof")).toBeEnabled();
+  });
+
+  test("#67 gewoon spel: geen slot-weergave", async ({ page }) => {
+    await startGame(page, { state: level(7, { scCPU: 1 }) });
+    await expect(page.locator("#AutoSell-col .autosell-locked")).toHaveCount(0);
+    await expect(page.locator("#AutoSell-col")).not.toContainText("Vanaf 2 CPU's");
+    await expect(page.locator("#SliderFlour")).toBeEnabled();
+  });
+});
