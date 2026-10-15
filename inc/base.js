@@ -288,7 +288,9 @@ var helpTexts = {
   ],
   WindmillController: [
     "Windmolencontrollers",
-    "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per tick.",
+    BETA
+      ? "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per maalrun van 10 ticks (0,8 per tick)."
+      : "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per tick.",
   ],
   "olie-col": [
     "Olie",
@@ -1488,13 +1490,13 @@ function renderBar(label, valueText, percentage) {
 }
 
 // Instellingen van automatisch verkopen voor één product
-function renderAutoSell(product, active, minimumPrice, currentPrice) {
+function renderAutoSell(product, active, minimumPrice, currentPrice, locked) {
   return (
     "<h3>" +
     product +
     "</h3>" +
     renderStats([
-      ["Status", active ? "Aan" : "Uit"],
+      ["Status", locked || (active ? "Aan" : "Uit")],
       ["Verkopen vanaf", FixMoney(+minimumPrice)],
       ["Huidige prijs", currentPrice],
     ])
@@ -2620,7 +2622,9 @@ var objWindmill = {
 var objWindmillController = {
   amount: 0,
   price: 10000,
-  energy: 80,
+  // Energie per maalrun van 10 ticks. In de beta 8 (0,8 per tick, issue #64): eerst kostte
+  // aansturen van een molen bijna evenveel stroom als het bewerken van 50 velden.
+  energy: BETA ? 8 : 80,
   cap: 1,
   add: function () {
     // Een controller bedient één windmolen
@@ -3796,6 +3800,22 @@ var objSalesComputer = {
   autoSellFlour: false,
   autoSellPasta: false,
   autoSellKunststof: false,
+  // [product, schuif, aantal CPU's dat het product vrijzet]
+  products: [
+    ["Olie", "SliderOil", 1],
+    ["Bloem", "SliderFlour", 2],
+    ["Pasta", "SliderPasta", 3],
+    ["Kunststof", "SliderKunststof", 4],
+  ],
+  // Beta: "Vanaf 2 CPU's" zolang het product op slot zit
+  lockedText: function (product) {
+    if (!BETA) return null;
+    var needed = objSalesComputer.products.find(function (p) {
+      return p[0] === product;
+    })[2];
+    if (+objSalesComputer.cpu >= needed) return null;
+    return "Vanaf " + needed + (needed > 1 ? " CPU's" : " CPU");
+  },
   add: function () {
     if (+objMoney.amount > +objSalesComputer.cpuCost) {
       objMoney.use(+objSalesComputer.cpuCost);
@@ -3870,6 +3890,17 @@ var objSalesComputer = {
         document.getElementById("autoKunststofCheck").disabled = false;
         break;
     }
+    // Beta: producten die nog op slot zitten duidelijk tonen, met de schuif uit (issue #67)
+    if (BETA) {
+      objSalesComputer.products.forEach(function (p) {
+        var locked = +objSalesComputer.cpu < p[2];
+        var slider = document.getElementById(p[1]);
+        slider.disabled = locked;
+        slider
+          .closest(".autosell-item")
+          .classList.toggle("autosell-locked", locked);
+      });
+    }
     var inputOil = document.getElementById("SliderOil").value;
     objSalesComputer.showOil(inputOil);
     var inputFlour = document.getElementById("SliderFlour").value;
@@ -3886,7 +3917,8 @@ var objSalesComputer = {
       "Olie",
       objSalesComputer.autoSellOil == true,
       inputwaarde,
-      FixMoney(objOil.price)
+      FixMoney(objOil.price),
+      objSalesComputer.lockedText("Olie")
     );
   },
   showFlour: function (inputwaarde) {
@@ -3896,7 +3928,8 @@ var objSalesComputer = {
       "Bloem",
       objSalesComputer.autoSellFlour == true,
       inputwaarde,
-      FixMoney(objFlour.price)
+      FixMoney(objFlour.price),
+      objSalesComputer.lockedText("Bloem")
     );
   },
   showPasta: function (inputwaarde) {
@@ -3906,7 +3939,8 @@ var objSalesComputer = {
       "Pasta",
       objSalesComputer.autoSellPasta == true,
       inputwaarde,
-      FixMoney(objPasta.price())
+      FixMoney(objPasta.price()),
+      objSalesComputer.lockedText("Pasta")
     );
   },
   showKunststof: function (inputwaarde) {
@@ -3916,7 +3950,8 @@ var objSalesComputer = {
       "Kunststof",
       objSalesComputer.autoSellKunststof == true,
       inputwaarde,
-      FixMoney(objPlastic.price)
+      FixMoney(objPlastic.price),
+      objSalesComputer.lockedText("Kunststof")
     );
   },
   checkOil: function (checkState) {
@@ -3964,7 +3999,9 @@ var objSalesComputer = {
       }
     }
     if (objSalesComputer.autoSellFlour == true && +objSalesComputer.cpu > 1) {
-      if (+objFlour.price >= +objSalesComputer.flourValue) {
+      // In de beta niet "verkopen" als er niets is (issue #66)
+      var hasFlour = !BETA || +objFlourSilo.contents > 0;
+      if (+objFlour.price >= +objSalesComputer.flourValue && hasFlour) {
         var amount = +objFlourSilo.contents;
         objMoney.add(
           (+objFlourSilo.contents / 1000) * +objFlour.price,
@@ -3986,7 +4023,8 @@ var objSalesComputer = {
       +objSalesComputer.cpu > 3
     ) {
       var pp = objPlastic.price;
-      if (+pp >= +objSalesComputer.kunststofValue) {
+      var hasPlastic = !BETA || +objPlastic.amount > 0;
+      if (+pp >= +objSalesComputer.kunststofValue && hasPlastic) {
         objPlastic.sell(0, "Computerverkoop Plastic");
       }
     }
@@ -4002,8 +4040,21 @@ var objSalesComputer = {
       objSalesComputer.autoSellOil;
     document.getElementById("SliderOil").value = +objSalesComputer.oilValue;
 
+    // Beta: de schuiven voor bloem en pasta volgen de prijzen vanaf level 4 (issue #65).
+    // Een eerder bewaarde, te hoge drempel wordt begrensd.
+    var flourMax = BETA ? 450 : 875;
+    var pastaMax = BETA ? 225 : 450;
+    if (BETA) {
+      document.getElementById("SliderFlour").max = flourMax;
+      document.getElementById("SliderPasta").max = pastaMax;
+      document.getElementById("SliderPasta").step = 5;
+    }
+
     //bloem
-    objSalesComputer.flourValue = parseInt(store.getItem("autoFlour")) || 875;
+    objSalesComputer.flourValue = Math.min(
+      parseInt(store.getItem("autoFlour")) || flourMax,
+      flourMax
+    );
     objSalesComputer.autoSellFlour =
       JSON.parse(store.getItem("autoFlourCheck")) || false;
     document.getElementById("autoFlourCheck").checked =
@@ -4011,7 +4062,10 @@ var objSalesComputer = {
     document.getElementById("SliderFlour").value = +objSalesComputer.flourValue;
 
     //Pasta
-    objSalesComputer.pastaValue = parseInt(store.getItem("autoPasta")) || 450;
+    objSalesComputer.pastaValue = Math.min(
+      parseInt(store.getItem("autoPasta")) || pastaMax,
+      pastaMax
+    );
     objSalesComputer.autoSellPasta =
       JSON.parse(store.getItem("autoPastaCheck")) || false;
     document.getElementById("autoPastaCheck").checked =

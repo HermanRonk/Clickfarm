@@ -520,6 +520,15 @@ kbd2 {
     margin-top: 0;
 }
 
+/* Beta: product dat nog op slot zit (meer CPU's nodig) */
+.autosell-locked {
+    opacity: 0.55;
+}
+
+.autosell-locked dd:first-of-type {
+    font-weight: 600;
+}
+
 @media (min-width: 1024px) {
     #AutoSell-col {
         grid-column: 1 / -1;
