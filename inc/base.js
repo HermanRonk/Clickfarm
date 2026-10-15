@@ -108,6 +108,7 @@ window.onload = function () {
   showBeta();
   initHelp();
   objLayout.init();
+  objPause.init();
   objFlows.init();
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
@@ -440,6 +441,87 @@ function initHelp() {
     card.prepend(button);
   });
 }
+
+// Pauzeren per kaart (beta): een energieverbruiker even stilzetten, bijvoorbeeld om stroom
+// vrij te maken voor de opstart van kernenergie. Een gepauzeerde kaart gebruikt geen
+// stroom en produceert niets automatisch; handmatige knoppen blijven werken.
+var objPause = {
+  cards: [
+    "pomp-col",
+    "farmland-automation",
+    "WindmillController",
+    "pasta-col",
+    "platicFactory-col",
+    "Coal-col",
+    "Iron-col",
+    "Uranium-col",
+    "fuelRodFactory",
+    "Copper-col",
+    "CopperSmelter-col",
+  ],
+  paused: [],
+  is: function (cardId) {
+    return BETA && objPause.paused.indexOf(cardId) !== -1;
+  },
+  // 0 als de kaart gepauzeerd is, anders 1 (voor de piekvraag)
+  factor: function (cardId) {
+    return objPause.is(cardId) ? 0 : 1;
+  },
+  toggle: function (cardId) {
+    if (!BETA || objPause.cards.indexOf(cardId) === -1) return;
+    if (objPause.is(cardId)) {
+      objPause.paused = objPause.paused.filter(function (id) {
+        return id !== cardId;
+      });
+    } else {
+      objPause.paused.push(cardId);
+    }
+    store.setItem("paused", JSON.stringify(objPause.paused));
+    objPause.update(cardId);
+    objEnergy.show();
+    objFlows.updateActivity();
+  },
+  update: function (cardId) {
+    var card = document.getElementById(cardId);
+    var button = card && card.querySelector(":scope > .pause-toggle");
+    if (!button) return;
+    var paused = objPause.is(cardId);
+    var title = helpTexts[cardId] ? helpTexts[cardId][0] : cardId;
+    card.classList.toggle("card-paused", paused);
+    button.innerHTML = icon(paused ? "play" : "pause");
+    button.setAttribute("aria-pressed", String(paused));
+    button.setAttribute(
+      "aria-label",
+      (paused ? "Hervat " : "Pauzeer ") + title
+    );
+    button.title = paused ? "Hervat" : "Pauzeer";
+  },
+  init: function () {
+    if (!BETA) return;
+    var saved = [];
+    try {
+      saved = JSON.parse(store.getItem("paused") || "[]");
+    } catch (error) {
+      saved = [];
+    }
+    objPause.paused = (Array.isArray(saved) ? saved : []).filter(function (id) {
+      return objPause.cards.indexOf(id) !== -1;
+    });
+    objPause.cards.forEach(function (cardId) {
+      var card = document.getElementById(cardId);
+      if (!card) return;
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "pause-toggle card-ui";
+      button.addEventListener("click", function () {
+        objPause.toggle(cardId);
+      });
+      card.classList.add("has-pause");
+      card.prepend(button);
+      objPause.update(cardId);
+    });
+  },
+};
 
 // Indeling van de kaarten: volgorde per rij en ingeklapte kaarten.
 // Aanpassen kan alleen in de bewerkstand (Game opties > Indeling bewerken, alleen op desktop).
@@ -1434,18 +1516,20 @@ var objFlows = {
     Object.keys(objFlows.energyUsers).forEach(function (cardId) {
       var port = document.querySelector("#" + cardId + " > .energy-port");
       if (!port) return;
-      var need = +objFlows.energyUsers[cardId]() || 0;
+      var paused = objPause.is(cardId);
+      var need = paused ? 0 : +objFlows.energyUsers[cardId]() || 0;
       port.classList.toggle("active", need > 0);
       port.classList.toggle(
         "shortage",
         need > 0 && +objEnergy.available < need
       );
-      port.title =
-        need > 0
-          ? +objEnergy.available < need
-            ? "Te weinig energie"
-            : "Gebruikt energie"
-          : "Gebruikt energie (staat stil)";
+      port.title = paused
+        ? "Gepauzeerd"
+        : need > 0
+        ? +objEnergy.available < need
+          ? "Te weinig energie"
+          : "Gebruikt energie"
+        : "Gebruikt energie (staat stil)";
     });
   },
   setFocus: function (cardId) {
@@ -1809,6 +1893,7 @@ var objOil = {
     objOilTank.show();
   },
   produceOil: function () {
+    if (objPause.is("pomp-col")) return 0;
     if (objOilPump.amount > 0) {
       if (+objEnergy.available >= objOilPump.amount) {
         objEnergy.use(+objOilPump.amount, "Oliepomp");
@@ -1897,6 +1982,10 @@ var objFarmRobot = {
   },
   work: function () {
     if (+objFarmRobot.robots === 0) return 0;
+    if (objPause.is("farmland-automation")) {
+      objFarmRobot.activeRobots = 0;
+      return 0;
+    }
     let tempEnergy = objEnergy.available;
     objFarmRobot.activeRobots = Math.floor(
       tempEnergy / objFarmRobot.robotEnergy
@@ -2564,6 +2653,7 @@ var objWindmill = {
   },
   tempAmountAuto: 0,
   autogrind: function () {
+    if (objPause.is("WindmillController")) return 0;
     objWindmill.running = 1;
     objWindmill.tempAmountAuto = 0;
 
@@ -3070,19 +3160,30 @@ var objEnergy = {
   },
   // Piekvraag: wat alle verbruikers samen per tick kunnen vragen
   demand: function () {
+    // Gepauzeerde kaarten (beta) tellen niet mee
+    var f = objPause.factor;
     return (
-      +objOilPump.amount +
-      +objFarmRobot.activeRobots * +objFarmRobot.robotEnergy +
-      (objWindmillController.amount * objWindmillController.energy) / 10 +
-      +objMines.coalAmountActive * +objCoalMine.energy +
-      +objMines.uraniumAmountActive * +objUraniumMine.energy +
-      +objOilPumpAdv.amount * +objOilPumpAdv.energy +
-      +objMines.ironAmountActive * +objIronMine.energy +
-      +objMines.copperAmountActive * objCopperMine.energy +
-      +objCopperSmelter.amount * objCopperSmelter.energy +
+      (+objOilPump.amount + +objOilPumpAdv.amount * +objOilPumpAdv.energy) *
+        f("pomp-col") +
+      +objFarmRobot.activeRobots *
+        +objFarmRobot.robotEnergy *
+        f("farmland-automation") +
+      ((objWindmillController.amount * objWindmillController.energy) / 10) *
+        f("WindmillController") +
+      +objMines.coalAmountActive * +objCoalMine.energy * f("Coal-col") +
+      +objMines.uraniumAmountActive *
+        +objUraniumMine.energy *
+        f("Uranium-col") +
+      +objMines.ironAmountActive * +objIronMine.energy * f("Iron-col") +
+      +objMines.copperAmountActive * objCopperMine.energy * f("Copper-col") +
+      +objCopperSmelter.amount *
+        objCopperSmelter.energy *
+        f("CopperSmelter-col") +
       // In de beta gebruiken splijtstoffabrieken hun stroom per tick
       (BETA
-        ? +objFuelCellFactory.amount * objFuelCellFactory.energyPerTick()
+        ? +objFuelCellFactory.amount *
+          objFuelCellFactory.energyPerTick() *
+          f("fuelRodFactory")
         : 0)
     );
   },
@@ -3646,6 +3747,7 @@ var objPastaHelper = {
     }
   },
   action: function () {
+    if (objPause.is("pasta-col")) return 0;
     if (objPastaHelper.amount > 0) {
       objPastaFactory.produce("automated");
     } else {
@@ -4689,6 +4791,7 @@ var objCoalMine = {
   production: 3500,
   energy: 250,
   produce: function () {
+    if (objPause.is("Coal-col")) return 0;
     if (
       +objEnergy.available <
       +objMines.coalAmountActive * +objCoalMine.energy
@@ -4833,6 +4936,7 @@ var objIronMine = {
   production: 1000,
   energy: 450,
   produce: function () {
+    if (objPause.is("Iron-col")) return 0;
     if (
       +objEnergy.available <
       +objMines.ironAmountActive * +objIronMine.energy
@@ -5232,6 +5336,8 @@ var objPlasticFactory = {
     objPlasticFactory.show();
   },
   produce: function (typeProduction) {
+    // Gepauzeerd: de medewerkers werken niet (zelf op Maak kunststof klikken kan wel)
+    if (typeProduction == 1 && objPause.is("platicFactory-col")) return 0;
     var factoriesActive = +objPlasticFactory.amount;
     if (typeProduction == 1) {
       if (
@@ -5502,6 +5608,7 @@ var objUraniumMine = {
   workers: 20,
   workerFood: BETA ? 0.1 : 10,
   produce: function () {
+    if (objPause.is("Uranium-col")) return 0;
     var activeMines = objMines.uraniumAmountActive;
     if (
       +objStorehouse.pasta <
@@ -5648,6 +5755,10 @@ var objCopperMine = {
     );
   },
   produce: function () {
+    if (objPause.is("Copper-col")) {
+      objCopperMine.activeMines = 0;
+      return 0;
+    }
     var pasta = Math.max(
       0,
       +objStorehouse.pasta - objCopperMine.pastaReserve()
@@ -5803,6 +5914,10 @@ var objCopperSmelter = {
   },
   // Draait iedere tick zolang er erts, steenkool, stroom en opslagruimte is
   produce: function () {
+    if (objPause.is("CopperSmelter-col")) {
+      objCopperSmelter.active = 0;
+      return 0;
+    }
     var active = Math.min(
       +objCopperSmelter.amount,
       Math.floor(+objCopperOre.amount / objCopperSmelter.oreNeeded),
@@ -6014,6 +6129,10 @@ var objFuelCellFactory = {
     }
   },
   produce: function () {
+    if (objPause.is("fuelRodFactory")) {
+      document.getElementById("fuelRodCounter").innerHTML = "Gepauzeerd";
+      return 0;
+    }
     if (objFuelCellFactory.amount == 0) {
       return 0;
     }

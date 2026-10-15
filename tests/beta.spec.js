@@ -315,3 +315,120 @@ test.describe("Beta: koper (level 12)", () => {
     expect(await game(page, () => objFlows.edges.some((e) => e[2] === "koper"))).toBe(true);
   });
 });
+
+test.describe("Beta: pauzeren per kaart", () => {
+  const base = (extra = {}) =>
+    level(13, { Rlevel: 4, Money: 1e12, Capacitors: 10000, EnergyAvailable: 900000, ...extra });
+
+  // Per verbruiker: begintoestand en een waarde die alleen groeit als de kaart draait
+  const consumers = [
+    ["pomp-col", { Factory: 50, OilTankAmount: 100 }, () => +objOilTank.contents],
+    ["farmland-automation", { Farmland: 20, FarmRobots: 2, AutomatedFarms: 20, GrainSiloAmount: 10 }, () => +objGrainSilo.contents],
+    [
+      "WindmillController",
+      { WindmillAmount: 2, WindmillControllerAmount: 2, WindmillAutomated: 2, GrainSiloAmount: 10, GrainSiloContents: 40000, FlourSiloAmount: 10 },
+      () => +objFlourSilo.contents,
+    ],
+    [
+      "pasta-col",
+      { PastaFactoryAmount: 1, pastaHelper: 1, PastaFactoryAmountAutomated: 1, FlourSiloAmount: 10, FlourSiloContents: 20000, eggs: 50000 },
+      () => +objStorehouse.pasta,
+    ],
+    [
+      "platicFactory-col",
+      { plasticFactories: 1, plasticWorkers: 1, Pasta: 1000, Oil: 5000, OilTankAmount: 10 },
+      () => +objPlastic.amount,
+    ],
+    ["Coal-col", { coalAmountProspected: 1, coalAmountActive: 1 }, () => +objCoal.amount],
+    ["Iron-col", { ironAmountProspected: 1, ironAmountActive: 1 }, () => +objIronOre.amount],
+    ["Uranium-col", { uraniumAmountProspected: 1, uraniumAmountActive: 1, Pasta: 1000 }, () => +objUraniumOre.amount],
+    ["fuelRodFactory", { fuellCellFactory: 1, uraniumOreAmount: 20000, steelAmount: 5000 }, () => +objFuelCellFactory.counter],
+    ["Copper-col", { copperAmountProspected: 1, copperAmountActive: 1, Pasta: 1000 }, () => +objCopperOre.amount],
+    ["CopperSmelter-col", { copperSmelters: 1, copperOreAmount: 50000, coalAmount: 50000 }, () => +objCopper.amount],
+  ];
+
+  test("in het gewone spel zijn er geen pauzeknoppen", async ({ page }) => {
+    await startGame(page, { state: base({ coalAmountProspected: 1, coalAmountActive: 1 }) });
+    await expect(page.locator(".pause-toggle")).toHaveCount(0);
+    await game(page, () => objPause.toggle("Coal-col"));
+    await tick(page, 2);
+    expect(await game(page, () => +objCoal.amount)).toBeGreaterThan(0);
+  });
+
+  for (const [cardId, extra, measure] of consumers) {
+    test(`${cardId}: gepauzeerd staat hij stil en gebruikt hij geen energie, hervat draait hij weer`, async ({ page }) => {
+      await startGame(page, { beta: true, state: base({ ...extra, paused: JSON.stringify([cardId]) }) });
+      await expect(page.locator(`#${cardId}`)).toHaveClass(/card-paused/);
+      const value0 = await game(page, measure);
+      const energy0 = await game(page, () => +objEnergy.available);
+      await tick(page, 20);
+      expect(await game(page, measure)).toBe(value0);
+      expect(await game(page, () => +objEnergy.available)).toBe(energy0);
+
+      await page.locator(`#${cardId} > .pause-toggle`).click();
+      await expect(page.locator(`#${cardId}`)).not.toHaveClass(/card-paused/);
+      await tick(page, 20);
+      expect(await game(page, measure)).toBeGreaterThan(value0);
+    });
+  }
+
+  test("de knop toont de toestand, en de pauze blijft bewaard en gaat mee in de save-code", async ({ page }) => {
+    await startGame(page, { beta: true, state: base({ coalAmountProspected: 1, coalAmountActive: 1 }) });
+    const button = page.locator("#Coal-col > .pause-toggle");
+    await expect(button).toHaveAttribute("aria-pressed", "false");
+    await expect(button).toHaveAttribute("aria-label", "Pauzeer Steenkool");
+    await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(button).toHaveAttribute("aria-label", "Hervat Steenkool");
+    expect(await storage(page, "beta:paused")).toBe('["Coal-col"]');
+    expect(await game(page, () => JSON.parse(atob(saveProgress())))).toContain('paused:["Coal-col"]');
+
+    await reload(page);
+    await expect(page.locator("#Coal-col")).toHaveClass(/card-paused/);
+  });
+
+  test("gepauzeerde kaarten tellen niet mee in de piekvraag", async ({ page }) => {
+    await startGame(page, { beta: true, state: base({ coalAmountProspected: 2, coalAmountActive: 2 }) });
+    expect(await game(page, () => objEnergy.demand())).toBe(500);
+    await game(page, () => objPause.toggle("Coal-col"));
+    expect(await game(page, () => objEnergy.demand())).toBe(0);
+  });
+
+  test("pauzeren maakt stroom vrij: met de mijnen stil loopt de opslag weer op", async ({ page }) => {
+    // 20 ijzermijnen vragen 9.000 per tick, 10 kolencentrales leveren 7.500
+    await startGame(page, {
+      beta: true,
+      state: base({
+        ironAmountProspected: 20,
+        ironAmountActive: 20,
+        ironOreSilos: 100,
+        CoalPowerPlants: 10,
+        coalAmount: 900000,
+        EnergyAvailable: 0,
+      }),
+    });
+    await tick(page, 10);
+    expect(await game(page, () => +objEnergy.available)).toBeLessThan(9000);
+    await game(page, () => objPause.toggle("Iron-col"));
+    await tick(page, 10);
+    expect(await game(page, () => +objEnergy.available)).toBeGreaterThan(50000);
+  });
+
+  test("handmatige knoppen werken ook als de kaart gepauzeerd is", async ({ page }) => {
+    await startGame(page, { beta: true, state: base({ Factory: 10, paused: '["pomp-col"]' }) });
+    const oil = await game(page, () => +objOilTank.contents);
+    await page.getByRole("button", { name: "Pomp olie" }).click();
+    expect(await game(page, () => +objOilTank.contents)).toBe(oil + 1);
+  });
+
+  test("een kapotte pauzelijst wordt genegeerd", async ({ page }) => {
+    const { pageErrors } = await startGame(page, { beta: true, state: base({ paused: '["geld-col", 5, "Coal-col"' }) });
+    expect(await game(page, () => objPause.paused)).toEqual([]);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test("onbekende kaarten in de pauzelijst worden eruit gefilterd", async ({ page }) => {
+    await startGame(page, { beta: true, state: base({ paused: '["geld-col", 5, "Coal-col"]' }) });
+    expect(await game(page, () => objPause.paused)).toEqual(["Coal-col"]);
+  });
+});
