@@ -852,3 +852,120 @@ test.describe("Beta: bulk bouwen (#75)", () => {
     expect(await game(page, () => +objSolar.amount)).toBe(10);
   });
 });
+
+test.describe("Beta: goud en reactorbesturing (#76, #77)", () => {
+  // levels.data.js loopt tot level 13; de drempel van level 14 is die van 13 x 5
+  // levels.data.js loopt tot level 13: de drempel van level 14 is die van 13 x 5
+  const l14 = (extra = {}) => ({
+    PlayerLevel: 14,
+    NextLevel: threshold(13) * 5,
+    Rlevel: 4,
+    Money: 1e14,
+    steelAmount: 5000000,
+    steelStorage: 10,
+    Capacitors: 100000,
+    EnergyAvailable: 9000000,
+    Pasta: 100000,
+    ...extra,
+  });
+  const val = (page, fn) => game(page, fn);
+
+  test("in het gewone spel en op level 13 nog geen goud", async ({ page }) => {
+    await startGame(page, { state: l14({ goldAmountProspected: 2 }) });
+    await game(page, () => objMines.addMine(5, 1));
+    expect(await val(page, () => +objMines.goldAmountActive)).toBe(0);
+    expect(await game(page, () => document.getElementById("goud-row").checkVisibility())).toBe(false);
+    await expect(page.locator("#reactorControl")).toBeEmpty();
+  });
+
+  test("beta op level 13: nog geen goud", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14({ PlayerLevel: 13, NextLevel: threshold(13), goldAmountProspected: 2 }) });
+    await game(page, () => objMines.addMine(5, 1));
+    expect(await val(page, () => +objMines.goldAmountActive)).toBe(0);
+  });
+
+  test("#76 een goudmijn kost € 2 mrd en 100.000 ton staal en levert 500 ton erts per tick", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14({ goldAmountProspected: 2 }) });
+    await page.locator("#goldMineButton").click();
+    expect(await val(page, () => [+objMoney.amount, +objSteel.amount])).toEqual([1e14 - 2e9, 4900000]);
+    await tick(page, 4);
+    expect(await val(page, () => +objGoldOre.amount)).toBe(2000);
+    expect(await val(page, () => +objStorehouse.pasta)).toBeCloseTo(100000 - 2, 6);
+  });
+
+  test("#76 de raffinaderij maakt iedere tick 5 kg goud van erts, olie en energie", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14({ goldOreAmount: 6000, Oil: 5000, OilTankAmountBig: 1 }) });
+    await page.locator("#buyGoldRefinery").click();
+    expect(await val(page, () => [+objMoney.amount, +objSteel.amount])).toEqual([1e14 - 4e10, 4500000]);
+    await tick(page, 3);
+    // 6.000 ton erts is genoeg voor twee ticks
+    expect(await val(page, () => [+objGold.amount, +objGoldOre.amount, +objOilTank.contents])).toEqual([10, 1000, 4000]);
+  });
+
+  test("#76 zonder olie staat de raffinaderij stil", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14({ goldOreAmount: 6000, goldRefineries: 1, Oil: 0 }) });
+    await tick(page, 3);
+    expect(await val(page, () => +objGold.amount)).toBe(0);
+  });
+
+  test("#76 goud verkopen: volle prijs, en wat niet in de kluis past 20%", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14({ goldAmount: 10 }) });
+    await page.locator("#sellGold").click();
+    expect(await val(page, () => +objMoney.amount)).toBe(1e14 + 10 * 3e7);
+    await game(page, () => objGold.add(+objGold.storageCap + 1));
+    expect(await val(page, () => +objGold.amount)).toBe(10000);
+    expect(await val(page, () => +objMoney.amount)).toBe(1e14 + 10 * 3e7 + 3e7 * 0.2);
+  });
+
+  const reactors = (extra = {}) => l14({ nppAmount: 1, nrAmount: 2, frAmount: 2, fuellCellFactory: 1, pcbAmount: 5000, goldAmount: 200, ...extra });
+
+  test("#77 reactorbesturing kost printplaten en goud en verdubbelt de energie van een reactor", async ({ page }) => {
+    await startGame(page, { beta: true, state: reactors() });
+    await tick(page, 2);
+    expect(await val(page, () => objNuclearPowerPlant.activeReactors)).toBe(2);
+    await page.locator("#addReactorControl").click();
+    expect(await val(page, () => [+objNuclearPowerPlant.controlled, +objPCB.amount, +objGold.amount])).toEqual([1, 3000, 150]);
+    expect(await val(page, () => objNuclearPowerPlant.controlBonus())).toBe(5000);
+    await expect(page.locator("#reactorControl")).toContainText("5.000 per tick");
+  });
+
+  test("#77 niet meer besturing dan reactoren, en zonder goud geen besturing", async ({ page }) => {
+    await startGame(page, { beta: true, state: reactors({ reactorControls: 2, goldAmount: 49 }) });
+    await game(page, () => objNuclearPowerPlant.addControl());
+    expect(await val(page, () => +objNuclearPowerPlant.controlled)).toBe(2);
+    await game(page, () => objNuclearPowerPlant.buildReactor());
+    await game(page, () => objNuclearPowerPlant.addControl());
+    expect(await val(page, () => +objNuclearPowerPlant.controlled)).toBe(2);
+    await expect(page.locator("#notif")).toContainText("Niet genoeg goud");
+  });
+
+  test("#77 een reactor zonder splijtstof levert ook met besturing niets extra", async ({ page }) => {
+    await startGame(page, { beta: true, state: reactors({ reactorControls: 2, frAmount: 0, fuellCellFactory: 0 }) });
+    await tick(page, 2);
+    expect(await val(page, () => objNuclearPowerPlant.controlBonus())).toBe(0);
+  });
+
+  test("goud en reactorbesturing blijven staan na herladen", async ({ page }) => {
+    await startGame(page, { beta: true, state: reactors({ goldRefineries: 2, goldOreAmount: 123, reactorControls: 1 }) });
+    await reload(page);
+    expect(await val(page, () => [+objGoldRefinery.amount, +objGoldOre.amount, +objGold.amount, +objNuclearPowerPlant.controlled])).toEqual([2, 123, 200, 1]);
+  });
+
+  test("bulk bouwen werkt voor goudmijnen, raffinaderijen en reactorbesturing", async ({ page }) => {
+    await startGame(page, { beta: true, state: reactors({ goldAmountProspected: 3, nrAmount: 5, pcbAmount: 50000, goldAmount: 1000 }) });
+    await page.locator("[data-bulk='gold-max']").click();
+    expect(await val(page, () => +objMines.goldAmountActive)).toBe(3);
+    await page.locator("[data-bulk='reactorControl-max']").click();
+    expect(await val(page, () => +objNuclearPowerPlant.controlled)).toBe(5);
+    await expect(page.locator("[data-bulk='goldRefinery-10']")).toBeVisible();
+  });
+
+  test("de stromen van level 14 verwijzen naar bestaande kaarten", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14() });
+    const unknown = await page.evaluate(() =>
+      objFlows.edges.flatMap((edge) => [edge[0], edge[1]]).filter((id) => !document.getElementById(id) || !helpTexts[id])
+    );
+    expect(unknown).toEqual([]);
+    expect(await game(page, () => objFlows.edges.some((e) => e[2] === "goud"))).toBe(true);
+  });
+});
