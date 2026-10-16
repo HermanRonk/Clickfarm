@@ -521,3 +521,201 @@ test.describe("Beta: feedback van spelers (#64-#67)", () => {
     await expect(page.locator("#SliderFlour")).toBeEnabled();
   });
 });
+
+test.describe("Beta: level 13 (#71-#74)", () => {
+  const l13 = (extra = {}) =>
+    level(13, {
+      Rlevel: 4,
+      Money: 1e12,
+      steelAmount: 900000,
+      steelStorage: 2,
+      Capacitors: 100000,
+      EnergyAvailable: 5000000,
+      ...extra,
+    });
+  const val = (page, fn) => game(page, fn);
+
+  test("in het gewone spel en op level 12 bestaat level 13 nog niet", async ({ page }) => {
+    await startGame(page, { state: l13({ pcbAmount: 50000 }) });
+    await game(page, () => {
+      objElectronics.add(1);
+      objSolar.add();
+      objScanner.add();
+    });
+    expect(await val(page, () => [+objElectronics.amount, +objSolar.amount, +objScanner.amount])).toEqual([0, 0, 0]);
+    expect(await game(page, () => document.getElementById("elektronica-row").checkVisibility())).toBe(false);
+    expect(await game(page, () => document.getElementById("solarPark").checkVisibility())).toBe(false);
+    await expect(page.locator("#scanner")).toBeEmpty();
+  });
+
+  test("beta op level 12: nog geen elektronica", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ PlayerLevel: 12, NextLevel: threshold(12) }) });
+    await game(page, () => objElectronics.add(1));
+    expect(await val(page, () => +objElectronics.amount)).toBe(0);
+    expect(await game(page, () => document.getElementById("elektronica-row").checkVisibility())).toBe(false);
+  });
+
+  test("#71 een elektronicafabriek kost geld en staal en maakt iedere tick 100 printplaten", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ copperAmount: 1000, plasticAmount: 90000, plasticStorage: 2 }) });
+    await page.locator("#buyElectronics").click();
+    expect(await val(page, () => [+objMoney.amount, +objSteel.amount])).toEqual([1e12 - 5e9, 650000]);
+    await tick(page, 3);
+    expect(await val(page, () => [+objPCB.amount, +objCopper.amount, +objPlastic.amount])).toEqual([300, 850, 89400]);
+    await expect(page.locator("#Electronics-col")).toContainText("1 van 1");
+  });
+
+  test("#71 zonder koper of kunststof staat de fabriek stil", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ electronicsFactories: 1, copperAmount: 100, plasticAmount: 0 }) });
+    await tick(page, 3);
+    expect(await val(page, () => +objPCB.amount)).toBe(0);
+  });
+
+  test("#71 printplaten verkopen: volle prijs, en wat niet past voor 20%", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ pcbAmount: 1000 }) });
+    await page.locator("#sellPCB").click();
+    expect(await val(page, () => +objMoney.amount)).toBe(1e12 + 1000 * 60000);
+    await game(page, () => objPCB.add(+objPCB.storageCap + 10));
+    expect(await val(page, () => +objPCB.amount)).toBe(100000);
+    expect(await val(page, () => +objMoney.amount)).toBe(1e12 + 1000 * 60000 + 10 * 60000 * 0.2);
+  });
+
+  const smelters = (extra = {}) =>
+    l13({
+      ironAmountProspected: 1,
+      ironSmelters: 2,
+      ironOreAmount: 100000,
+      ironOreSilos: 1,
+      coalAmount: 100000,
+      pcbAmount: 12000,
+      ...extra,
+    });
+
+  test("#72 een hoogoven met besturing maakt iedere tick zelf staal", async ({ page }) => {
+    await startGame(page, { beta: true, state: smelters() });
+    await expect(page.locator("#SteelProduction-col > .pause-toggle")).toBeHidden();
+    await page.locator("#addSmelterControl").click();
+    expect(await val(page, () => [+objIronMelter.controlled, +objPCB.amount])).toEqual([1, 7000]);
+    await expect(page.locator("#SteelProduction-col > .pause-toggle")).toBeVisible();
+    await tick(page, 3);
+    expect(await val(page, () => +objSteel.amount)).toBe(900000 + 3 * 10000);
+    expect(await val(page, () => +objIronOre.amount)).toBe(100000 - 3 * 10000);
+  });
+
+  test("#72 zonder 5.000 printplaten geen besturing", async ({ page }) => {
+    await startGame(page, { beta: true, state: smelters({ pcbAmount: 4999 }) });
+    await page.locator("#addSmelterControl").click();
+    expect(await val(page, () => [+objIronMelter.controlled, +objPCB.amount])).toEqual([0, 4999]);
+    await expect(page.locator("#notif")).toContainText("Niet genoeg printplaten");
+  });
+
+  test("#72 Maak staal gebruikt alleen de hoogovens zonder besturing", async ({ page }) => {
+    await startGame(page, { beta: true, state: smelters({ smelterControls: 1, EnergyAvailable: 0 }) });
+    // Zonder energie draait de bestuurde hoogoven niet; met de hand komt er 1 run bij
+    await game(page, () => (objEnergy.available = 5000));
+    await page.locator("#makeSteelButton").click();
+    expect(await val(page, () => +objSteel.amount)).toBe(900000 + 10000);
+    await expect(page.locator("#SteelProduction-col")).toContainText("Totaal per run (zonder besturing)");
+  });
+
+  test("#72 met alle hoogovens bestuurd geeft Maak staal een melding", async ({ page }) => {
+    await startGame(page, { beta: true, state: smelters({ smelterControls: 2, EnergyAvailable: 0 }) });
+    await page.locator("#makeSteelButton").click();
+    expect(await val(page, () => +objSteel.amount)).toBe(900000);
+    await expect(page.locator("#notif")).toContainText("Al je hoogovens hebben besturing");
+  });
+
+  test("#72 niet meer besturing dan hoogovens, ook niet na verkopen", async ({ page }) => {
+    await startGame(page, { beta: true, state: smelters({ pcbAmount: 50000, smelterControls: 2 }) });
+    await game(page, () => objIronMelter.addControl());
+    expect(await val(page, () => +objIronMelter.controlled)).toBe(2);
+    await game(page, () => objIronMelter.add(-1));
+    expect(await val(page, () => +objIronMelter.controlled)).toBe(1);
+  });
+
+  test("#72 pauzeren stopt de bestuurde hoogovens", async ({ page }) => {
+    await startGame(page, { beta: true, state: smelters({ smelterControls: 1, paused: '["SteelProduction-col"]' }) });
+    await tick(page, 3);
+    expect(await val(page, () => +objSteel.amount)).toBe(900000);
+  });
+
+  const scan = (extra = {}) => l13({ pcbAmount: 25000, ...extra });
+
+  test("#73 een scanner kost printplaten en zoekt vanzelf, iedere zoektocht kost geld en energie", async ({ page }) => {
+    await startGame(page, { beta: true, state: scan({ EnergyAvailable: 100000 }) });
+    await page.locator("#buyScanner").click();
+    expect(await val(page, () => +objPCB.amount)).toBe(5000);
+    const sites = () => game(page, () => objMines.items.reduce((n, i) => n + +objMines[objMines.siteTypes[i] + "AmountProspected"], 0));
+    await tick(page, 15);
+    expect(await sites()).toBe(1);
+    // De volgende zoektocht start pas in de tick erna
+    expect(await val(page, () => +objMoney.amount)).toBe(1e12 - 50000000);
+    expect(await val(page, () => +objEnergy.available)).toBe(100000 - 15 * 1000);
+    await expect(page.locator("#scanner")).toContainText("Laatste vondsten");
+  });
+
+  test("#73 gericht zoeken maakt de kans op die grondstof 4 keer zo groot", async ({ page }) => {
+    await startGame(page, { beta: true, state: scan({ scanners: 1 }) });
+    await page.locator("#scannerTarget").selectOption("5");
+    expect(await storage(page, "beta:scannerTarget")).toBe("5");
+    expect(await val(page, () => objScanner.weights())).toEqual([20, 35, 15, 20, 20, 5]);
+    await reload(page);
+    await expect(page.locator("#scannerTarget")).toHaveValue("5");
+  });
+
+  test("#73 zonder geld of energie wacht de scanner, en pauzeren stopt hem", async ({ page }) => {
+    await startGame(page, { beta: true, state: scan({ scanners: 1, Money: 1000 }) });
+    await tick(page, 5);
+    expect(await val(page, () => objScanner.timers)).toEqual([0]);
+
+    await game(page, () => objMoney.add(1e9, "test"));
+    await game(page, () => objPause.toggle("Prospecting-col"));
+    await tick(page, 5);
+    expect(await val(page, () => objScanner.timers)).toEqual([0]);
+    await game(page, () => objPause.toggle("Prospecting-col"));
+    await tick(page, 5);
+    expect(await val(page, () => objScanner.timers)).toEqual([10]);
+  });
+
+  test("#74 een zonnepark kost geld, printplaten en staal en levert 3.000 energie per tick", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ pcbAmount: 2500, EnergyAvailable: 0 }) });
+    await page.locator("#buySolar").click();
+    expect(await val(page, () => [+objMoney.amount, +objPCB.amount, +objSteel.amount])).toEqual([1e12 - 2e9, 1500, 850000]);
+    expect(await val(page, () => +objSolar.price)).toBe(2e9 * 1.03);
+    await tick(page, 2);
+    expect(await val(page, () => +objEnergy.available)).toBe(6000);
+    await expect(page.locator("#TotalEnergyProduction")).toContainText("3.000");
+  });
+
+  test("#74 zonder printplaten geen zonnepark", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ pcbAmount: 999 }) });
+    await page.locator("#buySolar").click();
+    expect(await val(page, () => +objSolar.amount)).toBe(0);
+    await expect(page.locator("#notif")).toContainText("Niet genoeg printplaten");
+  });
+
+  test("level 13 blijft staan na herladen", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: l13({ electronicsFactories: 2, pcbAmount: 1234, solarParks: 3, scanners: 2, smelterControls: 1, ironSmelters: 1 }),
+    });
+    await reload(page);
+    expect(
+      await val(page, () => [
+        +objElectronics.amount,
+        +objPCB.amount,
+        +objSolar.amount,
+        +objScanner.amount,
+        +objIronMelter.controlled,
+      ])
+    ).toEqual([2, 1234, 3, 2, 1]);
+  });
+
+  test("de stromen van level 13 verwijzen naar bestaande kaarten", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13() });
+    const unknown = await page.evaluate(() =>
+      objFlows.edges.flatMap((edge) => [edge[0], edge[1]]).filter((id) => !document.getElementById(id) || !helpTexts[id])
+    );
+    expect(unknown).toEqual([]);
+    expect(await game(page, () => objFlows.edges.some((e) => e[2] === "printplaten"))).toBe(true);
+  });
+});

@@ -467,6 +467,8 @@
                 </div>
                 <div id="ProspectingProgress" class="timer"></div>
                 <div id="ProspectingResult"></div>
+                <!-- Seismische scanner: alleen in de beta (vanaf level 13) -->
+                <div id="scanner"></div>
             </div>
             <div class="container col-sm" id="MiningSites-col">
                 <h2>Mijnlocaties</h2>
@@ -512,6 +514,8 @@
                     </div>
                     <div class="card-half">
                         <div id="steelProductionStats"></div>
+                        <!-- Hoogovenbesturing: alleen in de beta (vanaf level 13) -->
+                        <div id="steelControl"></div>
                     </div>
                 </div>
             </div>
@@ -579,6 +583,29 @@
                 </div>
             </div>
         </div>
+        <!-- Elektronica: alleen in de beta (vanaf level 13); de inhoud wordt in inc/base.js opgebouwd -->
+        <div class="row rows" id="elektronica-row">
+            <div id="Electronics-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="electronicsFactory"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="electronicsStats"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="PCB-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="PCB"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="pcbStorage"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="row rows" id="nuclearFuel-row">
             <div class="container col-sm" id="fuelRodFactory">
                 <div id="fuelRod"></div>
@@ -608,6 +635,10 @@
                     <button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.buildReactor();' id='npprBuild'>Bouw kernreactor</button>
                 </div>
                 <div id="nppsum"></div>
+            </div>
+            <!-- Zonnepark: alleen in de beta (vanaf level 13) -->
+            <div class="container col-sm" id="solarPark">
+                <div id="solarParkInfo"></div>
             </div>
         </div>
         <div class="row rows" id="market-row">

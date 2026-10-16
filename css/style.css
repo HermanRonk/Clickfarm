@@ -522,6 +522,25 @@ kbd2 {
     margin-top: 0;
 }
 
+/* Seismische scanner (beta): keuze van de doelgrondstof */
+.scanner-target {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.scanner-target select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
 /* Beta: product dat nog op slot zit (meer CPU's nodig) */
 .autosell-locked {
     opacity: 0.55;
@@ -668,6 +687,10 @@ kbd2 {
     color: var(--muted);
     font-size: 0.65rem;
     cursor: pointer;
+}
+
+.pause-toggle[hidden] {
+    display: none;
 }
 
 .pause-toggle:hover,
@@ -1039,6 +1062,7 @@ kbd2 {
     --flow-afval: #8b8f94;
     --flow-energie: #3b82f6;
     --flow-koper: #b8733a;
+    --flow-printplaten: #2f8f5b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1057,6 +1081,7 @@ kbd2 {
         --flow-afval: #a7abb0;
         --flow-energie: #6aa6ff;
         --flow-koper: #e39a62;
+        --flow-printplaten: #5fcf8f;
     }
 }
 
@@ -1102,6 +1127,7 @@ body.flows-on {
 .flow-afval { color: var(--flow-afval); }
 .flow-energie { color: var(--flow-energie); }
 .flow-koper { color: var(--flow-koper); }
+.flow-printplaten { color: var(--flow-printplaten); }
 
 .flow-base,
 .flow-run {

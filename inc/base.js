@@ -138,6 +138,10 @@ window.onload = function () {
   objCopperOre.init();
   objCopperSmelter.init();
   objCopper.init();
+  objElectronics.init();
+  objPCB.init();
+  objSolar.init();
+  objScanner.init();
   objIronMelter.init();
   objSteel.init();
   objCoalPowerPlant.init();
@@ -396,8 +400,18 @@ var helpTexts = {
   ],
 };
 
-// Kaarten die alleen in de beta bestaan
+// Kaarten die alleen in de beta bestaan, en uitleg die in de beta verder gaat
 if (BETA) {
+  helpTexts["SteelProduction-col"] = [
+    "Hoogovens",
+    helpTexts["SteelProduction-col"][1] +
+      " Vanaf level 13 kun je een hoogoven besturing geven (5.000 printplaten): die maakt dan iedere tick zelf staal.",
+  ];
+  helpTexts["Prospecting-col"] = [
+    "Prospecting",
+    helpTexts["Prospecting-col"][1] +
+      " Vanaf level 13 zoeken seismische scanners (20.000 printplaten) vanzelf door, eventueel gericht op één grondstof.",
+  ];
   Object.assign(helpTexts, {
     "Copper-col": [
       "Koper",
@@ -406,6 +420,18 @@ if (BETA) {
     "CopperSmelter-col": [
       "Kopersmelterij",
       "Een smelterij maakt iedere tick 200 ton koper van 2.000 ton kopererts, 200 ton steenkool en 2.000 energie. Hij draait vanzelf zolang alles er is.",
+    ],
+    "Electronics-col": [
+      "Elektronicafabriek",
+      "Een elektronicafabriek kost geld en staal en maakt iedere tick 100 printplaten van 50 ton koper, 200 kunststof en 3.000 energie. Hij draait vanzelf zolang alles er is.",
+    ],
+    "PCB-col": [
+      "Printplaten",
+      "Printplaten zijn € 60.000 per stuk waard. Je hebt ze nodig voor hoogovenbesturing (5.000 per hoogoven), seismische scanners (20.000 per scanner) en zonneparken (1.000 per park).",
+    ],
+    solarPark: [
+      "Zonneparken",
+      "Een zonnepark kost geld, printplaten en staal en levert 3.000 energie per tick zonder brandstof. Ieder park is 3% duurder dan het vorige.",
     ],
     "CopperInfo-col": [
       "Koper",
@@ -460,8 +486,20 @@ var objPause = {
     "fuelRodFactory",
     "Copper-col",
     "CopperSmelter-col",
+    "Electronics-col",
+    "SteelProduction-col",
+    "Prospecting-col",
   ],
   paused: [],
+  // Kaarten waarop pauzeren pas zin heeft als er iets automatisch draait
+  relevant: {
+    "SteelProduction-col": function () {
+      return +objIronMelter.controlled > 0;
+    },
+    "Prospecting-col": function () {
+      return +objScanner.amount > 0;
+    },
+  },
   is: function (cardId) {
     return BETA && objPause.paused.indexOf(cardId) !== -1;
   },
@@ -489,6 +527,8 @@ var objPause = {
     if (!button) return;
     var paused = objPause.is(cardId);
     var title = helpTexts[cardId] ? helpTexts[cardId][0] : cardId;
+    var relevant = objPause.relevant[cardId];
+    button.hidden = !!relevant && !relevant() && !paused;
     card.classList.toggle("card-paused", paused);
     button.innerHTML = icon(paused ? "play" : "pause");
     button.setAttribute("aria-pressed", String(paused));
@@ -1191,6 +1231,81 @@ var objFlows = {
       },
     ],
   ],
+  // Stromen van level 13 (beta): elektronica, printplaten en zonneparken
+  betaEdges13: [
+    [
+      "CopperInfo-col",
+      "Electronics-col",
+      "koper",
+      function () {
+        return objElectronics.active > 0;
+      },
+    ],
+    [
+      "plasticStorage-col",
+      "Electronics-col",
+      "kunststof",
+      function () {
+        return objElectronics.active > 0;
+      },
+    ],
+    [
+      "Electronics-col",
+      "PCB-col",
+      "printplaten",
+      function () {
+        return objElectronics.active > 0;
+      },
+    ],
+    [
+      "PCB-col",
+      "SteelProduction-col",
+      "printplaten",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "PCB-col",
+      "Prospecting-col",
+      "printplaten",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "PCB-col",
+      "solarPark",
+      "printplaten",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "Electronics-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "solarPark",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "solarPark",
+      "energy-col",
+      "energie",
+      function () {
+        return +objSolar.amount > 0;
+      },
+    ],
+  ],
   // Energieverbruikers: benodigde energie per tick/run (0 = staat stil)
   energyUsers: {
     "pomp-col": function () {
@@ -1230,6 +1345,9 @@ var objFlows = {
     },
     "CopperSmelter-col": function () {
       return +objCopperSmelter.amount * objCopperSmelter.energy;
+    },
+    "Electronics-col": function () {
+      return +objElectronics.amount * objElectronics.energy;
     },
   },
   key: function (edge) {
@@ -1559,7 +1677,11 @@ var objFlows = {
     button.style.display = objFlows.canShow() ? "" : "none";
   },
   init: function () {
-    if (BETA) objFlows.edges = objFlows.edges.concat(objFlows.betaEdges);
+    if (BETA)
+      objFlows.edges = objFlows.edges.concat(
+        objFlows.betaEdges,
+        objFlows.betaEdges13
+      );
     objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
     Object.keys(objFlows.energyUsers).forEach(function (cardId) {
@@ -3017,6 +3139,13 @@ var objEnergy = {
     return 0;
   },
   produce: function () {
+    // Zonneparken (beta): zonder brandstof, tot de opslag vol is
+    if (+objSolar.amount > 0) {
+      objEnergy.available = Math.min(
+        +objEnergy.storageCap * +objEnergy.capacitors,
+        +objEnergy.available + +objSolar.amount * objSolar.production
+      );
+    }
     // Nuclear
     if (+objNuclearPowerPlant.reactors > 0) {
       var capLeft =
@@ -3143,7 +3272,8 @@ var objEnergy = {
           +objPowerPlant.amount * +objPowerPlant.yield +
             +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
             +objNuclearPowerPlant.reactors *
-              +objNuclearPowerPlant.reactorProduction
+              +objNuclearPowerPlant.reactorProduction +
+            +objSolar.amount * objSolar.production
         ),
       ],
     ]);
@@ -3183,6 +3313,12 @@ var objEnergy = {
       +objCopperSmelter.amount *
         objCopperSmelter.energy *
         f("CopperSmelter-col") +
+      // Level 13 (beta): elektronica, scanners en bestuurde hoogovens
+      +objElectronics.amount * objElectronics.energy * f("Electronics-col") +
+      +objScanner.amount * objScanner.energy * f("Prospecting-col") +
+      +objIronMelter.controlled *
+        +objIronMelter.energy *
+        f("SteelProduction-col") +
       // In de beta gebruiken splijtstoffabrieken hun stroom per tick
       (BETA
         ? +objFuelCellFactory.amount *
@@ -4468,54 +4604,7 @@ var objMines = {
     document.getElementById("ProspectingProgress").innerHTML =
       "Zoeken klaar over " + objMines.prospectTimerActive + " seconden";
     if (objMines.prospectTimerActive < 1) {
-      //bepalen welke resource er gevonden wordt: (geinspireerd door: http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
-
-      let weighed_list = generateWeighedList(objMines.items, objMines.weight);
-      let random_num = randomSelect(0, weighed_list.length - 1);
-      let selectedItem = parseInt(weighed_list[random_num]);
-
-      //verwerken resultaat
-      switch (selectedItem) {
-        case 1:
-          objMines.ironAmountProspected++;
-          store.setItem("ironAmountProspected", objMines.ironAmountProspected);
-          selectedItem = "Ijzer";
-          break;
-        case 2:
-          objMines.coalAmountProspected++;
-          store.setItem("coalAmountProspected", objMines.coalAmountProspected);
-          selectedItem = "Steenkool";
-          break;
-        case 3:
-          objMines.uraniumAmountProspected++;
-          store.setItem(
-            "uraniumAmountProspected",
-            objMines.uraniumAmountProspected
-          );
-          selectedItem = "Uranium";
-          break;
-        case 4:
-          objMines.copperAmountProspected++;
-          store.setItem(
-            "copperAmountProspected",
-            objMines.copperAmountProspected
-          );
-          selectedItem = "Koper";
-          break;
-        case 5:
-          objMines.goldAmountProspected++;
-          store.setItem("goldAmountProspected", objMines.goldAmountProspected);
-          selectedItem = "Goud";
-          break;
-        case 6:
-          objMines.diamondAmountProspected++;
-          store.setItem(
-            "diamondAmountProspected",
-            objMines.diamondAmountProspected
-          );
-          selectedItem = "Diamant";
-          break;
-      }
+      var selectedItem = objMines.findSite(objMines.weight);
       objMines.prospecting = 0;
       store.setItem("prospecting", objMines.prospecting);
       document.getElementById("ProspectingProgress").style.display = "none";
@@ -4526,6 +4615,19 @@ var objMines = {
       objMines.showProspecting();
       objMines.showMining();
     }
+  },
+  siteNames: ["", "Ijzer", "Steenkool", "Uranium", "Koper", "Goud", "Diamant"],
+  siteTypes: ["", "iron", "coal", "uranium", "copper", "gold", "diamond"],
+  // Een willekeurige locatie vinden met de gegeven gewichten (gebaseerd op
+  // http://codetheory.in/weighted-biased-random-number-generation-with-javascript-based-on-probability/)
+  findSite: function (weights) {
+    let weighed_list = generateWeighedList(objMines.items, weights);
+    let random_num = randomSelect(0, weighed_list.length - 1);
+    let item = parseInt(weighed_list[random_num]);
+    var key = objMines.siteTypes[item] + "AmountProspected";
+    objMines[key]++;
+    store.setItem(key, objMines[key]);
+    return objMines.siteNames[item];
   },
   showProspecting: function () {
     if (+objResearch.level > 2) {
@@ -5095,6 +5197,10 @@ var objIronMelter = {
   coalNeeded: 1000,
   energy: 5000,
   activeSmelters: 0,
+  // Hoogovenbesturing (beta, vanaf level 13): bestuurde hoogovens maken iedere tick zelf staal
+  controlled: 0,
+  controlPCB: 5000,
+  autoActive: 0,
   add: function (amount) {
     if (amount < 0) {
       imPrice = +objIronMelter.cost * 0.75;
@@ -5112,6 +5218,10 @@ var objIronMelter = {
     if (+objMoney.amount > +imPrice * +amount) {
       objMoney.use(+imPrice * +amount);
       objIronMelter.amount = +objIronMelter.amount + +amount;
+      if (+objIronMelter.controlled > +objIronMelter.amount) {
+        objIronMelter.controlled = +objIronMelter.amount;
+        store.setItem("smelterControls", objIronMelter.controlled);
+      }
     } else {
       notificationOverlay("Niet genoeg doekoe!", "Hoogoven", "fa-euro-sign");
     }
@@ -5124,10 +5234,20 @@ var objIronMelter = {
       notificationOverlay("Geen hoogovens!", "Hoogovens", "fa-industry");
       return 0;
     }
-    var coalNeededT = +objIronMelter.amount * +objIronMelter.coalNeeded;
-    var ironOreNeededT = +objIronMelter.amount * +objIronMelter.ironOreNeeded;
-    var energyNeededT = +objIronMelter.amount * +objIronMelter.energy;
-    objIronMelter.activeSmelters = +objIronMelter.amount;
+    // Met de hand: alleen de hoogovens zonder besturing
+    var smelters = +objIronMelter.amount - +objIronMelter.controlled;
+    if (smelters < 1) {
+      notificationOverlay(
+        "Al je hoogovens hebben besturing en maken zelf staal.",
+        "Hoogovens",
+        "fa-industry"
+      );
+      return 0;
+    }
+    var coalNeededT = smelters * +objIronMelter.coalNeeded;
+    var ironOreNeededT = smelters * +objIronMelter.ironOreNeeded;
+    var energyNeededT = smelters * +objIronMelter.energy;
+    objIronMelter.activeSmelters = smelters;
 
     function setProductionMax(selectedResource) {
       coalNeededT = +objIronMelter.activeSmelters * +objIronMelter.coalNeeded;
@@ -5178,7 +5298,73 @@ var objIronMelter = {
     ]);
     objSteel.show();
   },
+  addControl: function () {
+    if (!objElectronics.unlocked()) return 0;
+    if (+objIronMelter.controlled >= +objIronMelter.amount) {
+      notificationOverlay(
+        "Iedere hoogoven heeft al besturing. Bouw eerst een extra hoogoven.",
+        "Hoogovenbesturing",
+        "fa-info"
+      );
+      return 0;
+    }
+    if (!objPCB.has(objIronMelter.controlPCB, "Hoogovenbesturing")) return 0;
+    objPCB.use(objIronMelter.controlPCB);
+    objFlows.pulse("PCB-col", "SteelProduction-col");
+    objIronMelter.controlled++;
+    store.setItem("smelterControls", objIronMelter.controlled);
+    objIronMelter.show();
+    objPause.update("SteelProduction-col");
+  },
+  // Bestuurde hoogovens: iedere tick zoveel runs als er ijzererts, steenkool en energie is
+  autoProduce: function () {
+    objIronMelter.autoActive = 0;
+    if (+objIronMelter.controlled < 1 || objPause.is("SteelProduction-col"))
+      return 0;
+    var active = Math.min(
+      +objIronMelter.controlled,
+      Math.floor(+objIronOre.amount / +objIronMelter.ironOreNeeded),
+      Math.floor(+objCoal.amount / +objIronMelter.coalNeeded),
+      Math.floor(+objEnergy.available / +objIronMelter.energy)
+    );
+    if (active < 1) return 0;
+    objIronMelter.autoActive = active;
+    objIronOre.use(active * +objIronMelter.ironOreNeeded);
+    objCoal.use(active * +objIronMelter.coalNeeded);
+    objEnergy.use(active * +objIronMelter.energy, "Hoogovenbesturing");
+    objSteel.add(active * +objIronMelter.production);
+    objSteel.show();
+  },
+  showControl: function () {
+    var el = document.getElementById("steelControl");
+    if (!objElectronics.unlocked() || +objMines.ironAmountProspected < 1) {
+      el.innerHTML = "";
+      return;
+    }
+    var free = +objIronMelter.amount - +objIronMelter.controlled;
+    el.innerHTML =
+      "<h3>Besturing</h3>" +
+      renderStats([
+        [
+          "Bestuurde hoogovens",
+          FixNumber(objIronMelter.controlled) +
+            " van " +
+            FixNumber(objIronMelter.amount),
+        ],
+        ["Nu actief", FixNumber(objIronMelter.autoActive)],
+        ["Printplaten per besturing", FixNumber(objIronMelter.controlPCB)],
+      ]) +
+      renderHint(
+        "Een hoogoven met besturing maakt iedere tick zelf staal zolang er ijzererts, steenkool en energie is. Maak staal gebruikt alleen de hoogovens zonder besturing."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objIronMelter.addControl();' id='addSmelterControl'" +
+      (free < 1 ? " disabled" : "") +
+      ">Installeer besturing</button>" +
+      "</div>";
+  },
   show: function () {
+    objIronMelter.showControl();
     if (+objMines.ironAmountProspected > 0) {
       document.getElementById("steelProduction").innerHTML =
         "<h2>Hoogovens</h2>" +
@@ -5198,22 +5384,17 @@ var objIronMelter = {
         "<button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
         "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button>" +
         "</div>";
+      // Maak staal gebruikt alleen de hoogovens zonder besturing (beta)
+      var manual = +objIronMelter.amount - +objIronMelter.controlled;
       document.getElementById("steelProductionStats").innerHTML =
-        "<h3>Totaal per run</h3>" +
+        "<h3>Totaal per run" +
+        (+objIronMelter.controlled > 0 ? " (zonder besturing)" : "") +
+        "</h3>" +
         renderStats([
-          [
-            "Staal",
-            FixUnit(+objIronMelter.amount * +objIronMelter.production, "ton"),
-          ],
-          [
-            "IJzererts",
-            FixUnit(objIronMelter.amount * objIronMelter.ironOreNeeded, "ton"),
-          ],
-          [
-            "Steenkool",
-            FixUnit(objIronMelter.amount * objIronMelter.coalNeeded, "ton"),
-          ],
-          ["Energie", FixNumber(objIronMelter.amount * objIronMelter.energy)],
+          ["Staal", FixUnit(manual * +objIronMelter.production, "ton")],
+          ["IJzererts", FixUnit(manual * objIronMelter.ironOreNeeded, "ton")],
+          ["Steenkool", FixUnit(manual * objIronMelter.coalNeeded, "ton")],
+          ["Energie", FixNumber(manual * objIronMelter.energy)],
         ]) +
         "<div class='actions'>" +
         "<button type='button' class='btn btn-success' onClick='objIronMelter.produce();' id='makeSteelButton'>Maak staal</button>" +
@@ -5222,6 +5403,9 @@ var objIronMelter = {
   },
   init: function () {
     objIronMelter.amount = store.getItem("ironSmelters") || 0;
+    objIronMelter.controlled = BETA
+      ? Math.min(+store.getItem("smelterControls") || 0, +objIronMelter.amount)
+      : 0;
     objIronMelter.show();
   },
 };
@@ -6127,6 +6311,463 @@ var objCopper = {
     objCopper.amount = +store.getItem("copperAmount") || 0;
     objCopper.storage = +store.getItem("copperStorage") || 1;
     objCopper.show();
+  },
+};
+
+// Elektronica (alleen in de beta, vanaf level 13): koper + kunststof + energie -> printplaten.
+// Printplaten zijn te verkopen en nodig voor de hoogovenbesturing, de seismische scanner
+// en zonneparken.
+var objElectronics = {
+  amount: 0,
+  cost: 5000000000,
+  steelNeeded: 250000,
+  copperNeeded: 50,
+  plasticNeeded: 200,
+  energy: 3000,
+  production: 100,
+  active: 0,
+  unlocked: function () {
+    return BETA && +objPlayerInfo.level >= 13;
+  },
+  add: function (amount) {
+    if (!objElectronics.unlocked()) return 0;
+    if (+amount < 0) {
+      if (+objElectronics.amount < 1) {
+        notificationOverlay(
+          "Geen fabrieken om te verkopen",
+          "Elektronicafabriek",
+          "fa-industry"
+        );
+        return 0;
+      }
+      objElectronics.amount--;
+      objMoney.add(
+        +objElectronics.cost * 0.75,
+        "Verkoop elektronicafabriek",
+        24,
+        1
+      );
+    } else {
+      if (moneyCheck(+objElectronics.cost) == 0) {
+        notificationOverlay(
+          "Niet genoeg doekoe!",
+          "Elektronicafabriek",
+          "fa-euro-sign"
+        );
+        return 0;
+      }
+      if (+objSteel.amount < +objElectronics.steelNeeded) {
+        notificationOverlay(
+          "Niet genoeg staal!",
+          "Elektronicafabriek",
+          "fa-box"
+        );
+        return 0;
+      }
+      objMoney.use(+objElectronics.cost);
+      objSteel.use(+objElectronics.steelNeeded);
+      objSteel.show();
+      objFlows.pulse("SteelInfo-col", "Electronics-col");
+      objElectronics.amount++;
+    }
+    store.setItem("electronicsFactories", objElectronics.amount);
+    objElectronics.show();
+  },
+  // Draait iedere tick zolang er koper, kunststof, energie en opslagruimte is
+  produce: function () {
+    if (objPause.is("Electronics-col")) {
+      objElectronics.active = 0;
+      return 0;
+    }
+    var active = Math.min(
+      +objElectronics.amount,
+      Math.floor(+objCopper.amount / objElectronics.copperNeeded),
+      Math.floor(+objPlastic.amount / objElectronics.plasticNeeded),
+      Math.floor(+objEnergy.available / objElectronics.energy),
+      Math.floor(objPCB.space() / objElectronics.production)
+    );
+    objElectronics.active = Math.max(0, active);
+    if (active < 1) return 0;
+    objCopper.use(active * objElectronics.copperNeeded);
+    objPlastic.use(active * objElectronics.plasticNeeded);
+    objPlastic.show();
+    objEnergy.use(active * objElectronics.energy, "Elektronicafabriek");
+    objPCB.add(active * objElectronics.production);
+  },
+  show: function () {
+    var left = document.getElementById("electronicsFactory");
+    var right = document.getElementById("electronicsStats");
+    if (!objElectronics.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objElectronics.amount;
+    var a = objElectronics.active;
+    left.innerHTML =
+      "<h2>Elektronicafabriek</h2>" +
+      renderStats([
+        ["Fabrieken", FixNumber(n)],
+        ["Prijs per fabriek", FixMoney(objElectronics.cost)],
+        ["Staal per fabriek", FixUnit(objElectronics.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(objElectronics.cost * 0.75)],
+      ]) +
+      "<h3>Per fabriek per tick</h3>" +
+      renderStats([
+        ["Koper", FixUnit(objElectronics.copperNeeded, "ton")],
+        ["Kunststof", FixUnit(objElectronics.plasticNeeded, "eenheden")],
+        ["Energie", FixNumber(objElectronics.energy)],
+        ["Printplaten", FixNumber(objElectronics.production)],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objElectronics.add(1);' id='buyElectronics'>Bouw elektronicafabriek</button> " +
+      "<button type='button' class='btn btn-danger' onClick='objElectronics.add(-1);' id='sellElectronics'>Verkoop elektronicafabriek</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(a) + " van " + FixNumber(n)],
+        ["Printplaten", FixNumber(a * objElectronics.production) + " per tick"],
+        ["Koper", FixUnit(a * objElectronics.copperNeeded, "ton per tick")],
+        [
+          "Kunststof",
+          FixNumber(a * objElectronics.plasticNeeded) + " per tick",
+        ],
+        ["Energie", FixNumber(a * objElectronics.energy) + " per tick"],
+      ]) +
+      renderHint(
+        "Een fabriek draait vanzelf iedere tick zolang er koper, kunststof, energie en ruimte voor printplaten is."
+      );
+  },
+  init: function () {
+    objElectronics.amount = +store.getItem("electronicsFactories") || 0;
+    objElectronics.show();
+  },
+};
+
+var objPCB = {
+  amount: 0,
+  price: 60000,
+  storage: 1,
+  storageCap: 100000,
+  storagePrice: 1000000000,
+  space: function () {
+    return +objPCB.storage * +objPCB.storageCap - +objPCB.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objPCB", amountAdded, "pcbAmount");
+  },
+  use: function (amount) {
+    return useResource("objPCB", amount, "pcbAmount");
+  },
+  // Genoeg printplaten? Zo niet, dan een melding
+  has: function (amount, title) {
+    if (+objPCB.amount >= +amount) return true;
+    notificationOverlay(
+      "Niet genoeg printplaten! Nodig: " + FixNumber(amount) + ".",
+      title,
+      "fa-box"
+    );
+    return false;
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot printplaten";
+    var priceValue = +objPCB.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objPCB.amount;
+      if (amountSold <= 0) return 0;
+      objPCB.use(amountSold);
+      reason = "Handmatige verkoop printplaten";
+      priceValue = +objPCB.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 25, amountSold);
+  },
+  addStorage: function () {
+    if (moneyCheck(+objPCB.storagePrice) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Printplatenopslag",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    objMoney.use(+objPCB.storagePrice);
+    objPCB.storage++;
+    store.setItem("pcbStorage", objPCB.storage);
+    objPCB.show();
+  },
+  show: function () {
+    var left = document.getElementById("PCB");
+    var right = document.getElementById("pcbStorage");
+    if (!objElectronics.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var capacity = +objPCB.storage * +objPCB.storageCap;
+    left.innerHTML =
+      "<h2>Printplaten</h2>" +
+      renderBar(
+        "Voorraad",
+        FixNumber(objPCB.amount),
+        (+objPCB.amount / capacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixNumber(objPCB.space())],
+        ["Prijs per printplaat", FixMoney(objPCB.price)],
+      ]) +
+      renderHint(
+        "Nodig voor hoogovenbesturing, seismische scanners en zonneparken. Wat niet past wordt verkocht voor 20% van de prijs."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objPCB.sell(0)' id='sellPCB'>Verkoop printplaten</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
+        [
+          "Magazijnen",
+          FixNumber(objPCB.storage) + " (" + FixNumber(capacity) + ")",
+        ],
+        ["Prijs extra magazijn", FixMoney(objPCB.storagePrice)],
+        ["Capaciteit per magazijn", FixNumber(objPCB.storageCap)],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objPCB.addStorage();' id='addPCBStorage'>Koop magazijn</button>" +
+      "</div>";
+  },
+  init: function () {
+    objPCB.amount = +store.getItem("pcbAmount") || 0;
+    objPCB.storage = +store.getItem("pcbStorage") || 1;
+    objPCB.show();
+  },
+};
+
+// Zonnepark (alleen in de beta, vanaf level 13): stroom zonder brandstof
+var objSolar = {
+  amount: 0,
+  price: 2000000000,
+  priceFactor: 1.03,
+  pcbNeeded: 1000,
+  steelNeeded: 50000,
+  production: 3000,
+  add: function () {
+    if (!objElectronics.unlocked()) return 0;
+    if (moneyCheck(+objSolar.price) == 0) {
+      notificationOverlay("Niet genoeg doekoe!", "Zonnepark", "fa-euro-sign");
+      return 0;
+    }
+    if (+objSteel.amount < +objSolar.steelNeeded) {
+      notificationOverlay("Niet genoeg staal!", "Zonnepark", "fa-box");
+      return 0;
+    }
+    if (!objPCB.has(objSolar.pcbNeeded, "Zonnepark")) return 0;
+    objMoney.use(+objSolar.price);
+    objSteel.use(+objSolar.steelNeeded);
+    objSteel.show();
+    objPCB.use(objSolar.pcbNeeded);
+    objFlows.pulseAll([
+      ["SteelInfo-col", "solarPark"],
+      ["PCB-col", "solarPark"],
+    ]);
+    objSolar.amount++;
+    objSolar.price = +objSolar.price * objSolar.priceFactor;
+    store.setItem("solarParks", objSolar.amount);
+    store.setItem("solarPrice", objSolar.price);
+    objSolar.show();
+    objEnergy.show();
+  },
+  sell: function () {
+    if (+objSolar.amount < 1) {
+      notificationOverlay(
+        "Geen zonneparken om te verkopen",
+        "Zonnepark",
+        "fa-info"
+      );
+      return 0;
+    }
+    objSolar.price = +objSolar.price / objSolar.priceFactor;
+    objSolar.amount--;
+    objMoney.add(+objSolar.price * 0.75, "Verkoop zonnepark", 26, 1);
+    store.setItem("solarParks", objSolar.amount);
+    store.setItem("solarPrice", objSolar.price);
+    objSolar.show();
+    objEnergy.show();
+  },
+  show: function () {
+    var el = document.getElementById("solarParkInfo");
+    if (!objElectronics.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML =
+      "<h2>Zonneparken</h2>" +
+      renderStats([
+        ["Zonneparken", FixNumber(objSolar.amount)],
+        [
+          "Energie",
+          FixNumber(objSolar.amount * objSolar.production) + " per tick",
+        ],
+        ["Prijs per park", FixMoney(objSolar.price)],
+        ["Printplaten per park", FixNumber(objSolar.pcbNeeded)],
+        ["Staal per park", FixUnit(objSolar.steelNeeded, "ton")],
+        [
+          "Verkoopwaarde",
+          FixMoney((+objSolar.price / objSolar.priceFactor) * 0.75),
+        ],
+      ]) +
+      renderHint(
+        "Een zonnepark levert " +
+          FixNumber(objSolar.production) +
+          " energie per tick, zonder brandstof. Ieder park is 3% duurder dan het vorige."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objSolar.add();' id='buySolar'>Bouw zonnepark</button> " +
+      "<button type='button' class='btn btn-danger' onClick='objSolar.sell();' id='sellSolar'>Verkoop zonnepark</button>" +
+      "</div>";
+  },
+  init: function () {
+    objSolar.amount = +store.getItem("solarParks") || 0;
+    objSolar.price = +store.getItem("solarPrice") || objSolar.price;
+    objSolar.show();
+  },
+};
+
+// Seismische scanner (alleen in de beta, vanaf level 13): prospect automatisch achter elkaar
+// door, eventueel gericht op één grondstof (kans x4). Iedere zoektocht kost nog steeds geld;
+// een scanner gebruikt energie zolang hij zoekt.
+var objScanner = {
+  amount: 0,
+  pcbNeeded: 20000,
+  energy: 1000,
+  targetFactor: 4,
+  target: 0, // 0 = geen voorkeur, anders het nummer uit objMines.items
+  timers: [],
+  found: [],
+  unlocked: function () {
+    return objElectronics.unlocked() && +objResearch.level > 2;
+  },
+  weights: function () {
+    return objMines.weight.map(function (w, i) {
+      return objMines.items[i] === +objScanner.target
+        ? +w * objScanner.targetFactor
+        : +w;
+    });
+  },
+  add: function () {
+    if (!objScanner.unlocked()) return 0;
+    if (!objPCB.has(objScanner.pcbNeeded, "Seismische scanner")) return 0;
+    objPCB.use(objScanner.pcbNeeded);
+    objFlows.pulse("PCB-col", "Prospecting-col");
+    objScanner.amount++;
+    objScanner.timers.push(0);
+    objScanner.save();
+    objScanner.show();
+    objPause.update("Prospecting-col");
+  },
+  setTarget: function (value) {
+    objScanner.target = +value || 0;
+    store.setItem("scannerTarget", objScanner.target);
+    objScanner.show();
+  },
+  save: function () {
+    store.setItem("scanners", objScanner.amount);
+    store.setItem("scannerTimers", JSON.stringify(objScanner.timers));
+  },
+  // Iedere tick: lopende zoektochten een tick verder (als er energie is), klare scanners
+  // starten een nieuwe zoektocht (als er geld is)
+  tick: function () {
+    if (+objScanner.amount < 1 || objPause.is("Prospecting-col")) return 0;
+    var price = objMines.prospectPrice();
+    for (var i = 0; i < objScanner.timers.length; i++) {
+      if (objScanner.timers[i] <= 0) {
+        if (+objMoney.amount < price) continue;
+        objMoney.use(price);
+        objScanner.timers[i] = +objMines.prospectTimer;
+      }
+      if (
+        objEnergy.use(objScanner.energy, "Seismische scanner") !==
+        objScanner.energy
+      )
+        continue;
+      objScanner.timers[i]--;
+      if (objScanner.timers[i] <= 0) {
+        objScanner.found.unshift(objMines.findSite(objScanner.weights()));
+        objScanner.found = objScanner.found.slice(0, 5);
+        objMines.showAll();
+      }
+    }
+    objScanner.save();
+  },
+  show: function () {
+    var el = document.getElementById("scanner");
+    if (!objScanner.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    // De keuzelijst en de knop één keer opbouwen (anders klapt de lijst iedere tick dicht);
+    // daarna alleen de cijfers bijwerken
+    if (!document.getElementById("scannerStats")) {
+      var options = [0].concat(objMines.items).map(function (item) {
+        return (
+          "<option value='" +
+          item +
+          "'>" +
+          (item === 0 ? "geen voorkeur" : objMines.siteNames[item]) +
+          "</option>"
+        );
+      });
+      el.innerHTML =
+        "<h3>Seismische scanner</h3>" +
+        "<div id='scannerStats'></div>" +
+        "<label class='scanner-target'>Zoek vooral naar " +
+        "<select id='scannerTarget' onchange='objScanner.setTarget(this.value)'>" +
+        options.join("") +
+        "</select></label>" +
+        renderHint(
+          "Iedere scanner zoekt vanzelf achter elkaar door en betaalt per zoektocht. Kies je een grondstof, dan is de kans daarop 4 keer zo groot. Met de pauzeknop stoppen de scanners."
+        ) +
+        "<div class='actions'>" +
+        "<button type='button' class='btn btn-primary' onClick='objScanner.add();' id='buyScanner'>Koop scanner</button>" +
+        "</div>";
+    }
+    var select = document.getElementById("scannerTarget");
+    if (select.value !== String(+objScanner.target))
+      select.value = String(+objScanner.target);
+    var busy = objScanner.timers.filter(function (t) {
+      return t > 0;
+    }).length;
+    document.getElementById("scannerStats").innerHTML = renderStats([
+      ["Scanners", FixNumber(objScanner.amount)],
+      ["Nu aan het zoeken", FixNumber(busy)],
+      [
+        "Energie per zoekende scanner",
+        FixNumber(objScanner.energy) + " per tick",
+      ],
+      ["Printplaten per scanner", FixNumber(objScanner.pcbNeeded)],
+      objScanner.found.length && [
+        "Laatste vondsten",
+        objScanner.found.join(", "),
+      ],
+    ]);
+  },
+  init: function () {
+    objScanner.amount = BETA ? +store.getItem("scanners") || 0 : 0;
+    objScanner.target = +store.getItem("scannerTarget") || 0;
+    var timers = [];
+    try {
+      timers = JSON.parse(store.getItem("scannerTimers") || "[]");
+    } catch (error) {
+      timers = [];
+    }
+    if (!Array.isArray(timers)) timers = [];
+    objScanner.timers = [];
+    for (var i = 0; i < objScanner.amount; i++) {
+      objScanner.timers.push(
+        Math.max(0, Math.min(+timers[i] || 0, +objMines.prospectTimer))
+      );
+    }
+    objScanner.show();
   },
 };
 
@@ -7395,6 +8036,18 @@ var loopsProduction = setInterval(function () {
       objCopperMine.show();
       objCopperSmelter.show();
       objCopper.show();
+    }
+    if (objElectronics.unlocked()) {
+      objElectronics.produce();
+      objIronMelter.autoProduce();
+      objScanner.tick();
+      objElectronics.show();
+      objPCB.show();
+      objSolar.show();
+      objScanner.show();
+      objIronMelter.showControl();
+      objPause.update("SteelProduction-col");
+      objPause.update("Prospecting-col");
     }
 
     objEnergy.produce();
