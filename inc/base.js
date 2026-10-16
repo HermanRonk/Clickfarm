@@ -110,6 +110,7 @@ window.onload = function () {
   initHelp();
   objLayout.init();
   objPause.init();
+  objBulk.init();
   objFlows.init();
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
@@ -470,6 +471,161 @@ function initHelp() {
     card.prepend(button);
   });
 }
+
+// Bulk bouwen (beta): +10 en Max bouwen één voor één met de gewone bouwfunctie, tot het
+// aantal bereikt is of het niet meer lukt (geld, staal, locaties of ruimte op). Zo gelden alle
+// gewone regels en oplopende prijzen.
+var objBulk = {
+  max: 1000, // veiligheidsgrens voor Max
+  targets: {
+    iron: [
+      "ijzerertsmijnen",
+      function () {
+        return +objMines.ironAmountActive;
+      },
+      function () {
+        objMines.addMine(1, 1);
+      },
+    ],
+    coal: [
+      "steenkoolmijnen",
+      function () {
+        return +objMines.coalAmountActive;
+      },
+      function () {
+        objMines.addMine(2, 1);
+      },
+    ],
+    uranium: [
+      "uraniummijnen",
+      function () {
+        return +objMines.uraniumAmountActive;
+      },
+      function () {
+        objMines.addMine(3, 1);
+      },
+    ],
+    copper: [
+      "kopermijnen",
+      function () {
+        return +objMines.copperAmountActive;
+      },
+      function () {
+        objMines.addMine(4, 1);
+      },
+    ],
+    coalPlant: [
+      "kolencentrales",
+      function () {
+        return +objCoalPowerPlant.amount;
+      },
+      function () {
+        objCoalPowerPlant.add();
+      },
+    ],
+    nuclearPlant: [
+      "kerncentrales",
+      function () {
+        return +objNuclearPowerPlant.amount;
+      },
+      function () {
+        objNuclearPowerPlant.buildPlant();
+      },
+    ],
+    reactor: [
+      "kernreactoren",
+      function () {
+        return +objNuclearPowerPlant.reactors;
+      },
+      function () {
+        objNuclearPowerPlant.buildReactor();
+      },
+    ],
+    smelter: [
+      "hoogovens",
+      function () {
+        return +objIronMelter.amount;
+      },
+      function () {
+        objIronMelter.add(1);
+      },
+    ],
+    copperSmelter: [
+      "kopersmelterijen",
+      function () {
+        return +objCopperSmelter.amount;
+      },
+      function () {
+        objCopperSmelter.add(1);
+      },
+    ],
+    electronics: [
+      "elektronicafabrieken",
+      function () {
+        return +objElectronics.amount;
+      },
+      function () {
+        objElectronics.add(1);
+      },
+    ],
+    solar: [
+      "zonneparken",
+      function () {
+        return +objSolar.amount;
+      },
+      function () {
+        objSolar.add();
+      },
+    ],
+  },
+  // Bouw er maximaal n; geeft het aantal gebouwde terug
+  build: function (key, n) {
+    var target = objBulk.targets[key];
+    if (!BETA || !target) return 0;
+    var limit = Math.min(+n || 0, objBulk.max);
+    var built = 0;
+    for (var i = 0; i < limit; i++) {
+      var before = target[1]();
+      target[2]();
+      if (target[1]() <= before) break;
+      built++;
+    }
+    if (built > 1) {
+      notificationOverlay(
+        FixNumber(built) + " " + target[0] + " gebouwd",
+        "Bulk bouwen",
+        "fa-industry"
+      );
+    }
+    return built;
+  },
+  // Knoppen +10 en Max achter een gewone bouwknop (alleen in de beta)
+  buttons: function (key) {
+    if (!BETA) return "";
+    return (
+      " <button type='button' class='btn btn-primary btn-bulk' onClick='objBulk.build(\"" +
+      key +
+      "\", 10);' data-bulk='" +
+      key +
+      "-10' aria-label='Bouw 10 " +
+      objBulk.targets[key][0] +
+      "'>+10</button>" +
+      " <button type='button' class='btn btn-primary btn-bulk' onClick='objBulk.build(\"" +
+      key +
+      "\", objBulk.max);' data-bulk='" +
+      key +
+      "-max' aria-label='Bouw zoveel mogelijk " +
+      objBulk.targets[key][0] +
+      "'>Max</button>"
+    );
+  },
+  // Knoppen in de vaste HTML (kerncentrales): <span data-bulk-slot="...">
+  init: function () {
+    document.querySelectorAll("[data-bulk-slot]").forEach(function (slot) {
+      slot.outerHTML = objBulk.buttons(slot.dataset.bulkSlot);
+    });
+  },
+};
 
 // Pauzeren per kaart (beta): een energieverbruiker even stilzetten, bijvoorbeeld om stroom
 // vrij te maken voor de opstart van kernenergie. Een gepauzeerde kaart gebruikt geen
@@ -4104,6 +4260,7 @@ var objCoalPowerPlant = {
       document.getElementById("CoalSellPowerPlant").innerHTML =
         "<div class='actions'>" +
         "<button type='button' class='btn btn-primary' onClick='objCoalPowerPlant.add();' id='pushOne'>Bouw kolencentrale</button>" +
+        objBulk.buttons("coalPlant") +
         " <button type='button' class='btn btn-warning' onClick='objCoalPowerPlant.sell();' id='CoalpowerPlantSell'>Verkoop kolencentrale</button>" +
         "</div>";
       objEnergy.show();
@@ -4827,6 +4984,7 @@ var objMines = {
         "'>Bouw " +
         mineName +
         "</button>" +
+        objBulk.buttons(typeMine.replace("AmountProspected", "")) +
         " <button type='button' class='btn btn-danger' onClick='objMines.addMine(" +
         mineCode +
         ", 0);' id='" +
@@ -4890,11 +5048,13 @@ var objMines = {
         var activeMines = mineTypes[i] + "AmountActive";
         var prospectedMines = mineTypes[i] + "AmountProspected";
         var buttonMine = mineTypes[i] + "MineButton";
-        if (objMines[prospectedMines] <= +objMines[activeMines]) {
-          document.getElementById(buttonMine).disabled = true;
-        } else {
-          document.getElementById(buttonMine).disabled = false;
-        }
+        var full = objMines[prospectedMines] <= +objMines[activeMines];
+        document.getElementById(buttonMine).disabled = full;
+        document
+          .querySelectorAll("[data-bulk^='" + mineTypes[i] + "-']")
+          .forEach(function (button) {
+            button.disabled = full;
+          });
       }
     };
 
@@ -5395,7 +5555,9 @@ var objIronMelter = {
           ["Staal", FixUnit(objIronMelter.production, "ton")],
         ]) +
         "<div class='actions'>" +
-        "<button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button> " +
+        "<button type='button' class='btn btn-primary' onClick='objIronMelter.add(1);' id='buyIronMelter'>Bouw hoogoven</button>" +
+        objBulk.buttons("smelter") +
+        " " +
         "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button>" +
         "</div>";
       // Maak staal gebruikt alleen de hoogovens zonder besturing (beta)
@@ -6208,7 +6370,9 @@ var objCopperSmelter = {
         ["Koper", FixUnit(objCopperSmelter.production, "ton")],
       ]) +
       "<div class='actions'>" +
-      "<button type='button' class='btn btn-primary' onClick='objCopperSmelter.add(1);' id='buyCopperSmelter'>Bouw kopersmelterij</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objCopperSmelter.add(1);' id='buyCopperSmelter'>Bouw kopersmelterij</button>" +
+      objBulk.buttons("copperSmelter") +
+      " " +
       "<button type='button' class='btn btn-danger' onClick='objCopperSmelter.add(-1);' id='sellCopperSmelter'>Verkoop kopersmelterij</button>" +
       "</div>";
     right.innerHTML =
@@ -6440,7 +6604,9 @@ var objElectronics = {
         ["Printplaten", FixNumber(objElectronics.production)],
       ]) +
       "<div class='actions'>" +
-      "<button type='button' class='btn btn-primary' onClick='objElectronics.add(1);' id='buyElectronics'>Bouw elektronicafabriek</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objElectronics.add(1);' id='buyElectronics'>Bouw elektronicafabriek</button>" +
+      objBulk.buttons("electronics") +
+      " " +
       "<button type='button' class='btn btn-danger' onClick='objElectronics.add(-1);' id='sellElectronics'>Verkoop elektronicafabriek</button>" +
       "</div>";
     right.innerHTML =
@@ -6642,7 +6808,9 @@ var objSolar = {
           " energie per tick, zonder brandstof. Ieder park is 3% duurder dan het vorige."
       ) +
       "<div class='actions'>" +
-      "<button type='button' class='btn btn-primary' onClick='objSolar.add();' id='buySolar'>Bouw zonnepark</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objSolar.add();' id='buySolar'>Bouw zonnepark</button>" +
+      objBulk.buttons("solar") +
+      " " +
       "<button type='button' class='btn btn-danger' onClick='objSolar.sell();' id='sellSolar'>Verkoop zonnepark</button>" +
       "</div>";
   },
