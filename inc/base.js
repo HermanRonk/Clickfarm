@@ -84,6 +84,7 @@ window.onload = function () {
     "graanopbrengst-col",
     "olie-col",
     "Oilstock",
+    "Pastastock",
     "pomp-col",
     "energieproductie-col",
     "energy-col",
@@ -272,7 +273,7 @@ var helpTexts = {
   ],
   "energy-col": [
     "Energie",
-    "Centrales maken iedere seconde (tick) energie; die wordt opgeslagen tot de opslag vol is. Pompen, robots, controllers, mijnen en fabrieken gebruiken energie. Is er te weinig, dan draaien ze maar gedeeltelijk. Met de productieketen aan hebben verbruikers een ⚡-poortje: blauw als ze energie gebruiken, rood als er te weinig is.",
+    "Centrales maken iedere seconde (tick) energie; die wordt opgeslagen tot de opslag vol is. Hier koop je ook extra energieopslag. Pompen, robots, controllers, mijnen en fabrieken gebruiken energie. Is er te weinig, dan draaien ze maar gedeeltelijk. Met de productieketen aan hebben verbruikers een ⚡-poortje: blauw als ze energie gebruiken, rood als er te weinig is.",
   ],
   "landbouw-col": [
     "Landbouw",
@@ -310,7 +311,7 @@ var helpTexts = {
   ],
   "energieproductie-col": [
     "Oliecentrales",
-    "Een oliecentrale verbrandt 1 vat olie per tick en levert 10 energie. Energieopslag bepaalt hoeveel energie je kunt bewaren; wat niet past gaat verloren.",
+    "Een oliecentrale verbrandt 1 vat olie per tick en levert 10 energie. Wat niet in je energieopslag (in de kaart Energie) past, gaat verloren.",
   ],
   coalPower: [
     "Kolencentrales",
@@ -369,7 +370,7 @@ var helpTexts = {
   "Uranium-col": [
     "Uranium",
     BETA
-      ? "Een uraniummijn levert iedere tick 10 ton uranium voor 250 energie. Het personeel eet 2 dozen pasta per tick. Uranium is de grondstof voor splijtstofstaven."
+      ? "Een uraniummijn levert iedere 10 ticks (een dienst) 100 ton uranium voor 2.500 energie. Het personeel eet 20 dozen pasta per dienst. Uranium is de grondstof voor splijtstofstaven."
       : "Een uraniummijn levert iedere 10 ticks 100 ton uranium voor 2.500 energie. Het personeel eet pasta. Uranium is de grondstof voor splijtstofstaven.",
   ],
   fuelRodFactory: [
@@ -1888,7 +1889,12 @@ var objPlayerInfo = {
         Display.show(["AutoSell-col", "plastic-row"]);
 
       case 6: // Level 6 behaald
-        Display.show(["WindmillController", "chicken-col", "pasta-col"]);
+        Display.show([
+          "WindmillController",
+          "chicken-col",
+          "pasta-col",
+          "Pastastock",
+        ]);
 
       case 5: // Level 5 behaald
         Display.show("farmland-automation");
@@ -3946,6 +3952,10 @@ var objStorehouse = {
     document.getElementById("StorehousePasta").innerHTML = renderStats([
       ["Voorraad", FixNumber(objStorehouse.pasta) + " dozen"],
     ]);
+    // Ook in de kaart Voorraden (vanaf level 6); pasta heeft geen maximum, dus geen balk
+    document.getElementById("Pastastock").innerHTML = renderStats([
+      ["Pasta", FixNumber(Math.floor(objStorehouse.pasta)) + " dozen"],
+    ]);
   },
   init: function () {
     objStorehouse.amount = store.getItem("Storehouses") || 0;
@@ -5840,15 +5850,14 @@ var objPlastic = {
 
 // Uranium
 
-// Uraniummijn: draait eens per `period` ticks. In de beta iedere tick, met evenredig
-// minder productie en stroom per keer (geen grote stroomstoot), en het personeel eet een
-// tiende van de pasta.
+// Uraniummijn: draait in diensten van `period` ticks. In de beta eet het personeel een
+// tiende van de pasta: 20 dozen per dienst in plaats van 200 (#82).
 var objUraniumMine = {
-  period: BETA ? 1 : 10,
-  production: BETA ? 10 : 100,
-  energy: BETA ? 250 : 2500,
+  period: 10,
+  production: 100,
+  energy: 2500,
   workers: 20,
-  workerFood: BETA ? 0.1 : 10,
+  workerFood: BETA ? 1 : 10,
   produce: function () {
     if (objPause.is("Uranium-col")) return 0;
     var activeMines = objMines.uraniumAmountActive;
@@ -8094,7 +8103,8 @@ var loopsProduction = setInterval(function () {
       if (+objFuelCellFactory.amount > 0)
         objFuelRod.calculateWastePrice(50000, 99999);
     }
-    if (+timerCounter % 10 === 0) getPrice();
+    // Nieuwe marktprijzen: in de beta iedere 5 seconden, zoals in de oorspronkelijke versie (#83)
+    if (+timerCounter % (BETA ? 5 : 10) === 0) getPrice();
     if (
       +timerCounter % objUraniumMine.period === 0 &&
       +objMines.uraniumAmountActive >= 1

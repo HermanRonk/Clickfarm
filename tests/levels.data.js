@@ -13,7 +13,7 @@ const LEVELS = [
   { level: 3, threshold: 75000, unlocks: ["graanopbrengst-col", "olie-col", "Oilstock", "OilTop"] },
   { level: 4, threshold: 375000, unlocks: ["pomp-col", "energieproductie-col", "energy-col", "EnergyStats"] },
   { level: 5, threshold: 1500000, unlocks: ["farmland-automation"] },
-  { level: 6, threshold: 4500000, unlocks: ["WindmillController", "chicken-col", "pasta-col"] },
+  { level: 6, threshold: 4500000, unlocks: ["WindmillController", "chicken-col", "pasta-col", "Pastastock"] },
   { level: 7, threshold: 18000000, unlocks: ["AutoSell-col", "plastic-row"] },
   // Vanaf level 8 is het mijnbouwonderzoek beschikbaar; de mijnen zelf komen pas na het onderzoek
   { level: 8, threshold: 90000000, unlocks: ["MiningResearch-col", "mijnbouw-row"] },

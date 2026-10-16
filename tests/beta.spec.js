@@ -132,11 +132,11 @@ test.describe("Beta: balans", () => {
     EnergyAvailable: 50000,
   });
 
-  test("beta: een uraniummijn draait iedere tick en eet 2 dozen pasta per tick", async ({ page }) => {
+  test("beta: een uraniummijn draait in diensten van 10 ticks en eet 20 dozen per dienst (#82)", async ({ page }) => {
     await startGame(page, { beta: true, state: uranium });
-    await tick(page, 1);
-    expect(await game(page, () => [+objUraniumOre.amount, +objStorehouse.pasta])).toEqual([10, 998]);
     await tick(page, 9);
+    expect(await game(page, () => +objUraniumOre.amount)).toBe(0);
+    await tick(page, 1);
     expect(await game(page, () => [+objUraniumOre.amount, +objStorehouse.pasta])).toEqual([100, 980]);
   });
 
@@ -254,16 +254,17 @@ test.describe("Beta: koper (level 12)", () => {
   });
 
   test("bij weinig pasta gaat het uraniumpersoneel voor", async ({ page }) => {
-    // Eén uraniummijn eet 2 dozen per tick: de kopermijnen laten 120 dozen (60 ticks) liggen
+    // Eén uraniummijn eet 20 dozen per dienst van 10 ticks: de kopermijnen laten 120 dozen (60 ticks) liggen
     await startGame(page, {
       beta: true,
       state: copper({ copperAmountActive: 2, uraniumAmountProspected: 1, uraniumAmountActive: 1, Pasta: 100 }),
     });
-    await tick(page, 3);
+    await tick(page, 10);
     const s = await state(page);
     expect(s.ore).toBe(0);
-    expect(await game(page, () => +objUraniumOre.amount)).toBe(30);
-    expect(s.pasta).toBeCloseTo(94, 6);
+    // De uraniumdienst krijgt zijn 20 dozen wel
+    expect(await game(page, () => +objUraniumOre.amount)).toBe(100);
+    expect(s.pasta).toBeCloseTo(80, 6);
   });
 
   test("zonder stroom staan de mijnen stil", async ({ page }) => {
@@ -724,5 +725,63 @@ test.describe("Beta: level 13 (#71-#74)", () => {
     );
     expect(unknown).toEqual([]);
     expect(await game(page, () => objFlows.edges.some((e) => e[2] === "printplaten"))).toBe(true);
+  });
+});
+
+test.describe("Beta: wensen van spelers (#82, #83, #87, #88, #89)", () => {
+  for (const [beta, every] of [
+    [true, 5],
+    [false, 10],
+  ]) {
+    test(`#83 marktprijzen wisselen iedere ${every} seconden (${beta ? "beta" : "gewoon spel"})`, async ({ page }) => {
+      await startGame(page, { beta, state: level(5) });
+      await game(page, () => {
+        window.__priceCalls = 0;
+        const original = getPrice;
+        getPrice = function () {
+          window.__priceCalls++;
+          return original();
+        };
+      });
+      await tick(page, 20);
+      expect(await game(page, () => window.__priceCalls)).toBe(20 / every);
+    });
+  }
+
+  test("#89 pasta staat vanaf level 6 in de kaart Voorraden", async ({ page }) => {
+    await startGame(page, { state: level(6, { Pasta: 1234 }) });
+    await expect(page.locator("#opslag-col dt:text-is('Pasta') + dd")).toHaveText("1.234 dozen");
+  });
+
+  test("#89 op level 5 nog geen pasta in Voorraden", async ({ page }) => {
+    await startGame(page, { state: level(5) });
+    await expect(page.locator("#Pastastock")).toBeHidden();
+  });
+
+  test("#88 de energieopslag staat in de kaart Energie", async ({ page }) => {
+    await startGame(page, { state: level(4, { Money: 1e6 }) });
+    const card = page.locator("#energy-col");
+    await expect(card.locator("h3", { hasText: "Energieopslag" })).toBeVisible();
+    await card.getByRole("button", { name: "+10", exact: true }).click();
+    expect(await game(page, () => +objEnergy.capacitors)).toBe(20);
+    await expect(page.locator("#energieproductie-col")).not.toContainText("Energieopslag");
+  });
+
+  test("#87 de kopermijn staat in de koperrij, uranium direct boven de kernenergie", async ({ page }) => {
+    await startGame(page, { beta: true, state: level(12, { Rlevel: 4 }) });
+    expect(await game(page, () => document.getElementById("Copper-col").parentElement.id)).toBe("koper-row");
+    expect(await game(page, () => document.getElementById("mijnen-row2").nextElementSibling.id)).toBe("nuclearFuel-row");
+  });
+
+  test("#87 een oude indeling met de kopermijn in de uraniumrij blijft werken", async ({ page }) => {
+    const { pageErrors } = await startGame(page, {
+      beta: true,
+      state: level(12, {
+        Rlevel: 4,
+        layout: JSON.stringify({ order: { "mijnen-row2": ["Copper-col", "Uranium-col"] }, collapsed: [] }),
+      }),
+    });
+    expect(await game(page, () => document.getElementById("Copper-col").parentElement.id)).toBe("koper-row");
+    expect(pageErrors).toEqual([]);
   });
 });
