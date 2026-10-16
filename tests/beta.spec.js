@@ -286,6 +286,13 @@ test.describe("Beta: koper (level 12)", () => {
     await expect(page.locator("#CopperSmelter-col")).toContainText("0 van 1");
   });
 
+  test("onder Nu staat ook het steenkoolverbruik van de smelterij (#86)", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperOreAmount: 50000, copperSmelters: 2 }) });
+    await tick(page, 1);
+    // 2 actieve smelterijen x 200 ton
+    await expect(page.locator("#copperSmelterStats dt:text-is('Steenkool') + dd")).toHaveText("400 ton per tick");
+  });
+
   test("koper verkopen levert de volle prijs op; wat niet past 20%", async ({ page }) => {
     await startGame(page, { beta: true, state: copper({ copperAmount: 1000 }) });
     await page.locator("#sellCopper").click();

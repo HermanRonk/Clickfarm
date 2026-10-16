@@ -396,3 +396,25 @@ test.describe("Personeel en besturing per gebouw", () => {
     await expect(stat(page, "#farmland-automation", "Energie per run")).toHaveText("15");
   });
 });
+
+test.describe("Levelup werkt kaarten direct bij (#85)", () => {
+  for (const beta of [false, true]) {
+    test(`high-tech oliepompen verschijnen meteen op level 10${beta ? " (beta)" : ""}`, async ({ page }) => {
+      await startGame(page, { beta, state: { PlayerLevel: 9, NextLevel: threshold(9), Money: threshold(9) - 1000 } });
+      await expect(page.locator("#oil2")).toBeHidden();
+      await game(page, () => objMoney.add(5000, "test"));
+      await tick(page, 2);
+      expect(await game(page, () => +objPlayerInfo.level)).toBe(10);
+      await expect(page.locator("#oil2")).toBeVisible();
+    });
+  }
+
+  test("pastahelpers verschijnen meteen op level 7", async ({ page }) => {
+    await startGame(page, { state: { PlayerLevel: 6, NextLevel: threshold(6), Money: threshold(6) - 1000 } });
+    await expect(page.locator("#pastaHelperDiv")).toBeEmpty();
+    await game(page, () => objMoney.add(5000, "test"));
+    await tick(page, 2);
+    expect(await game(page, () => +objPlayerInfo.level)).toBe(7);
+    await expect(page.locator("#pastaHelperDiv")).toContainText("Pastahelpers");
+  });
+});

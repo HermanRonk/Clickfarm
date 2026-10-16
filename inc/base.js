@@ -1848,6 +1848,10 @@ var objPlayerInfo = {
           Math.min(objPlayerInfo.level, this.level_multiplier.length - 1)
         ];
       store.setItem("NextLevel", objPlayerInfo.nextlevel);
+      // Kaartdelen die zelf naar het level kijken, direct bijwerken (anders pas na herladen):
+      // pastahelpers (level 7) en high-tech oliepompen (level 10)
+      objPastaHelper.show();
+      objOilPumpAdv.show();
     }
 
     // Verkooptab is pas vanaf level 9 beschikbaar
@@ -6213,6 +6217,13 @@ var objCopperSmelter = {
           "Kopererts",
           FixUnit(
             objCopperSmelter.active * objCopperSmelter.oreNeeded,
+            "ton per tick"
+          ),
+        ],
+        [
+          "Steenkool",
+          FixUnit(
+            objCopperSmelter.active * objCopperSmelter.coalNeeded,
             "ton per tick"
           ),
         ],
