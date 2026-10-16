@@ -499,9 +499,6 @@
                     </div>
                 </div>
             </div>
-            <div id="Gold-col" class="container col-sm">
-                <div id="gold-mines"></div>
-            </div>
             <div id="Diamond-col" class="container col-sm">
                 <div id="diamond-mines"></div>
             </div>
@@ -589,6 +586,39 @@
                 </div>
             </div>
         </div>
+        <!-- Goud: alleen in de beta (vanaf level 14); de inhoud wordt in inc/base.js opgebouwd -->
+        <div class="row rows" id="goud-row">
+            <div id="Gold-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="gold-mines"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="GoldMine"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="GoldRefinery-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="goldRefinery"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="goldRefineryStats"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="GoldInfo-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="Gold"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="goldStorage"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="row rows" id="mijnen-row2">
             <div id="Uranium-col" class="container col-sm card-wide">
                 <div class="card-split">
@@ -636,6 +666,8 @@
                     <button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.buildReactor();' id='npprBuild'>Bouw kernreactor</button><span data-bulk-slot="reactor"></span>
                 </div>
                 <div id="nppsum"></div>
+                <!-- Reactorbesturing: alleen in de beta (vanaf level 14) -->
+                <div id="reactorControl"></div>
             </div>
             <!-- Zonnepark: alleen in de beta (vanaf level 13) -->
             <div class="container col-sm" id="solarPark">

@@ -144,6 +144,9 @@ window.onload = function () {
   objPCB.init();
   objSolar.init();
   objScanner.init();
+  objGoldOre.init();
+  objGoldRefinery.init();
+  objGold.init();
   objIronMelter.init();
   objSteel.init();
   objCoalPowerPlant.init();
@@ -345,7 +348,7 @@ var helpTexts = {
   "Prospecting-col": [
     "Prospecting",
     BETA
-      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12; goud- en diamantmijnen kun je nog niet bouwen."
+      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12 en goudmijnen vanaf level 14; diamantmijnen kun je nog niet bouwen."
       : "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
   ],
   "MiningSites-col": [
@@ -434,6 +437,18 @@ if (BETA) {
     solarPark: [
       "Zonneparken",
       "Een zonnepark kost geld, printplaten en staal en levert 3.000 energie per tick zonder brandstof. Ieder park is 3% duurder dan het vorige.",
+    ],
+    "Gold-col": [
+      "Goud",
+      "Een goudmijn kost geld en 100.000 ton staal. Hij levert 500 ton gouderts per tick voor 3.000 energie; het personeel eet 1 doos pasta per 2 ticks (het uraniumpersoneel gaat voor).",
+    ],
+    "GoldRefinery-col": [
+      "Goudraffinaderij",
+      "Een raffinaderij maakt iedere tick 5 kg goud van 2.500 ton gouderts, 500 vaten olie en 20.000 energie. Hij draait vanzelf zolang alles er is.",
+    ],
+    "GoldInfo-col": [
+      "Goud",
+      "Goud wordt in kluizen bewaard en levert € 30 miljoen per kg op. Je hebt het ook nodig voor de reactorbesturing.",
     ],
     "CopperInfo-col": [
       "Koper",
@@ -577,6 +592,33 @@ var objBulk = {
         objSolar.add();
       },
     ],
+    gold: [
+      "goudmijnen",
+      function () {
+        return +objMines.goldAmountActive;
+      },
+      function () {
+        objMines.addMine(5, 1);
+      },
+    ],
+    goldRefinery: [
+      "goudraffinaderijen",
+      function () {
+        return +objGoldRefinery.amount;
+      },
+      function () {
+        objGoldRefinery.add(1);
+      },
+    ],
+    reactorControl: [
+      "reactorbesturingen",
+      function () {
+        return +objNuclearPowerPlant.controlled;
+      },
+      function () {
+        objNuclearPowerPlant.addControl();
+      },
+    ],
   },
   // Bouw er maximaal n; geeft het aantal gebouwde terug
   build: function (key, n) {
@@ -646,6 +688,8 @@ var objPause = {
     "Electronics-col",
     "SteelProduction-col",
     "Prospecting-col",
+    "Gold-col",
+    "GoldRefinery-col",
   ],
   paused: [],
   // Kaarten waarop pauzeren pas zin heeft als er iets automatisch draait
@@ -1463,6 +1507,73 @@ var objFlows = {
       },
     ],
   ],
+  // Stromen van level 14 (beta): goud en de reactorbesturing
+  betaEdges14: [
+    [
+      "Gold-col",
+      "GoldRefinery-col",
+      "goud",
+      function () {
+        return objGoldRefinery.active > 0;
+      },
+    ],
+    [
+      "olie-col",
+      "GoldRefinery-col",
+      "olie",
+      function () {
+        return objGoldRefinery.active > 0;
+      },
+    ],
+    [
+      "GoldRefinery-col",
+      "GoldInfo-col",
+      "goud",
+      function () {
+        return objGoldRefinery.active > 0;
+      },
+    ],
+    [
+      "pasta-col",
+      "Gold-col",
+      "pasta",
+      function () {
+        return objGoldMine.activeMines > 0;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "Gold-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "GoldRefinery-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "GoldInfo-col",
+      "nuclearPower",
+      "goud",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "PCB-col",
+      "nuclearPower",
+      "printplaten",
+      function () {
+        return false;
+      },
+    ],
+  ],
   // Energieverbruikers: benodigde energie per tick/run (0 = staat stil)
   energyUsers: {
     "pomp-col": function () {
@@ -1505,6 +1616,12 @@ var objFlows = {
     },
     "Electronics-col": function () {
       return +objElectronics.amount * objElectronics.energy;
+    },
+    "Gold-col": function () {
+      return +objMines.goldAmountActive * objGoldMine.energy;
+    },
+    "GoldRefinery-col": function () {
+      return +objGoldRefinery.amount * objGoldRefinery.energy;
     },
   },
   key: function (edge) {
@@ -1837,7 +1954,8 @@ var objFlows = {
     if (BETA)
       objFlows.edges = objFlows.edges.concat(
         objFlows.betaEdges,
-        objFlows.betaEdges13
+        objFlows.betaEdges13,
+        objFlows.betaEdges14
       );
     objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
@@ -3439,6 +3557,11 @@ var objEnergy = {
             +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
             +objNuclearPowerPlant.reactors *
               +objNuclearPowerPlant.reactorProduction +
+            Math.min(
+              +objNuclearPowerPlant.controlled,
+              +objNuclearPowerPlant.reactors
+            ) *
+              +objNuclearPowerPlant.reactorProduction +
             +objSolar.amount * objSolar.production
         ),
       ],
@@ -3479,6 +3602,9 @@ var objEnergy = {
       +objCopperSmelter.amount *
         objCopperSmelter.energy *
         f("CopperSmelter-col") +
+      // Level 14 (beta): goud
+      +objMines.goldAmountActive * objGoldMine.energy * f("Gold-col") +
+      +objGoldRefinery.amount * objGoldRefinery.energy * f("GoldRefinery-col") +
       // Level 13 (beta): elektronica, scanners en bestuurde hoogovens
       +objElectronics.amount * objElectronics.energy * f("Electronics-col") +
       +objScanner.amount * objScanner.energy * f("Prospecting-col") +
@@ -4917,8 +5043,11 @@ var objMines = {
         objCopperSmelter.show();
         break;
       case 5:
+        if (!objGoldMine.unlocked()) return 0;
         var mineType = "gold";
         addMineFunction(mineType, amount);
+        objGoldMine.show();
+        objGoldRefinery.show();
         break;
       case 6:
         var mineType = "diamond";
@@ -4928,7 +5057,9 @@ var objMines = {
   },
   // Staal dat een nieuwe mijn kost (in ton)
   steelNeeded: function (mineType) {
-    return mineType === "copper" ? +objCopperMine.steelNeeded : 0;
+    if (mineType === "copper") return +objCopperMine.steelNeeded;
+    if (mineType === "gold") return +objGoldMine.steelNeeded;
+    return 0;
   },
   showAll: function () {
     objMines.showProspecting();
@@ -5040,7 +5171,21 @@ var objMines = {
     } else {
       document.getElementById("copper-mines").innerHTML = "";
     }
-    //generateText("gold-mines", "goldAmountProspected", "goldMineCost","goldAmountActive", "goudmijn", 5, "goldMineButton");
+    // Goudmijnen: in de beta vanaf level 14
+    if (objGoldMine.unlocked()) {
+      generateText(
+        "gold-mines",
+        "goldAmountProspected",
+        "goldMineCost",
+        "goldAmountActive",
+        "goudmijn",
+        5,
+        "goldMineButton",
+        "Goudmijnen"
+      );
+    } else {
+      document.getElementById("gold-mines").innerHTML = "";
+    }
     //generateText("diamond-mines", "diamondAmountProspected", "diamondMineCost","diamondAmountActive", "diamantmijn", 6, "diamondMineButton");
 
     var updateMineButtons = function (mineTypes) {
@@ -5060,6 +5205,7 @@ var objMines = {
 
     var mineTypes = ["iron", "coal", "uranium"];
     if (objCopperMine.unlocked()) mineTypes.push("copper");
+    if (objGoldMine.unlocked()) mineTypes.push("gold");
     updateMineButtons(mineTypes);
     Display.updateRows();
   },
@@ -5097,7 +5243,8 @@ var objMines = {
     objMines.copperMineCost =
       parseInt(store.getItem("copperMineCost")) || 150000000;
     objMines.goldMineCost =
-      parseInt(store.getItem("goldMineCost")) || 600000000;
+      parseInt(store.getItem("goldMineCost")) ||
+      (BETA ? 2000000000 : 600000000);
     objMines.diamondMineCost =
       parseInt(store.getItem("diamondMineCost")) || 600000000;
     objMines.prospectTimerActive = parseInt(store.getItem("pTimer")) || 0;
@@ -6959,6 +7106,337 @@ var objScanner = {
   },
 };
 
+// Goud (alleen in de beta, vanaf level 14): goudmijn -> gouderts -> goudraffinaderij -> goud.
+// Goud is te verkopen en nodig voor de reactorbesturing.
+var objGoldMine = {
+  production: 500,
+  energy: 3000,
+  pasta: 0.5, // dozen per tick per mijn
+  steelNeeded: 100000,
+  activeMines: 0,
+  unlocked: function () {
+    return BETA && +objPlayerInfo.level >= 14 && +objResearch.level > 3;
+  },
+  produce: function () {
+    if (objPause.is("Gold-col")) {
+      objGoldMine.activeMines = 0;
+      return 0;
+    }
+    // Net als bij koper gaat het uraniumpersoneel voor
+    var pasta = Math.max(
+      0,
+      +objStorehouse.pasta - objCopperMine.pastaReserve()
+    );
+    var active = Math.min(
+      +objMines.goldAmountActive,
+      Math.floor(pasta / objGoldMine.pasta),
+      Math.floor(+objEnergy.available / objGoldMine.energy),
+      Math.floor(objGoldOre.space() / objGoldMine.production)
+    );
+    objGoldMine.activeMines = Math.max(0, active);
+    if (active < 1) return 0;
+    objEnergy.use(active * objGoldMine.energy, "Goudmijn");
+    objStorehouse.removePasta(active * objGoldMine.pasta);
+    objGoldOre.add(active * objGoldMine.production);
+  },
+  show: function () {
+    var el = document.getElementById("GoldMine");
+    if (!objGoldMine.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    var mines = +objMines.goldAmountActive;
+    el.innerHTML =
+      "<h3>Gouderts</h3>" +
+      renderResource({
+        amount: objGoldOre.amount,
+        production: mines * objGoldMine.production,
+        energy: mines * objGoldMine.energy,
+        period: "tick",
+        extra: [
+          "Pasta",
+          FixNumber(mines * objGoldMine.pasta) + " dozen per tick",
+        ],
+        price: objGoldOre.price,
+        silos: objGoldOre.storage,
+        siloCap: objGoldOre.storageCap,
+        siloPrice: objGoldOre.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objGoldMine.production, "ton") +
+          " erts per tick voor " +
+          FixNumber(objGoldMine.energy) +
+          " energie; het personeel eet 1 doos pasta per 2 ticks (het uraniumpersoneel gaat voor). Is de opslag vol, dan stoppen de mijnen.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objGoldOre.sell(0)' id='sellGoldOreButton'>Verkoop gouderts</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objGoldOre.addSilo();' id='goldOreSiloButton'>Bouw gouderts-silo</button>" +
+      "</div>";
+  },
+};
+
+var objGoldOre = {
+  amount: 0,
+  storage: 1,
+  storageCap: 1000000,
+  storagePrice: 10000000,
+  price: 5000,
+  space: function () {
+    return +objGoldOre.storage * +objGoldOre.storageCap - +objGoldOre.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objGoldOre", amountAdded, "goldOreAmount");
+  },
+  use: function (amount) {
+    return useResource("objGoldOre", amount, "goldOreAmount");
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot gouderts";
+    var priceValue = +objGoldOre.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objGoldOre.amount;
+      if (amountSold <= 0) return 0;
+      objGoldOre.use(amountSold);
+      reason = "Handmatige verkoop gouderts";
+      priceValue = +objGoldOre.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 27, amountSold);
+  },
+  addSilo: function () {
+    if (moneyCheck(+objGoldOre.storagePrice) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Goudertsopslag",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    objMoney.use(+objGoldOre.storagePrice);
+    objGoldOre.storage++;
+    store.setItem("goldOreSilos", objGoldOre.storage);
+    objGoldOre.show();
+  },
+  show: function () {
+    objGoldMine.show();
+  },
+  init: function () {
+    objGoldOre.amount = +store.getItem("goldOreAmount") || 0;
+    objGoldOre.storage = +store.getItem("goldOreSilos") || 1;
+    objGoldOre.show();
+  },
+};
+
+var objGoldRefinery = {
+  amount: 0,
+  cost: 40000000000,
+  steelNeeded: 500000,
+  oreNeeded: 2500,
+  oilNeeded: 500,
+  energy: 20000,
+  production: 5, // kg goud per tick
+  active: 0,
+  add: function (amount) {
+    if (!objGoldMine.unlocked()) return 0;
+    if (+amount < 0) {
+      if (+objGoldRefinery.amount < 1) {
+        notificationOverlay(
+          "Geen raffinaderijen om te verkopen",
+          "Goudraffinaderij",
+          "fa-industry"
+        );
+        return 0;
+      }
+      objGoldRefinery.amount--;
+      objMoney.add(
+        +objGoldRefinery.cost * 0.75,
+        "Verkoop goudraffinaderij",
+        28,
+        1
+      );
+    } else {
+      if (moneyCheck(+objGoldRefinery.cost) == 0) {
+        notificationOverlay(
+          "Niet genoeg doekoe!",
+          "Goudraffinaderij",
+          "fa-euro-sign"
+        );
+        return 0;
+      }
+      if (+objSteel.amount < +objGoldRefinery.steelNeeded) {
+        notificationOverlay("Niet genoeg staal!", "Goudraffinaderij", "fa-box");
+        return 0;
+      }
+      objMoney.use(+objGoldRefinery.cost);
+      objSteel.use(+objGoldRefinery.steelNeeded);
+      objSteel.show();
+      objFlows.pulse("SteelInfo-col", "GoldRefinery-col");
+      objGoldRefinery.amount++;
+    }
+    store.setItem("goldRefineries", objGoldRefinery.amount);
+    objGoldRefinery.show();
+  },
+  // Draait iedere tick zolang er gouderts, olie, energie en ruimte in de kluis is
+  produce: function () {
+    if (objPause.is("GoldRefinery-col")) {
+      objGoldRefinery.active = 0;
+      return 0;
+    }
+    var active = Math.min(
+      +objGoldRefinery.amount,
+      Math.floor(+objGoldOre.amount / objGoldRefinery.oreNeeded),
+      Math.floor(+objOilTank.contents / objGoldRefinery.oilNeeded),
+      Math.floor(+objEnergy.available / objGoldRefinery.energy),
+      Math.floor(objGold.space() / objGoldRefinery.production)
+    );
+    objGoldRefinery.active = Math.max(0, active);
+    if (active < 1) return 0;
+    objGoldOre.use(active * objGoldRefinery.oreNeeded);
+    objOilTank.use(active * objGoldRefinery.oilNeeded, "Goudraffinaderij");
+    objEnergy.use(active * objGoldRefinery.energy, "Goudraffinaderij");
+    objGold.add(active * objGoldRefinery.production);
+  },
+  show: function () {
+    var left = document.getElementById("goldRefinery");
+    var right = document.getElementById("goldRefineryStats");
+    if (!objGoldMine.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objGoldRefinery.amount;
+    var a = objGoldRefinery.active;
+    left.innerHTML =
+      "<h2>Goudraffinaderij</h2>" +
+      renderStats([
+        ["Raffinaderijen", FixNumber(n)],
+        ["Prijs per raffinaderij", FixMoney(objGoldRefinery.cost)],
+        ["Staal per raffinaderij", FixUnit(objGoldRefinery.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(objGoldRefinery.cost * 0.75)],
+      ]) +
+      "<h3>Per raffinaderij per tick</h3>" +
+      renderStats([
+        ["Gouderts", FixUnit(objGoldRefinery.oreNeeded, "ton")],
+        ["Olie", FixUnit(objGoldRefinery.oilNeeded, "vaten")],
+        ["Energie", FixNumber(objGoldRefinery.energy)],
+        ["Goud", FixUnit(objGoldRefinery.production, "kg")],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objGoldRefinery.add(1);' id='buyGoldRefinery'>Bouw goudraffinaderij</button>" +
+      objBulk.buttons("goldRefinery") +
+      " <button type='button' class='btn btn-danger' onClick='objGoldRefinery.add(-1);' id='sellGoldRefinery'>Verkoop goudraffinaderij</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(a) + " van " + FixNumber(n)],
+        ["Goud", FixUnit(a * objGoldRefinery.production, "kg per tick")],
+        ["Gouderts", FixUnit(a * objGoldRefinery.oreNeeded, "ton per tick")],
+        ["Olie", FixUnit(a * objGoldRefinery.oilNeeded, "vaten per tick")],
+        ["Energie", FixNumber(a * objGoldRefinery.energy) + " per tick"],
+      ]) +
+      renderHint(
+        "Een raffinaderij draait vanzelf iedere tick zolang er gouderts, olie, energie en ruimte in je kluizen is."
+      );
+  },
+  init: function () {
+    objGoldRefinery.amount = +store.getItem("goldRefineries") || 0;
+    objGoldRefinery.show();
+  },
+};
+
+var objGold = {
+  amount: 0,
+  price: 30000000, // per kg
+  storage: 1,
+  storageCap: 10000, // kg per kluis
+  storagePrice: 5000000000,
+  space: function () {
+    return +objGold.storage * +objGold.storageCap - +objGold.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objGold", amountAdded, "goldAmount");
+  },
+  use: function (amount) {
+    return useResource("objGold", amount, "goldAmount");
+  },
+  has: function (amount, title) {
+    if (+objGold.amount >= +amount) return true;
+    notificationOverlay(
+      "Niet genoeg goud! Nodig: " + FixUnit(amount, "kg") + ".",
+      title,
+      "fa-box"
+    );
+    return false;
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot goud";
+    var priceValue = +objGold.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objGold.amount;
+      if (amountSold <= 0) return 0;
+      objGold.use(amountSold);
+      reason = "Handmatige verkoop goud";
+      priceValue = +objGold.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 29, amountSold);
+  },
+  addStorage: function () {
+    if (moneyCheck(+objGold.storagePrice) == 0) {
+      notificationOverlay("Niet genoeg doekoe!", "Goudkluis", "fa-euro-sign");
+      return 0;
+    }
+    objMoney.use(+objGold.storagePrice);
+    objGold.storage++;
+    store.setItem("goldStorage", objGold.storage);
+    objGold.show();
+  },
+  show: function () {
+    var left = document.getElementById("Gold");
+    var right = document.getElementById("goldStorage");
+    if (!objGoldMine.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var capacity = +objGold.storage * +objGold.storageCap;
+    left.innerHTML =
+      "<h2>Goud</h2>" +
+      renderBar(
+        "Voorraad",
+        FixUnit(objGold.amount, "kg"),
+        (+objGold.amount / capacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixUnit(objGold.space(), "kg")],
+        ["Prijs per kg", FixMoney(objGold.price)],
+      ]) +
+      renderHint(
+        "Nodig voor de reactorbesturing. Wat niet past wordt verkocht voor 20% van de prijs."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objGold.sell(0)' id='sellGold'>Verkoop goud</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
+        [
+          "Kluizen",
+          FixNumber(objGold.storage) + " (" + FixUnit(capacity, "kg") + ")",
+        ],
+        ["Prijs extra kluis", FixMoney(objGold.storagePrice)],
+        ["Capaciteit per kluis", FixUnit(objGold.storageCap, "kg")],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objGold.addStorage();' id='addGoldStorage'>Koop kluis</button>" +
+      "</div>";
+  },
+  init: function () {
+    objGold.amount = +store.getItem("goldAmount") || 0;
+    objGold.storage = +store.getItem("goldStorage") || 1;
+    objGold.show();
+  },
+};
+
 // Splijtstofstavenfabriek
 var objFuelCellFactory = {
   amount: 0,
@@ -7329,6 +7807,84 @@ var objNuclearPowerPlant = {
   reactorSteelNeeded: 500000,
   plantReactorCap: 5,
   reactorProduction: 5000,
+  // Reactorbesturing (beta, vanaf level 14): een bestuurde reactor levert het dubbele
+  controlled: 0,
+  controlPCB: 2000,
+  controlGold: 50,
+  controlUnlocked: function () {
+    return BETA && +objPlayerInfo.level >= 14;
+  },
+  // Extra energie door besturing: alleen voor reactoren die draaien
+  controlBonus: function () {
+    return (
+      Math.min(
+        +objNuclearPowerPlant.controlled,
+        +objNuclearPowerPlant.activeReactors
+      ) * +objNuclearPowerPlant.reactorProduction
+    );
+  },
+  addControl: function () {
+    if (!objNuclearPowerPlant.controlUnlocked()) return 0;
+    if (+objNuclearPowerPlant.controlled >= +objNuclearPowerPlant.reactors) {
+      notificationOverlay(
+        "Iedere reactor heeft al besturing. Bouw eerst een extra reactor.",
+        "Reactorbesturing",
+        "fa-info"
+      );
+      return 0;
+    }
+    if (!objPCB.has(objNuclearPowerPlant.controlPCB, "Reactorbesturing"))
+      return 0;
+    if (!objGold.has(objNuclearPowerPlant.controlGold, "Reactorbesturing"))
+      return 0;
+    objPCB.use(objNuclearPowerPlant.controlPCB);
+    objGold.use(objNuclearPowerPlant.controlGold);
+    objFlows.pulseAll([
+      ["PCB-col", "nuclearPower"],
+      ["GoldInfo-col", "nuclearPower"],
+    ]);
+    objNuclearPowerPlant.controlled++;
+    store.setItem("reactorControls", objNuclearPowerPlant.controlled);
+    objNuclearPowerPlant.showControl();
+    objEnergy.show();
+  },
+  showControl: function () {
+    var el = document.getElementById("reactorControl");
+    if (!objNuclearPowerPlant.controlUnlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    var free =
+      +objNuclearPowerPlant.reactors - +objNuclearPowerPlant.controlled;
+    el.innerHTML =
+      "<h3>Reactorbesturing</h3>" +
+      renderStats([
+        [
+          "Bestuurde reactoren",
+          FixNumber(objNuclearPowerPlant.controlled) +
+            " van " +
+            FixNumber(objNuclearPowerPlant.reactors),
+        ],
+        [
+          "Extra energie",
+          FixNumber(objNuclearPowerPlant.controlBonus()) + " per tick",
+        ],
+        [
+          "Printplaten per besturing",
+          FixNumber(objNuclearPowerPlant.controlPCB),
+        ],
+        ["Goud per besturing", FixUnit(objNuclearPowerPlant.controlGold, "kg")],
+      ]) +
+      renderHint(
+        "Een reactor met besturing levert het dubbele aan energie (10.000 per tick) voor dezelfde pellets."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objNuclearPowerPlant.addControl();' id='addReactorControl'" +
+      (free < 1 ? " disabled" : "") +
+      ">Installeer besturing</button>" +
+      objBulk.buttons("reactorControl") +
+      "</div>";
+  },
   reactorFuelUsage: 1,
   reactorFuelCap: 3,
   fuelRodPellets: 1000,
@@ -7450,7 +8006,8 @@ var objNuclearPowerPlant = {
     );
     var nppProduction =
       +objNuclearPowerPlant.activeReactors *
-      +objNuclearPowerPlant.reactorProduction;
+        +objNuclearPowerPlant.reactorProduction +
+      objNuclearPowerPlant.controlBonus();
     objNuclearPowerPlant.showUsage();
     return +nppProduction;
   },
@@ -7522,7 +8079,8 @@ var objNuclearPowerPlant = {
           "Energie per tick",
           FixNumber(
             +objNuclearPowerPlant.activeReactors *
-              +objNuclearPowerPlant.reactorProduction
+              +objNuclearPowerPlant.reactorProduction +
+              objNuclearPowerPlant.controlBonus()
           ),
         ],
         [
@@ -7539,9 +8097,16 @@ var objNuclearPowerPlant = {
     objNuclearPowerPlant.fuelRods = store.getItem("ppFuelRods") || 0;
     objNuclearPowerPlant.amount = store.getItem("nppAmount") || 0;
     objNuclearPowerPlant.reactors = store.getItem("nrAmount") || 0;
+    objNuclearPowerPlant.controlled = BETA
+      ? Math.min(
+          +store.getItem("reactorControls") || 0,
+          +objNuclearPowerPlant.reactors
+        )
+      : 0;
     objNuclearPowerPlant.pelletsActive = store.getItem("pelletsActive") || 0;
     objNuclearPowerPlant.pelletsUsed = store.getItem("pelletsUsed") || 0;
     objNuclearPowerPlant.show();
+    objNuclearPowerPlant.showControl();
   },
 };
 
@@ -8224,6 +8789,14 @@ var loopsProduction = setInterval(function () {
       objCopperMine.show();
       objCopperSmelter.show();
       objCopper.show();
+    }
+    if (objGoldMine.unlocked()) {
+      objGoldMine.produce();
+      objGoldRefinery.produce();
+      objGoldMine.show();
+      objGoldRefinery.show();
+      objGold.show();
+      objNuclearPowerPlant.showControl();
     }
     if (objElectronics.unlocked()) {
       objElectronics.produce();
