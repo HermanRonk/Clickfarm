@@ -100,6 +100,7 @@
                 <div id="Grainstock"></div>
                 <div id="Flourstock"></div>
                 <div id="Oilstock"></div>
+                <div id="Pastastock"></div>
             </div>
             <div class="container col-sm" id="energy-col">
                 <h2>Energie</h2>
@@ -107,6 +108,15 @@
                 <div id="CurrentEnergyUsage"></div>
                 <div id="AvailableEnergy"></div>
                 <div id="OilUsage"></div>
+                <h3>Energieopslag</h3>
+                <div id="EnergieOpslag"></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1);">+1</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10);">+10</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(100);">+100</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1000);">+1.000</button>
+                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10000);">+10.000</button>
+                </div>
             </div>
         </div>
 
@@ -305,15 +315,6 @@
                     <button type="button" class="btn btn-warning" onClick="objPowerPlant.sell();" id="powerPlantSell">Verkoop oliecentrale</button>
                 </div>
 
-                <h3>Energieopslag</h3>
-                <div id="EnergieOpslag"></div>
-                <div class="actions">
-                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1);">+1</button>
-                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10);">+10</button>
-                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(100);">+100</button>
-                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(1000);">+1.000</button>
-                    <button type="button" class="btn btn-primary" onClick="objEnergy.addCapa(10000);">+10.000</button>
-                </div>
             </div>
             <div class="container col-sm" id="coalPower">
                 <div id="CoalPowerPlantAmount"></div>
@@ -532,23 +533,7 @@
                 </div>
             </div>
         </div>
-        <div class="row rows" id="mijnen-row2">
-            <div id="Uranium-col" class="container col-sm card-wide">
-                <div class="card-split">
-                    <div class="card-half">
-                        <div id="uranium-mines"></div>
-                    </div>
-                    <div class="card-half">
-                        <h3>Uranium</h3>
-                        <div id="UraniumMine1"></div>
-                        <div id="UraniumMine"></div>
-                        <div class="actions">
-                            <button type='button' class='btn btn-danger' onClick='objUraniumOre.sell(0)' id='sellUraniumButton'>Verkoop uranium</button>
-                            <button type='button' class='btn btn-primary' onClick='objUraniumOre.addSilo();' id='uraniumOreSiloButton'>Bouw uranium-silo</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="row rows" id="koper-row">
             <!-- Koper: alleen in de beta (vanaf level 12); de inhoud wordt in inc/base.js opgebouwd -->
             <div id="Copper-col" class="container col-sm card-wide">
                 <div class="card-split">
@@ -560,8 +545,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="row rows" id="koper-row">
             <div id="CopperSmelter-col" class="container col-sm card-wide">
                 <div class="card-split">
                     <div class="card-half">
@@ -602,6 +585,24 @@
                     </div>
                     <div class="card-half">
                         <div id="pcbStorage"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row rows" id="mijnen-row2">
+            <div id="Uranium-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="uranium-mines"></div>
+                    </div>
+                    <div class="card-half">
+                        <h3>Uranium</h3>
+                        <div id="UraniumMine1"></div>
+                        <div id="UraniumMine"></div>
+                        <div class="actions">
+                            <button type='button' class='btn btn-danger' onClick='objUraniumOre.sell(0)' id='sellUraniumButton'>Verkoop uranium</button>
+                            <button type='button' class='btn btn-primary' onClick='objUraniumOre.addSilo();' id='uraniumOreSiloButton'>Bouw uranium-silo</button>
+                        </div>
                     </div>
                 </div>
             </div>
