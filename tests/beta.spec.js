@@ -785,3 +785,70 @@ test.describe("Beta: wensen van spelers (#82, #83, #87, #88, #89)", () => {
     expect(pageErrors).toEqual([]);
   });
 });
+
+test.describe("Beta: bulk bouwen (#75)", () => {
+  const coal = (extra = {}) => level(12, { Rlevel: 4, coalAmountProspected: 1, coalAmountActive: 1, ...extra });
+
+  test("in het gewone spel zijn er geen +10- en Max-knoppen", async ({ page }) => {
+    await startGame(page, { state: coal({ Money: 1e12 }) });
+    await expect(page.locator(".btn-bulk")).toHaveCount(0);
+    await game(page, () => objBulk.build("coalPlant", 10));
+    expect(await game(page, () => +objCoalPowerPlant.amount)).toBe(0);
+  });
+
+  test("+10 bouwt tien kolencentrales tegen de oplopende prijs", async ({ page }) => {
+    await startGame(page, { beta: true, state: coal({ Money: 1e12 }) });
+    await page.locator("[data-bulk='coalPlant-10']").click();
+    expect(await game(page, () => +objCoalPowerPlant.amount)).toBe(10);
+    // 50 mln x (1 + 1,05 + ... + 1,05^9)
+    const paid = Array.from({ length: 10 }, (_, i) => 5e7 * Math.pow(1.05, i)).reduce((a, b) => a + b, 0);
+    expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1e12 - paid, -3);
+    await expect(page.locator("#notif")).toContainText("10 kolencentrales gebouwd");
+  });
+
+  test("Max bouwt tot het geld op is", async ({ page }) => {
+    // Genoeg voor drie centrales (50 + 52,5 + 55,1 mln), niet voor een vierde
+    await startGame(page, { beta: true, state: coal({ Money: 2e8 }) });
+    await page.locator("[data-bulk='coalPlant-max']").click();
+    expect(await game(page, () => +objCoalPowerPlant.amount)).toBe(3);
+  });
+
+  test("mijnen: Max bouwt op alle vrije locaties, daarna staan de knoppen uit", async ({ page }) => {
+    await startGame(page, { beta: true, state: level(12, { Rlevel: 4, Money: 1e12, ironAmountProspected: 6, ironAmountActive: 1 }) });
+    await page.locator("[data-bulk='iron-max']").click();
+    expect(await game(page, () => +objMines.ironAmountActive)).toBe(6);
+    await expect(page.locator("[data-bulk='iron-10']")).toBeDisabled();
+    await expect(page.locator("[data-bulk='iron-max']")).toBeDisabled();
+  });
+
+  test("kopermijnen: Max stopt als het staal op is", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: level(12, { Rlevel: 4, Money: 1e12, copperAmountProspected: 10, steelAmount: 60000 }),
+    });
+    await page.locator("[data-bulk='copper-max']").click();
+    expect(await game(page, () => +objMines.copperAmountActive)).toBe(2);
+  });
+
+  test("reactoren: Max vult de kerncentrales tot 5 reactoren per centrale", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: level(13, { Rlevel: 4, Money: 1e14, nppAmount: 2, steelAmount: 9000000, steelStorage: 10 }),
+    });
+    await page.locator("[data-bulk='reactor-max']").click();
+    expect(await game(page, () => +objNuclearPowerPlant.reactors)).toBe(10);
+    await expect(page.locator("#notif")).toContainText("10 kernreactoren gebouwd");
+  });
+
+  test("hoogovens, smelterijen, elektronica en zonneparken hebben ook +10 en Max", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: level(13, { Rlevel: 4, Money: 1e14, ironAmountProspected: 1, steelAmount: 9000000, steelStorage: 10, pcbAmount: 50000 }),
+    });
+    for (const key of ["smelter", "copperSmelter", "electronics", "solar"]) {
+      await expect(page.locator(`[data-bulk='${key}-10']`), key).toBeVisible();
+    }
+    await page.locator("[data-bulk='solar-10']").click();
+    expect(await game(page, () => +objSolar.amount)).toBe(10);
+  });
+});
