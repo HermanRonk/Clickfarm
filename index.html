@@ -47,6 +47,7 @@
             <li class="statsbar" id="FlourTop"></li>
             <li class="statsbar" id="OilTop"></li>
             <li class="statsbar" id="EnergyStats"></li>
+            <li class="statsbar" id="AICoinTop" style="display: none"></li>
         </ul>
         <div class="dropdown">
             <button type="button" class="dropdown-toggle" id="navbarOptionDropdown" aria-haspopup="true" aria-expanded="false" aria-controls="optionsMenu">Game opties</button>
@@ -705,6 +706,45 @@
             <!-- Zonnepark: alleen in de beta (vanaf level 13) -->
             <div class="container col-sm" id="solarPark">
                 <div id="solarParkInfo"></div>
+            </div>
+        </div>
+        <!-- Level 16: alleen in de beta; de inhoud wordt in inc/base.js opgebouwd -->
+        <div class="row rows" id="datacenter-row">
+            <div id="ChipFactory-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="chipFactory"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="chipFactoryStats"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="Chips-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="Chips"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="chipsStorage"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="Datacenter-col" class="container col-sm card-wide">
+                <div class="card-split">
+                    <div class="card-half">
+                        <div id="datacenter"></div>
+                    </div>
+                    <div class="card-half">
+                        <div id="datacenterStats"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="AICoin-col" class="container col-sm">
+                <div id="AICoin"></div>
+            </div>
+            <div id="Fusion-col" class="container col-sm">
+                <div id="fusion"></div>
             </div>
         </div>
         <div class="row rows" id="market-row">

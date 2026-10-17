@@ -1171,3 +1171,189 @@ test.describe("Beta: diamant en diamantboren (#78, #79)", () => {
     expect(await game(page, () => objFlows.edges.some((e) => e[2] === "diamant"))).toBe(true);
   });
 });
+
+test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
+  // Level 16: na level 15 (multiplier 5)
+  const l16 = (extra = {}) => ({
+    PlayerLevel: 16,
+    NextLevel: threshold(13) * 125,
+    Rlevel: 4,
+    Money: 1e14,
+    steelAmount: 5000000,
+    steelStorage: 10,
+    Capacitors: 100000,
+    EnergyAvailable: 9000000,
+    Pasta: 100000,
+    ...extra,
+  });
+  const val = (page, fn) => game(page, fn);
+
+  test("in het gewone spel en op level 15 nog geen chips en datacenter", async ({ page }) => {
+    await startGame(page, { state: l16({ chipsAmount: 5000 }) });
+    await game(page, () => objDatacenter.add());
+    expect(await val(page, () => +objDatacenter.racks)).toBe(0);
+    expect(await game(page, () => document.getElementById("datacenter-row").checkVisibility())).toBe(false);
+  });
+
+  test("beta op level 15: nog geen chips en datacenter", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ PlayerLevel: 15, NextLevel: threshold(13) * 25, chipsAmount: 5000 }) });
+    await game(page, () => {
+      objDatacenter.add();
+      objFusion.add();
+      objChipFactory.add(1);
+    });
+    expect(await val(page, () => [+objDatacenter.racks, +objFusion.amount, +objChipFactory.amount])).toEqual([0, 0, 0]);
+    expect(await game(page, () => document.getElementById("datacenter-row").checkVisibility())).toBe(false);
+  });
+
+  test("#80 een chipfabriek maakt iedere tick 5 chips van printplaten, goud, industriële diamant en energie", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ pcbAmount: 1000, goldAmount: 100, industrialDiamondAmount: 100 }) });
+    await expect(page.locator("#datacenter-row")).toBeVisible();
+    await page.locator("#buyChipFactory").click();
+    expect(await val(page, () => [+objMoney.amount, +objSteel.amount])).toEqual([1e14 - 2e11, 4000000]);
+    await tick(page, 3);
+    expect(await val(page, () => [+objChips.amount, +objPCB.amount, +objIndustrialDiamond.amount])).toEqual([15, 850, 97]);
+    expect(await val(page, () => +objGold.amount)).toBeCloseTo(99.4, 6);
+  });
+
+  test("#80 zonder goud staat de chipfabriek stil", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ chipFactories: 1, pcbAmount: 1000, goldAmount: 0, industrialDiamondAmount: 100 }) });
+    await tick(page, 3);
+    expect(await val(page, () => +objChips.amount)).toBe(0);
+  });
+
+  test("#80 is de chipopslag vol, dan stopt de fabriek en wordt er niets verkocht", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ chipFactories: 1, pcbAmount: 1000, goldAmount: 100, industrialDiamondAmount: 100, chipsAmount: 10000 }) });
+    const money = await val(page, () => +objMoney.amount);
+    await tick(page, 3);
+    expect(await val(page, () => [+objChips.amount, +objPCB.amount, +objMoney.amount])).toEqual([10000, 1000, money]);
+    await expect(page.locator("#Chips-col")).toContainText("dan stoppen de chipfabrieken");
+  });
+
+  test("#80 een rek kost geld en chips, gebruikt energie en chips en betaalt iedere 10 ticks uit", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ chipsAmount: 1500 }) });
+    await page.locator("#buyRack").click();
+    expect(await val(page, () => [+objMoney.amount, +objChips.amount, objDatacenter.price])).toEqual([1e14 - 2e12, 500, 2.1e12]);
+    const money = await val(page, () => +objMoney.amount);
+    await tick(page, 9);
+    expect(await val(page, () => +objMoney.amount)).toBe(money);
+    await tick(page, 1);
+    expect(await val(page, () => +objMoney.amount)).toBe(money + 10 * 1e9);
+    expect(await val(page, () => +objAICoin.amount)).toBeCloseTo(1, 6);
+    expect(await val(page, () => +objChips.amount)).toBeCloseTo(499, 6);
+    await expect(page.locator("#AICoinTop")).toBeVisible();
+    await expect(page.locator("#AICoinTop")).toContainText("AICoin");
+  });
+
+  test("#80 zonder energie of chips, of gepauzeerd, levert een rek niets", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ datacenterRacks: 1, chipsAmount: 0 }) });
+    await tick(page, 10);
+    expect(await val(page, () => [+objMoney.amount, +objAICoin.amount])).toEqual([1e14, 0]);
+    await expect(page.locator("#AICoinTop")).toBeHidden();
+  });
+
+  test("#80 pauzeren stopt het datacenter", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ datacenterRacks: 1, chipsAmount: 100 }) });
+    await game(page, () => objPause.toggle("Datacenter-col"));
+    await tick(page, 10);
+    expect(await val(page, () => [+objMoney.amount, +objAICoin.amount, +objChips.amount])).toEqual([1e14, 0, 100]);
+  });
+
+  test("#80 de AICoin-koers verandert bij de prijswissel en blijft binnen de grenzen", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16() });
+    expect(await val(page, () => objAICoin.price)).toBe(1e9);
+    await tick(page, 5);
+    const price = await val(page, () => objAICoin.price);
+    expect(price).not.toBe(1e9);
+    expect(price).toBeGreaterThanOrEqual(0.75e9);
+    expect(price).toBeLessThanOrEqual(1.25e9);
+    const range = await val(page, () => {
+      let lo = Infinity, hi = 0;
+      for (let i = 0; i < 5000; i++) {
+        objAICoin.newPrice();
+        lo = Math.min(lo, objAICoin.price);
+        hi = Math.max(hi, objAICoin.price);
+      }
+      return [lo, hi];
+    });
+    expect(range[0]).toBeGreaterThanOrEqual(1e8);
+    expect(range[1]).toBeLessThanOrEqual(1e10);
+    // Grillig: de koers komt flink van de basiskoers af
+    expect(range[1] / range[0]).toBeGreaterThan(3);
+  });
+
+  test("#80 in het gewone spel verandert de prijswissel niets aan AICoin", async ({ page }) => {
+    await startGame(page, { state: l16({ aicoinPrice: 123 }) });
+    await tick(page, 10);
+    expect(await storage(page, "aicoinPrice")).toBe("123");
+  });
+
+  test("#80 AICoin verkopen tegen de koers", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ aicoinAmount: 3, aicoinPrice: 2e9 }) });
+    await page.locator("#sellAICoinOne").click();
+    expect(await val(page, () => [+objAICoin.amount, +objMoney.amount])).toEqual([2, 1e14 + 2e9]);
+    await page.locator("#sellAICoin").click();
+    expect(await val(page, () => [+objAICoin.amount, +objMoney.amount])).toEqual([0, 1e14 + 6e9]);
+  });
+
+  test("#81 een fusiecentrale kost geld, chips en staal en levert 2.000.000 energie per tick", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ chipsAmount: 2500, EnergyAvailable: 0 }) });
+    await page.locator("#buyFusion").click();
+    expect(await val(page, () => [+objMoney.amount, +objChips.amount, +objSteel.amount, objFusion.price])).toEqual([
+      1e14 - 5e12,
+      500,
+      3000000,
+      5e12 * 1.15,
+    ]);
+    const energy = await val(page, () => +objEnergy.available);
+    await tick(page, 1);
+    expect(await val(page, () => +objEnergy.available)).toBe(energy + 2000000);
+    await expect(page.locator("#TotalEnergyProduction")).toContainText("2.000.000");
+  });
+
+  test("#81 zonder chips geen fusiecentrale", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ chipsAmount: 1999 }) });
+    await page.locator("#buyFusion").click();
+    expect(await val(page, () => +objFusion.amount)).toBe(0);
+    await expect(page.locator("#notif")).toContainText("Niet genoeg chips");
+  });
+
+  test("level 16 blijft staan na herladen", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: l16({ chipFactories: 2, chipsAmount: 42, chipsStorage: 3, datacenterRacks: 4, datacenterPrice: 3e12, aicoinAmount: 1.5, aicoinPrice: 7e8, fusionPlants: 2, fusionPrice: 6e12 }),
+    });
+    await reload(page);
+    expect(
+      await val(page, () => [
+        +objChipFactory.amount,
+        +objChips.storage,
+        +objDatacenter.racks,
+        objDatacenter.price,
+        +objAICoin.amount,
+        objAICoin.price,
+        +objFusion.amount,
+        objFusion.price,
+      ])
+    ).toEqual([2, 3, 4, 3e12, 1.5, 7e8, 2, 6e12]);
+  });
+
+  test("bulk bouwen werkt voor chipfabrieken, rekken en fusiecentrales", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ chipsAmount: 3500 }) });
+    await page.locator("[data-bulk='datacenter-max']").click();
+    expect(await val(page, () => +objDatacenter.racks)).toBe(3);
+    await page.locator("[data-bulk='chipFactory-10']").click();
+    // 5.000.000 ton staal is genoeg voor 5 chipfabrieken
+    expect(await val(page, () => +objChipFactory.amount)).toBe(5);
+    await expect(page.locator("[data-bulk='fusion-max']")).toBeVisible();
+  });
+
+  test("de stromen van level 16 verwijzen naar bestaande kaarten", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16() });
+    const unknown = await page.evaluate(() =>
+      objFlows.edges.flatMap((edge) => [edge[0], edge[1]]).filter((id) => !document.getElementById(id) || !helpTexts[id])
+    );
+    expect(unknown).toEqual([]);
+    expect(await game(page, () => objFlows.edges.some((e) => e[2] === "chips"))).toBe(true);
+  });
+});
