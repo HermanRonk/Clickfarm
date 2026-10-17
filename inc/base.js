@@ -151,6 +151,11 @@ window.onload = function () {
   objDiamondCutter.init();
   objDiamondVault.init();
   objDiamondDrill.init();
+  objChipFactory.init();
+  objChips.init();
+  objDatacenter.init();
+  objAICoin.init();
+  objFusion.init();
   objIronMelter.init();
   objSteel.init();
   objCoalPowerPlant.init();
@@ -472,6 +477,26 @@ if (BETA) {
       "Diamantboren",
       "Een diamantboor koop je één keer per soort mijn, met industriële diamant. Alle mijnen van die soort maken daarna 50% meer voor dezelfde energie en pasta.",
     ],
+    "ChipFactory-col": [
+      "Chipfabriek",
+      "Een chipfabriek maakt iedere tick 5 chips van 50 printplaten, 0,2 kg goud, 1 karaat industriële diamant en 50.000 energie. Hij draait vanzelf zolang alles er is.",
+    ],
+    "Chips-col": [
+      "Chips",
+      "Chips zijn € 20 miljoen per stuk waard. Je hebt ze nodig voor datacenterrekken (1.000 per rek) en fusiecentrales (2.000 per centrale), en ieder rek verbruikt 0,1 chip per tick.",
+    ],
+    "Datacenter-col": [
+      "Datacenter",
+      "Een rek gebruikt 250.000 energie en 0,1 chip per tick en levert daarvoor € 1 miljard en 0,1 AICoin. De opbrengst wordt iedere 10 ticks uitbetaald. Ieder rek is 5% duurder dan het vorige.",
+    ],
+    "AICoin-col": [
+      "AICoin",
+      "AICoin komt uit het datacenter. De koers verandert bij iedere prijswissel, met uitschieters naar boven en beneden. Verkoop als de koers hoog is, of bewaar ze.",
+    ],
+    "Fusion-col": [
+      "Fusiecentrale",
+      "Een fusiecentrale kost geld, chips en staal en levert 2.000.000 energie per tick zonder brandstof. Zorg voor genoeg energieopslag. Iedere centrale is 15% duurder dan de vorige.",
+    ],
     "CopperInfo-col": [
       "Koper",
       "Koper wordt in loodsen opgeslagen en levert € 40.000 per ton op. Zijn de loodsen vol, dan stoppen de smelterijen tot er weer ruimte is.",
@@ -650,6 +675,33 @@ var objBulk = {
         objDiamondCutter.add(1);
       },
     ],
+    chipFactory: [
+      "chipfabrieken",
+      function () {
+        return +objChipFactory.amount;
+      },
+      function () {
+        objChipFactory.add(1);
+      },
+    ],
+    datacenter: [
+      "datacenterrekken",
+      function () {
+        return +objDatacenter.racks;
+      },
+      function () {
+        objDatacenter.add();
+      },
+    ],
+    fusion: [
+      "fusiecentrales",
+      function () {
+        return +objFusion.amount;
+      },
+      function () {
+        objFusion.add();
+      },
+    ],
     reactorControl: [
       "reactorbesturingen",
       function () {
@@ -732,6 +784,8 @@ var objPause = {
     "GoldRefinery-col",
     "Diamond-col",
     "DiamondCutter-col",
+    "ChipFactory-col",
+    "Datacenter-col",
   ],
   paused: [],
   // Kaarten waarop pauzeren pas zin heeft als er iets automatisch draait
@@ -1667,6 +1721,89 @@ var objFlows = {
       },
     ],
   ],
+  // Stromen van level 16 (beta): chips, datacenter, AICoin en fusie
+  betaEdges16: [
+    [
+      "PCB-col",
+      "ChipFactory-col",
+      "printplaten",
+      function () {
+        return objChipFactory.active > 0;
+      },
+    ],
+    [
+      "GoldInfo-col",
+      "ChipFactory-col",
+      "goud",
+      function () {
+        return objChipFactory.active > 0;
+      },
+    ],
+    [
+      "DiamondInfo-col",
+      "ChipFactory-col",
+      "diamant",
+      function () {
+        return objChipFactory.active > 0;
+      },
+    ],
+    [
+      "ChipFactory-col",
+      "Chips-col",
+      "chips",
+      function () {
+        return objChipFactory.active > 0;
+      },
+    ],
+    [
+      "Chips-col",
+      "Datacenter-col",
+      "chips",
+      function () {
+        return objDatacenter.active > 0;
+      },
+    ],
+    [
+      "Datacenter-col",
+      "AICoin-col",
+      "chips",
+      function () {
+        return objDatacenter.active > 0;
+      },
+    ],
+    [
+      "Fusion-col",
+      "energy-col",
+      "energie",
+      function () {
+        return +objFusion.amount > 0;
+      },
+    ],
+    [
+      "Chips-col",
+      "Fusion-col",
+      "chips",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "ChipFactory-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "Fusion-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+  ],
   // Energieverbruikers: benodigde energie per tick/run (0 = staat stil)
   energyUsers: {
     "pomp-col": function () {
@@ -1721,6 +1858,12 @@ var objFlows = {
     },
     "DiamondCutter-col": function () {
       return +objDiamondCutter.amount * objDiamondCutter.energy;
+    },
+    "ChipFactory-col": function () {
+      return +objChipFactory.amount * objChipFactory.energy;
+    },
+    "Datacenter-col": function () {
+      return +objDatacenter.racks * objDatacenter.energy;
     },
   },
   key: function (edge) {
@@ -2055,7 +2198,8 @@ var objFlows = {
         objFlows.betaEdges,
         objFlows.betaEdges13,
         objFlows.betaEdges14,
-        objFlows.betaEdges15
+        objFlows.betaEdges15,
+        objFlows.betaEdges16
       );
     objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
@@ -2383,6 +2527,7 @@ function getPrice() {
   objPrijslijst.GrainHigh = randomBetween(1, 250);
   objPrijslijst.FlourLow = randomBetween(100, 900);
   objPrijslijst.FlourHigh = randomBetween(100, 450);
+  if (BETA) objAICoin.newPrice();
   showMessage("Prijzen bepaald", JSON.stringify(objPrijslijst));
 }
 
@@ -3537,6 +3682,13 @@ var objEnergy = {
         +objEnergy.available + +objSolar.amount * objSolar.production
       );
     }
+    // Fusiecentrales (beta): zonder brandstof, tot de opslag vol is
+    if (+objFusion.amount > 0) {
+      objEnergy.available = Math.min(
+        +objEnergy.storageCap * +objEnergy.capacitors,
+        +objEnergy.available + +objFusion.amount * objFusion.production
+      );
+    }
     // Nuclear
     if (+objNuclearPowerPlant.reactors > 0) {
       var capLeft =
@@ -3669,7 +3821,8 @@ var objEnergy = {
               +objNuclearPowerPlant.reactors
             ) *
               +objNuclearPowerPlant.reactorProduction +
-            +objSolar.amount * objSolar.production
+            +objSolar.amount * objSolar.production +
+            +objFusion.amount * objFusion.production
         ),
       ],
     ]);
@@ -3717,6 +3870,9 @@ var objEnergy = {
       +objDiamondCutter.amount *
         objDiamondCutter.energy *
         f("DiamondCutter-col") +
+      // Level 16 (beta): chips en datacenter
+      +objChipFactory.amount * objChipFactory.energy * f("ChipFactory-col") +
+      +objDatacenter.racks * objDatacenter.energy * f("Datacenter-col") +
       // Level 13 (beta): elektronica, scanners en bestuurde hoogovens
       +objElectronics.amount * objElectronics.energy * f("Electronics-col") +
       +objScanner.amount * objScanner.energy * f("Prospecting-col") +
@@ -8127,6 +8283,541 @@ var objDiamondDrill = {
   },
 };
 
+// Level 16 (alleen in de beta): chipfabriek -> chips -> datacenter (geld en AICoin),
+// en de fusiecentrale die de stroom voor het datacenter levert.
+var objChipFactory = {
+  amount: 0,
+  cost: 200000000000,
+  steelNeeded: 1000000,
+  pcbNeeded: 50,
+  goldNeeded: 0.2, // kg
+  diamondNeeded: 1, // karaat industriële diamant
+  energy: 50000,
+  production: 5, // chips per tick
+  active: 0,
+  unlocked: function () {
+    return BETA && +objPlayerInfo.level >= 16 && +objResearch.level > 3;
+  },
+  add: function (amount) {
+    if (!objChipFactory.unlocked()) return 0;
+    if (+amount < 0) {
+      if (+objChipFactory.amount < 1) {
+        notificationOverlay(
+          "Geen chipfabrieken om te verkopen",
+          "Chipfabriek",
+          "fa-industry"
+        );
+        return 0;
+      }
+      objChipFactory.amount--;
+      objMoney.add(+objChipFactory.cost * 0.75, "Verkoop chipfabriek", 35, 1);
+    } else {
+      if (moneyCheck(+objChipFactory.cost) == 0) {
+        notificationOverlay(
+          "Niet genoeg doekoe!",
+          "Chipfabriek",
+          "fa-euro-sign"
+        );
+        return 0;
+      }
+      if (+objSteel.amount < +objChipFactory.steelNeeded) {
+        notificationOverlay("Niet genoeg staal!", "Chipfabriek", "fa-box");
+        return 0;
+      }
+      objMoney.use(+objChipFactory.cost);
+      objSteel.use(+objChipFactory.steelNeeded);
+      objSteel.show();
+      objFlows.pulse("SteelInfo-col", "ChipFactory-col");
+      objChipFactory.amount++;
+    }
+    store.setItem("chipFactories", objChipFactory.amount);
+    objChipFactory.show();
+  },
+  // Draait iedere tick zolang er printplaten, goud, industriële diamant, energie en ruimte is
+  produce: function () {
+    if (objPause.is("ChipFactory-col")) {
+      objChipFactory.active = 0;
+      return 0;
+    }
+    var active = Math.min(
+      +objChipFactory.amount,
+      Math.floor(+objPCB.amount / objChipFactory.pcbNeeded),
+      Math.floor(+objGold.amount / objChipFactory.goldNeeded),
+      Math.floor(+objIndustrialDiamond.amount / objChipFactory.diamondNeeded),
+      Math.floor(+objEnergy.available / objChipFactory.energy),
+      Math.floor(objChips.space() / objChipFactory.production)
+    );
+    objChipFactory.active = Math.max(0, active);
+    if (active < 1) return 0;
+    objPCB.use(active * objChipFactory.pcbNeeded);
+    objGold.use(active * objChipFactory.goldNeeded);
+    objIndustrialDiamond.use(active * objChipFactory.diamondNeeded);
+    objEnergy.use(active * objChipFactory.energy, "Chipfabriek");
+    objChips.add(active * objChipFactory.production);
+  },
+  show: function () {
+    var left = document.getElementById("chipFactory");
+    var right = document.getElementById("chipFactoryStats");
+    if (!objChipFactory.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objChipFactory.amount;
+    var a = objChipFactory.active;
+    left.innerHTML =
+      "<h2>Chipfabriek</h2>" +
+      renderStats([
+        ["Chipfabrieken", FixNumber(n)],
+        ["Prijs per fabriek", FixMoney(objChipFactory.cost)],
+        ["Staal per fabriek", FixUnit(objChipFactory.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(objChipFactory.cost * 0.75)],
+      ]) +
+      "<h3>Per fabriek per tick</h3>" +
+      renderStats([
+        ["Printplaten", FixNumber(objChipFactory.pcbNeeded)],
+        ["Goud", FixUnit(objChipFactory.goldNeeded, "kg")],
+        [
+          "Industriële diamant",
+          FixUnit(objChipFactory.diamondNeeded, "karaat"),
+        ],
+        ["Energie", FixNumber(objChipFactory.energy)],
+        ["Chips", FixNumber(objChipFactory.production)],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objChipFactory.add(1);' id='buyChipFactory'>Bouw chipfabriek</button>" +
+      objBulk.buttons("chipFactory") +
+      " <button type='button' class='btn btn-danger' onClick='objChipFactory.add(-1);' id='sellChipFactory'>Verkoop chipfabriek</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(a) + " van " + FixNumber(n)],
+        ["Chips", FixNumber(a * objChipFactory.production) + " per tick"],
+        ["Printplaten", FixNumber(a * objChipFactory.pcbNeeded) + " per tick"],
+        ["Goud", FixUnit(a * objChipFactory.goldNeeded, "kg per tick")],
+        [
+          "Industriële diamant",
+          FixUnit(a * objChipFactory.diamondNeeded, "karaat per tick"),
+        ],
+        ["Energie", FixNumber(a * objChipFactory.energy) + " per tick"],
+      ]) +
+      renderHint(
+        "Een chipfabriek draait vanzelf iedere tick zolang er printplaten, goud, industriële diamant, energie en ruimte in je chipopslag is."
+      );
+  },
+  init: function () {
+    objChipFactory.amount = +store.getItem("chipFactories") || 0;
+    objChipFactory.show();
+  },
+};
+
+var objChips = {
+  amount: 0,
+  storage: 1,
+  storageCap: 10000,
+  storagePrice: 10000000000,
+  price: 20000000,
+  space: function () {
+    return +objChips.storage * +objChips.storageCap - +objChips.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objChips", amountAdded, "chipsAmount");
+  },
+  use: function (amount) {
+    return useResource("objChips", amount, "chipsAmount");
+  },
+  has: function (amount, title) {
+    if (+objChips.amount >= +amount) return true;
+    notificationOverlay(
+      "Niet genoeg chips! Nodig: " + FixNumber(amount) + ".",
+      title,
+      "fa-box"
+    );
+    return false;
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot chips";
+    var priceValue = +objChips.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = Math.floor(+objChips.amount);
+      if (amountSold <= 0) return 0;
+      objChips.use(amountSold);
+      reason = "Handmatige verkoop chips";
+      priceValue = +objChips.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 36, amountSold);
+  },
+  addStorage: function () {
+    if (moneyCheck(+objChips.storagePrice) == 0) {
+      notificationOverlay("Niet genoeg doekoe!", "Chipopslag", "fa-euro-sign");
+      return 0;
+    }
+    objMoney.use(+objChips.storagePrice);
+    objChips.storage++;
+    store.setItem("chipsStorage", objChips.storage);
+    objChips.show();
+  },
+  show: function () {
+    var left = document.getElementById("Chips");
+    var right = document.getElementById("chipsStorage");
+    if (!objChipFactory.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var capacity = +objChips.storage * +objChips.storageCap;
+    left.innerHTML =
+      "<h2>Chips</h2>" +
+      renderBar(
+        "Voorraad",
+        FixNumber(Math.floor(objChips.amount)),
+        (+objChips.amount / capacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixNumber(Math.floor(objChips.space()))],
+        ["Prijs per chip", FixMoney(objChips.price)],
+      ]) +
+      renderHint(
+        "Nodig voor datacenterrekken en fusiecentrales; een rek verbruikt ook chips. Is de opslag vol, dan stoppen de chipfabrieken tot er weer ruimte is."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objChips.sell(0)' id='sellChips'>Verkoop chips</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
+        [
+          "Opslagen",
+          FixNumber(objChips.storage) + " (" + FixNumber(capacity) + " chips)",
+        ],
+        ["Prijs extra opslag", FixMoney(objChips.storagePrice)],
+        ["Capaciteit per opslag", FixNumber(objChips.storageCap) + " chips"],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objChips.addStorage();' id='addChipsStorage'>Koop opslag</button>" +
+      "</div>";
+  },
+  init: function () {
+    objChips.amount = +store.getItem("chipsAmount") || 0;
+    objChips.storage = +store.getItem("chipsStorage") || 1;
+    objChips.show();
+  },
+};
+
+// Het datacenter verkoopt rekenkracht en levert AICoin. De opbrengst wordt iedere
+// 10 ticks in één keer uitbetaald, zodat de lijst met inkomsten leesbaar blijft.
+var objDatacenter = {
+  racks: 0,
+  price: 2000000000000,
+  priceFactor: 1.05,
+  chipsNeeded: 1000,
+  energy: 250000,
+  chipUse: 0.1, // chips per rek per tick (onderhoud)
+  income: 1000000000, // per rek per tick
+  coins: 0.1, // AICoin per rek per tick
+  payPeriod: 10,
+  active: 0,
+  pending: 0,
+  counter: 0,
+  add: function () {
+    if (!objChipFactory.unlocked()) return 0;
+    if (moneyCheck(+objDatacenter.price) == 0) {
+      notificationOverlay("Niet genoeg doekoe!", "Datacenter", "fa-euro-sign");
+      return 0;
+    }
+    if (!objChips.has(objDatacenter.chipsNeeded, "Datacenter")) return 0;
+    objMoney.use(+objDatacenter.price);
+    objChips.use(objDatacenter.chipsNeeded);
+    objFlows.pulse("Chips-col", "Datacenter-col");
+    objDatacenter.racks++;
+    objDatacenter.price = +objDatacenter.price * objDatacenter.priceFactor;
+    store.setItem("datacenterRacks", objDatacenter.racks);
+    store.setItem("datacenterPrice", objDatacenter.price);
+    objDatacenter.show();
+  },
+  sell: function () {
+    if (+objDatacenter.racks < 1) {
+      notificationOverlay(
+        "Geen rekken om te verkopen",
+        "Datacenter",
+        "fa-info"
+      );
+      return 0;
+    }
+    objDatacenter.price = +objDatacenter.price / objDatacenter.priceFactor;
+    objDatacenter.racks--;
+    objMoney.add(+objDatacenter.price * 0.75, "Verkoop datacenterrek", 37, 1);
+    store.setItem("datacenterRacks", objDatacenter.racks);
+    store.setItem("datacenterPrice", objDatacenter.price);
+    objDatacenter.show();
+  },
+  produce: function () {
+    if (objPause.is("Datacenter-col")) {
+      objDatacenter.active = 0;
+    } else {
+      var active = Math.min(
+        +objDatacenter.racks,
+        Math.floor(+objEnergy.available / objDatacenter.energy),
+        Math.floor(+objChips.amount / objDatacenter.chipUse)
+      );
+      objDatacenter.active = Math.max(0, active);
+      if (active >= 1) {
+        objEnergy.use(active * objDatacenter.energy, "Datacenter");
+        objChips.use(active * objDatacenter.chipUse);
+        objDatacenter.pending += active * objDatacenter.income;
+        objAICoin.add(active * objDatacenter.coins);
+      }
+    }
+    objDatacenter.counter++;
+    if (objDatacenter.counter >= objDatacenter.payPeriod) {
+      objDatacenter.counter = 0;
+      if (objDatacenter.pending > 0) {
+        objMoney.add(objDatacenter.pending, "Rekenkracht datacenter", 38, 1);
+        objDatacenter.pending = 0;
+      }
+    }
+  },
+  show: function () {
+    var left = document.getElementById("datacenter");
+    var right = document.getElementById("datacenterStats");
+    if (!objChipFactory.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objDatacenter.racks;
+    var a = objDatacenter.active;
+    left.innerHTML =
+      "<h2>Datacenter</h2>" +
+      renderStats([
+        ["Rekken", FixNumber(n)],
+        ["Prijs per rek", FixMoney(objDatacenter.price)],
+        ["Chips per rek", FixNumber(objDatacenter.chipsNeeded)],
+        [
+          "Verkoopwaarde",
+          FixMoney((+objDatacenter.price / objDatacenter.priceFactor) * 0.75),
+        ],
+      ]) +
+      "<h3>Per rek per tick</h3>" +
+      renderStats([
+        ["Energie", FixNumber(objDatacenter.energy)],
+        ["Chips (onderhoud)", FixNumber(objDatacenter.chipUse)],
+        ["Opbrengst", FixMoney(objDatacenter.income)],
+        ["AICoin", FixNumber(objDatacenter.coins)],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objDatacenter.add();' id='buyRack'>Bouw rek</button>" +
+      objBulk.buttons("datacenter") +
+      " <button type='button' class='btn btn-danger' onClick='objDatacenter.sell();' id='sellRack'>Verkoop rek</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(a) + " van " + FixNumber(n)],
+        ["Energie", FixNumber(a * objDatacenter.energy) + " per tick"],
+        ["Chips", FixNumber(a * objDatacenter.chipUse) + " per tick"],
+        ["Opbrengst", FixMoney(a * objDatacenter.income) + " per tick"],
+        ["AICoin", FixNumber(a * objDatacenter.coins) + " per tick"],
+      ]) +
+      renderHint(
+        "Een rek draait vanzelf zolang er energie en chips zijn. De opbrengst wordt iedere " +
+          objDatacenter.payPeriod +
+          " ticks uitbetaald. Ieder rek is 5% duurder dan het vorige."
+      );
+  },
+  init: function () {
+    objDatacenter.racks = +store.getItem("datacenterRacks") || 0;
+    objDatacenter.price =
+      +store.getItem("datacenterPrice") || objDatacenter.price;
+    objDatacenter.show();
+  },
+};
+
+// AICoin: een eigen munt met een grillige koers. Je kunt hem verkopen of bewaren.
+var objAICoin = {
+  amount: 0,
+  price: 1000000000,
+  previous: 1000000000,
+  base: 1000000000, // de koers wordt hier langzaam naartoe getrokken
+  minPrice: 100000000,
+  maxPrice: 10000000000,
+  add: function (amount) {
+    objAICoin.amount = +objAICoin.amount + +amount;
+    store.setItem("aicoinAmount", objAICoin.amount);
+  },
+  // Voor later: onderzoek betalen met AICoin
+  use: function (amount) {
+    if (+objAICoin.amount < +amount) return 0;
+    objAICoin.amount = +objAICoin.amount - +amount;
+    store.setItem("aicoinAmount", objAICoin.amount);
+    objAICoin.show();
+    return +amount;
+  },
+  // Nieuwe koers bij iedere prijswissel: willekeurig tot 25% op of neer, met een lichte trek naar de basiskoers
+  newPrice: function () {
+    if (!objChipFactory.unlocked()) return;
+    var change = 0.75 + Math.random() * 0.5;
+    var pull = Math.pow(objAICoin.base / objAICoin.price, 0.1);
+    objAICoin.previous = objAICoin.price;
+    objAICoin.price = Math.round(
+      Math.max(
+        objAICoin.minPrice,
+        Math.min(objAICoin.maxPrice, objAICoin.price * change * pull)
+      )
+    );
+    store.setItem("aicoinPrice", objAICoin.price);
+    store.setItem("aicoinPrevious", objAICoin.previous);
+  },
+  sell: function (amount) {
+    var coins =
+      +amount > 0 ? Math.min(+amount, +objAICoin.amount) : +objAICoin.amount;
+    if (coins <= 0) {
+      notificationOverlay("Geen AICoin om te verkopen", "AICoin", "fa-info");
+      return 0;
+    }
+    objAICoin.use(coins);
+    objMoney.add(coins * objAICoin.price, "Verkoop AICoin", 39, coins);
+  },
+  show: function () {
+    var top = document.getElementById("AICoinTop");
+    var el = document.getElementById("AICoin");
+    var visible = objChipFactory.unlocked();
+    top.style.display = visible && +objAICoin.amount > 0 ? "" : "none";
+    top.innerHTML = visible
+      ? "AICoin: <kbd2>" + FixNumber(objAICoin.amount) + "</kbd2>"
+      : "";
+    if (!visible) {
+      el.innerHTML = "";
+      return;
+    }
+    var change = (objAICoin.price / objAICoin.previous - 1) * 100;
+    el.innerHTML =
+      "<h2>AICoin</h2>" +
+      renderStats([
+        ["In bezit", FixNumber(objAICoin.amount)],
+        ["Koers", FixMoney(objAICoin.price)],
+        [
+          "Verandering",
+          (change >= 0 ? "+" : "") +
+            FixNumber(Math.round(change * 10) / 10) +
+            "%",
+        ],
+        ["Waarde", FixMoney(objAICoin.amount * objAICoin.price)],
+      ]) +
+      renderHint(
+        "Het datacenter levert AICoin. De koers verandert bij iedere prijswissel en schommelt rond " +
+          FixMoney(objAICoin.base) +
+          ". Verkoop als de koers hoog is, of bewaar ze."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objAICoin.sell(1)' id='sellAICoinOne'>Verkoop 1 AICoin</button> " +
+      "<button type='button' class='btn btn-danger' onClick='objAICoin.sell(0)' id='sellAICoin'>Verkoop alles</button>" +
+      "</div>";
+  },
+  init: function () {
+    objAICoin.amount = +store.getItem("aicoinAmount") || 0;
+    objAICoin.price = +store.getItem("aicoinPrice") || objAICoin.base;
+    objAICoin.previous = +store.getItem("aicoinPrevious") || objAICoin.price;
+    objAICoin.show();
+  },
+};
+
+// Fusiecentrale: heel veel energie zonder brandstof, voor het datacenter
+var objFusion = {
+  amount: 0,
+  price: 5000000000000,
+  priceFactor: 1.15,
+  chipsNeeded: 2000,
+  steelNeeded: 2000000,
+  production: 2000000,
+  add: function () {
+    if (!objChipFactory.unlocked()) return 0;
+    if (moneyCheck(+objFusion.price) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Fusiecentrale",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    if (+objSteel.amount < +objFusion.steelNeeded) {
+      notificationOverlay("Niet genoeg staal!", "Fusiecentrale", "fa-box");
+      return 0;
+    }
+    if (!objChips.has(objFusion.chipsNeeded, "Fusiecentrale")) return 0;
+    objMoney.use(+objFusion.price);
+    objSteel.use(+objFusion.steelNeeded);
+    objSteel.show();
+    objChips.use(objFusion.chipsNeeded);
+    objFlows.pulseAll([
+      ["SteelInfo-col", "Fusion-col"],
+      ["Chips-col", "Fusion-col"],
+    ]);
+    objFusion.amount++;
+    objFusion.price = +objFusion.price * objFusion.priceFactor;
+    store.setItem("fusionPlants", objFusion.amount);
+    store.setItem("fusionPrice", objFusion.price);
+    objFusion.show();
+    objEnergy.show();
+  },
+  sell: function () {
+    if (+objFusion.amount < 1) {
+      notificationOverlay(
+        "Geen fusiecentrales om te verkopen",
+        "Fusiecentrale",
+        "fa-info"
+      );
+      return 0;
+    }
+    objFusion.price = +objFusion.price / objFusion.priceFactor;
+    objFusion.amount--;
+    objMoney.add(+objFusion.price * 0.75, "Verkoop fusiecentrale", 40, 1);
+    store.setItem("fusionPlants", objFusion.amount);
+    store.setItem("fusionPrice", objFusion.price);
+    objFusion.show();
+    objEnergy.show();
+  },
+  show: function () {
+    var el = document.getElementById("fusion");
+    if (!objChipFactory.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    el.innerHTML =
+      "<h2>Fusiecentrales</h2>" +
+      renderStats([
+        ["Fusiecentrales", FixNumber(objFusion.amount)],
+        [
+          "Energie",
+          FixNumber(objFusion.amount * objFusion.production) + " per tick",
+        ],
+        ["Prijs per centrale", FixMoney(objFusion.price)],
+        ["Chips per centrale", FixNumber(objFusion.chipsNeeded)],
+        ["Staal per centrale", FixUnit(objFusion.steelNeeded, "ton")],
+        [
+          "Verkoopwaarde",
+          FixMoney((+objFusion.price / objFusion.priceFactor) * 0.75),
+        ],
+      ]) +
+      renderHint(
+        "Een fusiecentrale levert " +
+          FixNumber(objFusion.production) +
+          " energie per tick, zonder brandstof. Zorg voor genoeg energieopslag: wat niet past, gaat verloren. Iedere centrale is 15% duurder dan de vorige."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objFusion.add();' id='buyFusion'>Bouw fusiecentrale</button>" +
+      objBulk.buttons("fusion") +
+      " <button type='button' class='btn btn-danger' onClick='objFusion.sell();' id='sellFusion'>Verkoop fusiecentrale</button>" +
+      "</div>";
+  },
+  init: function () {
+    objFusion.amount = +store.getItem("fusionPlants") || 0;
+    objFusion.price = +store.getItem("fusionPrice") || objFusion.price;
+    objFusion.show();
+  },
+};
+
 // Splijtstofstavenfabriek
 var objFuelCellFactory = {
   amount: 0,
@@ -9500,6 +10191,15 @@ var loopsProduction = setInterval(function () {
       objDiamondCutter.show();
       objDiamondVault.show();
       objDiamondDrill.show();
+    }
+    if (objChipFactory.unlocked()) {
+      objChipFactory.produce();
+      objDatacenter.produce();
+      objChipFactory.show();
+      objChips.show();
+      objDatacenter.show();
+      objAICoin.show();
+      objFusion.show();
     }
     if (objElectronics.unlocked()) {
       objElectronics.produce();

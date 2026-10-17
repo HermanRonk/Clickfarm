@@ -1079,6 +1079,7 @@ kbd2 {
     --flow-printplaten: #2f8f5b;
     --flow-goud: #b8860b;
     --flow-diamant: #2a9bb0;
+    --flow-chips: #6d4fd8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1100,6 +1101,7 @@ kbd2 {
         --flow-printplaten: #5fcf8f;
         --flow-goud: #ffd24a;
         --flow-diamant: #8fe3f0;
+        --flow-chips: #b6a2ff;
     }
 }
 
@@ -1148,6 +1150,7 @@ body.flows-on {
 .flow-printplaten { color: var(--flow-printplaten); }
 .flow-goud { color: var(--flow-goud); }
 .flow-diamant { color: var(--flow-diamant); }
+.flow-chips { color: var(--flow-chips); }
 
 .flow-base,
 .flow-run {
