@@ -1089,6 +1089,15 @@ test.describe("Beta: diamant en diamantboren (#78, #79)", () => {
     expect(await val(page, () => [+objRoughDiamond.amount, +objGems.amount])).toEqual([1000, 0]);
   });
 
+  test("#78 zijn de diamantkluizen vol, dan stopt de slijperij en wordt er niets verkocht", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ roughDiamondAmount: 1000, diamondCutters: 1, industrialDiamondAmount: 49990 }) });
+    const money = await val(page, () => +objMoney.amount);
+    await tick(page, 3);
+    expect(await val(page, () => [+objRoughDiamond.amount, +objMoney.amount])).toEqual([1000, money]);
+    await expect(page.locator("#DiamondInfo-col")).toContainText("dan stoppen de slijperijen");
+    await expect(page.locator("#DiamondInfo-col")).not.toContainText("20%");
+  });
+
   test("#78 edelstenen verkopen: volle prijs, en wat niet in de kluis past 20%", async ({ page }) => {
     await startGame(page, { beta: true, state: l15({ gemsAmount: 10, industrialDiamondAmount: 4 }) });
     await page.locator("#sellGems").click();

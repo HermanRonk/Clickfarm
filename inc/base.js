@@ -466,7 +466,7 @@ if (BETA) {
     ],
     "DiamondInfo-col": [
       "Diamanten",
-      "Edelstenen leveren € 6 miljoen per karaat op, industriële diamant € 500.000. Beide liggen in diamantkluizen; iedere kluis heeft ruimte voor 50.000 karaat van elke soort.",
+      "Edelstenen leveren € 6 miljoen per karaat op, industriële diamant € 500.000. Beide liggen in diamantkluizen; iedere kluis heeft ruimte voor 50.000 karaat van elke soort. Zijn de kluizen vol, dan stoppen de slijperijen.",
     ],
     "DiamondDrill-col": [
       "Diamantboren",
@@ -7958,7 +7958,7 @@ var objDiamondVault = {
         ],
       ]) +
       renderHint(
-        "Industriële diamant heb je nodig voor diamantboren. Wat niet past wordt verkocht voor 20% van de prijs."
+        "Industriële diamant heb je nodig voor diamantboren. Zijn de kluizen vol, dan stoppen de slijperijen tot er weer ruimte is."
       ) +
       "<div class='actions'>" +
       "<button type='button' class='btn btn-danger' onClick='objGems.sell(0)' id='sellGems'>Verkoop edelstenen</button> " +
