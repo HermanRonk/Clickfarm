@@ -1,18 +1,28 @@
 # Clickfarm
-Clickfarm is een "simpel" webspelletje dat ik in mijn vrije tijd geschreven heb. Omdat ik het niet de aandacht kan geven die het wel verdient wil ik het nu open stellen voor bijdragen vanuit de community. Dus vandaar deze repository :).
+Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je begint met één veld graan en bouwt via molens, kippen, pasta, olie, staal en kernenergie een industrieel imperium op. In de beta loopt het door tot koper, elektronica, goud, diamant en een datacenter dat de munt AICoin oplevert.
+
+**Spelen:** [clickfarm.nl](https://clickfarm.nl) · **Nieuwste onderdelen uitproberen:** [clickfarm.nl/beta](https://clickfarm.nl/beta/) · **Spelinformatie:** [clickfarm.nl/info.html](https://clickfarm.nl/info.html)
+
+Geen account, geen advertenties en geen tracking: je spel staat in je eigen browser.
+
+![Clickfarm op level 10: financiën, voorraden, energie, landbouw, molens en olie](docs/screenshots/overzicht.jpg)
+
+![De productieketen in de beta: lijnen tonen hoe grondstoffen tussen mijnen, hoogovens en staal stromen](docs/screenshots/productieketen.jpg)
 
 # Hoe is het begonnen
 Ik wilde graag weten hoe ver ik zou komen als ik zelf iets in HTML/CSS/Javascript zou schrijven, en dat pakte uiteindelijk iets uitgebreider uit dan ik verwacht had moet ik zeggen.
 
-Wat werd opgevolgd met deze forumpost en de ruim 2.000 reaties die daar op volgde: https://gathering.tweakers.net/forum/list_messages/1834443
+Wat werd opgevolgd met deze forumpost en de ruim 2.000 reacties die daar op volgden: https://gathering.tweakers.net/forum/list_messages/1834443
+
+Het spel is open source. Bijdragen, bugmeldingen en ideeën zijn welkom via de [issues](https://github.com/HermanRonk/Clickfarm/issues) of in het topic op Tweakers.
 
 # Wat moet er gebeuren
-Een aantal zaken zoals bepaalde vormen van research hebben nu nog een eigen loop, die moeten eigenlijk ondergebracht worden in de centrale loop om timing verschillen te voorkomen. Verder:
+De actuele lijst staat in de [issues](https://github.com/HermanRonk/Clickfarm/issues). De grote lijnen:
 
-- bugfixing
-- documentatie
-- resterende mijnen implementeren (#48)
-- Olie start voorraad capaciteit is te groot
+- de beta (level 12 tot en met 16) testen met spelers en daarna naar het gewone spel brengen (#84);
+- de resterende mijnen (#48) zijn in de beta gebouwd en gaan mee met #84;
+- bugfixing en documentatie;
+- de startcapaciteit van de olieopslag is te groot.
 
 # Hoe werkt het
 Clickfarm draait volledig in de browser, er is geen backend of database (meer) nodig:
@@ -39,6 +49,7 @@ De bestanden:
 | `css/style.css` | Alle opmaak, met automatisch donker thema |
 | `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |
 | `tests/`, `package.json`, `playwright.config.js` | End-to-end tests (gaan niet mee in de container) |
+| `docs/screenshots/` | Schermafbeeldingen voor deze README (gaan niet mee in de container) |
 
 # Zelf draaien
 Zonder installatie: open `index.html` in je browser, of start een simpele webserver in de map, bijvoorbeeld:
@@ -46,6 +57,8 @@ Zonder installatie: open `index.html` in je browser, of start een simpele webser
 ```
 python3 -m http.server 8080
 ```
+
+De beta (`/beta/spel.html`) bestaat niet als bestand: nginx serveert er `index.html` voor. Lokaal werkt hij met Docker (hieronder) of met de testserver: `node tests/helpers/serve.js` (http://localhost:8081).
 
 Met Docker:
 
