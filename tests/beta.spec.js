@@ -969,3 +969,35 @@ test.describe("Beta: goud en reactorbesturing (#76, #77)", () => {
     expect(await game(page, () => objFlows.edges.some((e) => e[2] === "goud"))).toBe(true);
   });
 });
+
+test.describe("Beta: overschot eieren voor 50% (#96)", () => {
+  // Volle eieropslag: 100.000 eieren in 1 opslag
+  const full = (extra = {}) => level(12, { Money: 1000, eggs: 100000, EggStorage: 1, ...extra });
+
+  test("beta: eieren die niet passen leveren de helft van de prijs op", async ({ page }) => {
+    await startGame(page, { beta: true, state: full() });
+    await game(page, () => objEgg.add(10000));
+    expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1000 + 10000 * 0.1 * 0.5, 6);
+    expect(await game(page, () => messages[0][0])).toBe("Overschot eieren");
+    await expect(page.locator("#chicken-col")).toContainText("voor 50% van de prijs");
+  });
+
+  test("gewoon spel: overschot nog voor de volle prijs", async ({ page }) => {
+    await startGame(page, { state: full() });
+    await game(page, () => objEgg.add(10000));
+    expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1000 + 10000 * 0.1, 6);
+  });
+
+  test("beta: zelf verkopen levert nog steeds de volle prijs op", async ({ page }) => {
+    await startGame(page, { beta: true, state: full() });
+    await page.getByRole("button", { name: "Verkoop alle eieren" }).click();
+    expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1000 + 100000 * 0.1, 6);
+  });
+
+  test("beta: markteieren die niet passen leveren ook de helft op", async ({ page }) => {
+    await startGame(page, { beta: true, state: full({ Money: 1e6 }) });
+    // 1.000 eieren voor 150%, allemaal overschot: betaald 150, terug 50
+    await game(page, () => objMarket.buy("eggs", 1000));
+    expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1e6 - 1000 * 0.15 + 1000 * 0.05, 6);
+  });
+});

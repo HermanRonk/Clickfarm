@@ -393,7 +393,9 @@ var helpTexts = {
   ],
   marketEggs: [
     "Markt: eieren",
-    "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht.",
+    BETA
+      ? "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht voor 50% van de normale prijs."
+      : "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht.",
   ],
   marketSteel: [
     "Markt: staal",
@@ -3825,6 +3827,9 @@ var objEgg = {
   storageCap: 100000,
   storageUnitCost: 500000,
   price: 0.1,
+  // Overschot (wat niet in de opslag past) levert in de beta de helft op, zoals de kaart
+  // vroeger al beloofde (#96); in het gewone spel nog de volle prijs
+  overflowFactor: BETA ? 0.5 : 1,
   add: function (aantal) {
     aantal = parseInt(aantal);
     var eieren = parseInt(objEgg.amount);
@@ -3833,7 +3838,7 @@ var objEgg = {
     if (+aantal > +SpaceLeft) {
       objEgg.amount = +eieren + +SpaceLeft;
       var Rest = +aantal - +SpaceLeft;
-      objEgg.sell(Rest, "Overschot eieren");
+      objEgg.sell(Rest, "Overschot eieren", true);
     } else {
       objEgg.amount = +eieren + +aantal;
     }
@@ -3849,7 +3854,7 @@ var objEgg = {
     objEgg.show();
     return +amountEggs;
   },
-  sell: function (aantal, reden) {
+  sell: function (aantal, reden, overflow) {
     if (isNaN(aantal)) {
       aantal = +objEgg.amount;
       reden = "Reguliere verkoop eieren";
@@ -3857,7 +3862,8 @@ var objEgg = {
       store.setItem("eggs", objEgg.amount);
       objEgg.show();
     }
-    var Profit = +aantal * +objEgg.price;
+    var Profit =
+      +aantal * +objEgg.price * (overflow ? objEgg.overflowFactor : 1);
     objMoney.add(+Profit, reden, 6, aantal);
   },
   addStorageUnit: function () {
@@ -3891,7 +3897,12 @@ var objEgg = {
           ) + " eieren",
         ],
         ["Prijs per ei", FixMoney(+objEgg.price)],
-      ]) + renderHint("Wat niet past wordt direct verkocht.");
+      ]) +
+      renderHint(
+        BETA
+          ? "Wat niet past wordt direct verkocht voor 50% van de prijs."
+          : "Wat niet past wordt direct verkocht."
+      );
     objEgg.visual();
   },
   init: function () {
@@ -8503,7 +8514,12 @@ var objMarket = {
             +objEgg.storageUnits * +objEgg.storageCap - +objEgg.amount
           ) + " eieren",
         ],
-      ]) + renderHint("Wat niet past wordt direct weer verkocht.");
+      ]) +
+      renderHint(
+        BETA
+          ? "Wat niet past wordt direct weer verkocht, voor 50% van de normale prijs."
+          : "Wat niet past wordt direct weer verkocht."
+      );
     document.getElementById("buySteel").innerHTML =
       renderStats([
         ["Prijs per ton", FixMoney(+objSteel.price * 1.25)],
