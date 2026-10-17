@@ -1001,3 +1001,173 @@ test.describe("Beta: overschot eieren voor 50% (#96)", () => {
     expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1e6 - 1000 * 0.15 + 1000 * 0.05, 6);
   });
 });
+
+test.describe("Beta: diamant en diamantboren (#78, #79)", () => {
+  // Level 15: na level 14 (multiplier 5)
+  const l15 = (extra = {}) => ({
+    PlayerLevel: 15,
+    NextLevel: threshold(13) * 25,
+    Rlevel: 4,
+    Money: 1e14,
+    steelAmount: 5000000,
+    steelStorage: 10,
+    Capacitors: 100000,
+    EnergyAvailable: 9000000,
+    Pasta: 100000,
+    ...extra,
+  });
+  const val = (page, fn) => game(page, fn);
+
+  test("in het gewone spel nog geen diamant", async ({ page }) => {
+    await startGame(page, { state: l15({ diamondAmountProspected: 2 }) });
+    await game(page, () => objMines.addMine(6, 1));
+    expect(await val(page, () => +objMines.diamondAmountActive)).toBe(0);
+    expect(await game(page, () => document.getElementById("diamant-row").checkVisibility())).toBe(false);
+  });
+
+  test("beta op level 14: nog geen diamant", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ PlayerLevel: 14, NextLevel: threshold(13) * 5, diamondAmountProspected: 2 }) });
+    await game(page, () => objMines.addMine(6, 1));
+    expect(await val(page, () => +objMines.diamondAmountActive)).toBe(0);
+    expect(await game(page, () => document.getElementById("diamant-row").checkVisibility())).toBe(false);
+    await expect(page.locator("#DiamondDrill")).toBeEmpty();
+  });
+
+  test("#78 een diamantmijn kost € 5 mrd en 200.000 ton staal en levert 10 karaat per tick", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ diamondAmountProspected: 2 }) });
+    await expect(page.locator("#diamant-row")).toBeVisible();
+    await page.locator("#diamondMineButton").click();
+    expect(await val(page, () => [+objMoney.amount, +objSteel.amount])).toEqual([1e14 - 5e9, 4800000]);
+    await tick(page, 4);
+    expect(await val(page, () => +objRoughDiamond.amount)).toBe(40);
+    expect(await val(page, () => +objStorehouse.pasta)).toBeCloseTo(100000 - 4, 6);
+    await expect(page.locator("#DiamondMine")).toContainText("karaat");
+  });
+
+  test("#78 de slijperij verdeelt 50 karaat per tick over edelstenen en industriële diamant", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ roughDiamondAmount: 520 }) });
+    await page.locator("#buyDiamondCutter").click();
+    expect(await val(page, () => [+objMoney.amount, +objSteel.amount])).toEqual([1e14 - 1e11, 4000000]);
+    const before = await val(page, () => +objMoney.amount);
+    for (let i = 0; i < 10; i++) {
+      const [gems, industrial] = await val(page, () => [+objGems.amount, +objIndustrialDiamond.amount]);
+      await tick(page, 1);
+      const [gems2, industrial2] = await val(page, () => [+objGems.amount, +objIndustrialDiamond.amount]);
+      expect(gems2 - gems + industrial2 - industrial).toBe(50);
+      expect(gems2 - gems).toBeGreaterThanOrEqual(25);
+      expect(gems2 - gems).toBeLessThanOrEqual(35);
+    }
+    // 520 karaat is genoeg voor tien ticks, daarna staat de slijperij stil
+    await tick(page, 2);
+    expect(await val(page, () => [+objRoughDiamond.amount, +objGems.amount + +objIndustrialDiamond.amount])).toEqual([20, 500]);
+    expect(await val(page, () => objDiamondCutter.active)).toBe(0);
+    expect(await val(page, () => +objMoney.amount)).toBe(before);
+  });
+
+  test("#78 een topsteen levert meteen € 5 mrd op", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ roughDiamondAmount: 1000, diamondCutters: 2 }) });
+    await game(page, () => (objDiamondCutter.topChance = 1));
+    await tick(page, 1);
+    expect(await val(page, () => [+objMoney.amount, objDiamondCutter.topStones])).toEqual([1e14 + 2 * 5e9, 2]);
+    await reload(page);
+    expect(await val(page, () => objDiamondCutter.topStones)).toBe(2);
+  });
+
+  test("#78 zonder energie of bij pauze staat de slijperij stil", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ roughDiamondAmount: 1000, diamondCutters: 1, EnergyAvailable: 0, Capacitors: 0 }) });
+    await tick(page, 2);
+    expect(await val(page, () => +objGems.amount + +objIndustrialDiamond.amount)).toBe(0);
+  });
+
+  test("#78 pauzeren stopt de diamantmijnen en de slijperij", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ roughDiamondAmount: 1000, diamondCutters: 1, diamondAmountProspected: 1, diamondAmountActive: 1 }) });
+    await game(page, () => {
+      objPause.toggle("Diamond-col");
+      objPause.toggle("DiamondCutter-col");
+    });
+    await tick(page, 3);
+    expect(await val(page, () => [+objRoughDiamond.amount, +objGems.amount])).toEqual([1000, 0]);
+  });
+
+  test("#78 edelstenen verkopen: volle prijs, en wat niet in de kluis past 20%", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ gemsAmount: 10, industrialDiamondAmount: 4 }) });
+    await page.locator("#sellGems").click();
+    expect(await val(page, () => +objMoney.amount)).toBe(1e14 + 10 * 6e6);
+    await page.locator("#sellIndustrialDiamond").click();
+    expect(await val(page, () => +objMoney.amount)).toBe(1e14 + 10 * 6e6 + 4 * 5e5);
+    await game(page, () => objGems.add(50001));
+    expect(await val(page, () => +objGems.amount)).toBe(50000);
+    expect(await val(page, () => +objMoney.amount)).toBe(1e14 + 10 * 6e6 + 4 * 5e5 + 6e6 * 0.2);
+  });
+
+  test("#78 een extra kluis geeft ruimte voor beide soorten", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15() });
+    await page.locator("#addDiamondVault").click();
+    expect(await val(page, () => [+objMoney.amount, objGems.space(), objIndustrialDiamond.space()])).toEqual([1e14 - 1e10, 100000, 100000]);
+    await reload(page);
+    expect(await val(page, () => objIndustrialDiamond.space())).toBe(100000);
+  });
+
+  test("#79 een diamantboor kost industriële diamant en geeft alle mijnen van die soort 50% meer", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: l15({ industrialDiamondAmount: 2500, coalAmountProspected: 2, coalAmountActive: 2, coalSilos: 100 }),
+    });
+    await tick(page, 1);
+    const coal1 = await val(page, () => +objCoal.amount);
+    expect(coal1).toBe(2 * 3500);
+    await page.locator("#drill-coal").click();
+    expect(await val(page, () => [+objIndustrialDiamond.amount, objCoalMine.production])).toEqual([500, 5250]);
+    await tick(page, 1);
+    expect(await val(page, () => +objCoal.amount)).toBe(coal1 + 2 * 5250);
+    await expect(page.locator("#DiamondDrill")).toContainText("+50%");
+    // Te weinig industriële diamant voor de ijzerboor
+    await expect(page.locator("#drill-iron")).toBeDisabled();
+    await game(page, () => objDiamondDrill.buy("iron"));
+    await expect(page.locator("#notif")).toContainText("Niet genoeg industriële diamant");
+    expect(await val(page, () => objDiamondDrill.has("iron"))).toBe(false);
+  });
+
+  test("#79 iedere boor koop je één keer, en hij blijft na herladen", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ industrialDiamondAmount: 100000 }) });
+    const base = await val(page, () => [objIronMine.production, objUraniumMine.production, objCopperMine.production, objGoldMine.production, objDiamondMine.production]);
+    for (const type of ["iron", "uranium", "copper", "gold", "diamond"]) await game(page, (t) => objDiamondDrill.buy(t), type);
+    await game(page, () => objDiamondDrill.buy("diamond"));
+    expect(await val(page, () => +objIndustrialDiamond.amount)).toBe(100000 - 2000 - 5000 - 5000 - 10000 - 20000);
+    await reload(page);
+    expect(await val(page, () => [objIronMine.production, objUraniumMine.production, objCopperMine.production, objGoldMine.production, objDiamondMine.production])).toEqual(
+      base.map((p) => p * 1.5)
+    );
+    expect(await val(page, () => objCoalMine.production)).toBe(3500);
+  });
+
+  test("#79 in het gewone spel doet een opgeslagen boor niets", async ({ page }) => {
+    await startGame(page, { state: l15({ diamondDrills: '["coal"]' }) });
+    expect(await val(page, () => objCoalMine.production)).toBe(3500);
+  });
+
+  test("diamant blijft staan na herladen", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ diamondCutters: 2, roughDiamondAmount: 77, gemsAmount: 12, industrialDiamondAmount: 5, diamondVaults: 3 }) });
+    await reload(page);
+    expect(await val(page, () => [+objDiamondCutter.amount, +objRoughDiamond.amount, +objGems.amount, +objIndustrialDiamond.amount, objDiamondVault.storage])).toEqual([2, 77, 12, 5, 3]);
+  });
+
+  test("bulk bouwen werkt voor diamantmijnen en slijperijen", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15({ diamondAmountProspected: 3 }) });
+    await page.locator("[data-bulk='diamond-max']").click();
+    expect(await val(page, () => +objMines.diamondAmountActive)).toBe(3);
+    await expect(page.locator("#diamondMineButton")).toBeDisabled();
+    await page.locator("[data-bulk='diamondCutter-10']").click();
+    // 5.000.000 - 3 x 200.000 ton staal is genoeg voor 4 slijperijen
+    expect(await val(page, () => +objDiamondCutter.amount)).toBe(4);
+  });
+
+  test("de stromen van level 15 verwijzen naar bestaande kaarten", async ({ page }) => {
+    await startGame(page, { beta: true, state: l15() });
+    const unknown = await page.evaluate(() =>
+      objFlows.edges.flatMap((edge) => [edge[0], edge[1]]).filter((id) => !document.getElementById(id) || !helpTexts[id])
+    );
+    expect(unknown).toEqual([]);
+    expect(await game(page, () => objFlows.edges.some((e) => e[2] === "diamant"))).toBe(true);
+  });
+});

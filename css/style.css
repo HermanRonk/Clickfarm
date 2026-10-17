@@ -541,6 +541,20 @@ kbd2 {
     font: inherit;
 }
 
+/* Diamantboren (beta): één regel per soort mijn */
+.drill-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.drill-done {
+    font-weight: 600;
+}
+
 /* Beta: product dat nog op slot zit (meer CPU's nodig) */
 .autosell-locked {
     opacity: 0.55;
@@ -1064,6 +1078,7 @@ kbd2 {
     --flow-koper: #b8733a;
     --flow-printplaten: #2f8f5b;
     --flow-goud: #b8860b;
+    --flow-diamant: #2a9bb0;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1084,6 +1099,7 @@ kbd2 {
         --flow-koper: #e39a62;
         --flow-printplaten: #5fcf8f;
         --flow-goud: #ffd24a;
+        --flow-diamant: #8fe3f0;
     }
 }
 
@@ -1131,6 +1147,7 @@ body.flows-on {
 .flow-koper { color: var(--flow-koper); }
 .flow-printplaten { color: var(--flow-printplaten); }
 .flow-goud { color: var(--flow-goud); }
+.flow-diamant { color: var(--flow-diamant); }
 
 .flow-base,
 .flow-run {

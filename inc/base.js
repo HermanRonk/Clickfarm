@@ -147,6 +147,10 @@ window.onload = function () {
   objGoldOre.init();
   objGoldRefinery.init();
   objGold.init();
+  objRoughDiamond.init();
+  objDiamondCutter.init();
+  objDiamondVault.init();
+  objDiamondDrill.init();
   objIronMelter.init();
   objSteel.init();
   objCoalPowerPlant.init();
@@ -348,7 +352,7 @@ var helpTexts = {
   "Prospecting-col": [
     "Prospecting",
     BETA
-      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12 en goudmijnen vanaf level 14; diamantmijnen kun je nog niet bouwen."
+      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12, goudmijnen vanaf level 14 en diamantmijnen vanaf level 15."
       : "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
   ],
   "MiningSites-col": [
@@ -451,6 +455,22 @@ if (BETA) {
     "GoldInfo-col": [
       "Goud",
       "Goud wordt in kluizen bewaard en levert € 30 miljoen per kg op. Je hebt het ook nodig voor de reactorbesturing.",
+    ],
+    "Diamond-col": [
+      "Diamant",
+      "Een diamantmijn kost geld en 200.000 ton staal. Hij levert 10 karaat ruwe diamant per tick voor 5.000 energie; het personeel eet 1 doos pasta per tick (het uraniumpersoneel gaat voor).",
+    ],
+    "DiamondCutter-col": [
+      "Slijperij",
+      "Een slijperij slijpt iedere tick 50 karaat ruwe diamant voor 25.000 energie. Daarvan wordt willekeurig 50 tot 70% edelsteen en de rest industriële diamant. Af en toe vind je een topsteen, die meteen € 5 miljard oplevert.",
+    ],
+    "DiamondInfo-col": [
+      "Diamanten",
+      "Edelstenen leveren € 6 miljoen per karaat op, industriële diamant € 500.000. Beide liggen in diamantkluizen; iedere kluis heeft ruimte voor 50.000 karaat van elke soort.",
+    ],
+    "DiamondDrill-col": [
+      "Diamantboren",
+      "Een diamantboor koop je één keer per soort mijn, met industriële diamant. Alle mijnen van die soort maken daarna 50% meer voor dezelfde energie en pasta.",
     ],
     "CopperInfo-col": [
       "Koper",
@@ -612,6 +632,24 @@ var objBulk = {
         objGoldRefinery.add(1);
       },
     ],
+    diamond: [
+      "diamantmijnen",
+      function () {
+        return +objMines.diamondAmountActive;
+      },
+      function () {
+        objMines.addMine(6, 1);
+      },
+    ],
+    diamondCutter: [
+      "slijperijen",
+      function () {
+        return +objDiamondCutter.amount;
+      },
+      function () {
+        objDiamondCutter.add(1);
+      },
+    ],
     reactorControl: [
       "reactorbesturingen",
       function () {
@@ -692,6 +730,8 @@ var objPause = {
     "Prospecting-col",
     "Gold-col",
     "GoldRefinery-col",
+    "Diamond-col",
+    "DiamondCutter-col",
   ],
   paused: [],
   // Kaarten waarop pauzeren pas zin heeft als er iets automatisch draait
@@ -1576,6 +1616,57 @@ var objFlows = {
       },
     ],
   ],
+  // Stromen van level 15 (beta): diamant en diamantboren
+  betaEdges15: [
+    [
+      "Diamond-col",
+      "DiamondCutter-col",
+      "diamant",
+      function () {
+        return objDiamondCutter.active > 0;
+      },
+    ],
+    [
+      "DiamondCutter-col",
+      "DiamondInfo-col",
+      "diamant",
+      function () {
+        return objDiamondCutter.active > 0;
+      },
+    ],
+    [
+      "pasta-col",
+      "Diamond-col",
+      "pasta",
+      function () {
+        return objDiamondMine.activeMines > 0;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "Diamond-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "DiamondCutter-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "DiamondInfo-col",
+      "DiamondDrill-col",
+      "diamant",
+      function () {
+        return false;
+      },
+    ],
+  ],
   // Energieverbruikers: benodigde energie per tick/run (0 = staat stil)
   energyUsers: {
     "pomp-col": function () {
@@ -1624,6 +1715,12 @@ var objFlows = {
     },
     "GoldRefinery-col": function () {
       return +objGoldRefinery.amount * objGoldRefinery.energy;
+    },
+    "Diamond-col": function () {
+      return +objMines.diamondAmountActive * objDiamondMine.energy;
+    },
+    "DiamondCutter-col": function () {
+      return +objDiamondCutter.amount * objDiamondCutter.energy;
     },
   },
   key: function (edge) {
@@ -1957,7 +2054,8 @@ var objFlows = {
       objFlows.edges = objFlows.edges.concat(
         objFlows.betaEdges,
         objFlows.betaEdges13,
-        objFlows.betaEdges14
+        objFlows.betaEdges14,
+        objFlows.betaEdges15
       );
     objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
@@ -2068,19 +2166,26 @@ function renderAutoSell(product, active, minimumPrice, currentPrice, locked) {
 // Voorraad, productie en opslag van een grondstof uit mijnen (steenkool, ijzererts, uranium)
 function renderResource(o) {
   var capacity = +o.silos * +o.siloCap;
+  var unit = o.unit || "ton";
   return (
     renderBar(
       "Voorraad",
-      FixUnit(o.amount, "ton"),
+      FixUnit(o.amount, unit),
       (+o.amount / capacity) * 100
     ) +
     renderStats([
-      ["Productie", FixUnit(o.production, "ton per " + o.period)],
+      ["Productie", FixUnit(o.production, unit + " per " + o.period)],
       ["Energie", FixNumber(o.energy) + " per " + o.period],
       o.extra,
-      ["Prijs per ton", FixMoney(o.price)],
-      ["Silo's", FixNumber(o.silos) + " (" + FixUnit(capacity, "ton") + ")"],
-      ["Prijs extra silo", FixMoney(o.siloPrice)],
+      ["Prijs per " + unit, FixMoney(o.price)],
+      [
+        o.siloLabel || "Silo's",
+        FixNumber(o.silos) + " (" + FixUnit(capacity, unit) + ")",
+      ],
+      [
+        "Prijs extra " + (o.siloLabel ? o.siloLabel.toLowerCase() : "silo"),
+        FixMoney(o.siloPrice),
+      ],
     ]) +
     renderHint(o.hint)
   );
@@ -3607,6 +3712,11 @@ var objEnergy = {
       // Level 14 (beta): goud
       +objMines.goldAmountActive * objGoldMine.energy * f("Gold-col") +
       +objGoldRefinery.amount * objGoldRefinery.energy * f("GoldRefinery-col") +
+      // Level 15 (beta): diamant
+      +objMines.diamondAmountActive * objDiamondMine.energy * f("Diamond-col") +
+      +objDiamondCutter.amount *
+        objDiamondCutter.energy *
+        f("DiamondCutter-col") +
       // Level 13 (beta): elektronica, scanners en bestuurde hoogovens
       +objElectronics.amount * objElectronics.energy * f("Electronics-col") +
       +objScanner.amount * objScanner.energy * f("Prospecting-col") +
@@ -5015,7 +5125,11 @@ var objMines = {
         if (steel > 0) {
           objSteel.use(steel);
           objSteel.show();
-          objFlows.pulse("SteelInfo-col", "Copper-col");
+          objFlows.pulse(
+            "SteelInfo-col",
+            { gold: "Gold-col", diamond: "Diamond-col" }[mineType] ||
+              "Copper-col"
+          );
         }
         objMines[mCost] = +objMines[mCost] * +objMines.priceFactor;
       } else {
@@ -5061,8 +5175,11 @@ var objMines = {
         objGoldRefinery.show();
         break;
       case 6:
+        if (!objDiamondMine.unlocked()) return 0;
         var mineType = "diamond";
         addMineFunction(mineType, amount);
+        objDiamondMine.show();
+        objDiamondCutter.show();
         break;
     }
   },
@@ -5070,6 +5187,7 @@ var objMines = {
   steelNeeded: function (mineType) {
     if (mineType === "copper") return +objCopperMine.steelNeeded;
     if (mineType === "gold") return +objGoldMine.steelNeeded;
+    if (mineType === "diamond") return +objDiamondMine.steelNeeded;
     return 0;
   },
   showAll: function () {
@@ -5197,7 +5315,21 @@ var objMines = {
     } else {
       document.getElementById("gold-mines").innerHTML = "";
     }
-    //generateText("diamond-mines", "diamondAmountProspected", "diamondMineCost","diamondAmountActive", "diamantmijn", 6, "diamondMineButton");
+    // Diamantmijnen: in de beta vanaf level 15
+    if (objDiamondMine.unlocked()) {
+      generateText(
+        "diamond-mines",
+        "diamondAmountProspected",
+        "diamondMineCost",
+        "diamondAmountActive",
+        "diamantmijn",
+        6,
+        "diamondMineButton",
+        "Diamantmijnen"
+      );
+    } else {
+      document.getElementById("diamond-mines").innerHTML = "";
+    }
 
     var updateMineButtons = function (mineTypes) {
       for (let i = 0; i < mineTypes.length; i++) {
@@ -5217,6 +5349,7 @@ var objMines = {
     var mineTypes = ["iron", "coal", "uranium"];
     if (objCopperMine.unlocked()) mineTypes.push("copper");
     if (objGoldMine.unlocked()) mineTypes.push("gold");
+    if (objDiamondMine.unlocked()) mineTypes.push("diamond");
     updateMineButtons(mineTypes);
     Display.updateRows();
   },
@@ -5257,7 +5390,8 @@ var objMines = {
       parseInt(store.getItem("goldMineCost")) ||
       (BETA ? 2000000000 : 600000000);
     objMines.diamondMineCost =
-      parseInt(store.getItem("diamondMineCost")) || 600000000;
+      parseInt(store.getItem("diamondMineCost")) ||
+      (BETA ? 5000000000 : 600000000);
     objMines.prospectTimerActive = parseInt(store.getItem("pTimer")) || 0;
     objMines.prospecting = parseInt(store.getItem("prospecting")) || 0;
     document.getElementById("Prospecting-col").style.display = "none";
@@ -7448,6 +7582,549 @@ var objGold = {
   },
 };
 
+// Diamant (alleen in de beta, vanaf level 15): diamantmijn -> ruwe diamant -> slijperij ->
+// edelstenen (om te verkopen) en industriële diamant (voor diamantboren).
+var objDiamondMine = {
+  production: 10, // karaat ruwe diamant per tick
+  energy: 5000,
+  pasta: 1, // dozen per tick per mijn
+  steelNeeded: 200000,
+  activeMines: 0,
+  unlocked: function () {
+    return BETA && +objPlayerInfo.level >= 15 && +objResearch.level > 3;
+  },
+  produce: function () {
+    if (objPause.is("Diamond-col")) {
+      objDiamondMine.activeMines = 0;
+      return 0;
+    }
+    // Net als bij koper en goud gaat het uraniumpersoneel voor
+    var pasta = Math.max(
+      0,
+      +objStorehouse.pasta - objCopperMine.pastaReserve()
+    );
+    var active = Math.min(
+      +objMines.diamondAmountActive,
+      Math.floor(pasta / objDiamondMine.pasta),
+      Math.floor(+objEnergy.available / objDiamondMine.energy),
+      Math.floor(objRoughDiamond.space() / objDiamondMine.production)
+    );
+    objDiamondMine.activeMines = Math.max(0, active);
+    if (active < 1) return 0;
+    objEnergy.use(active * objDiamondMine.energy, "Diamantmijn");
+    objStorehouse.removePasta(active * objDiamondMine.pasta);
+    objRoughDiamond.add(active * objDiamondMine.production);
+  },
+  show: function () {
+    var el = document.getElementById("DiamondMine");
+    if (!objDiamondMine.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    var mines = +objMines.diamondAmountActive;
+    el.innerHTML =
+      "<h3>Ruwe diamant</h3>" +
+      renderResource({
+        amount: objRoughDiamond.amount,
+        unit: "karaat",
+        siloLabel: "Opslag",
+        production: mines * objDiamondMine.production,
+        energy: mines * objDiamondMine.energy,
+        period: "tick",
+        extra: [
+          "Pasta",
+          FixNumber(mines * objDiamondMine.pasta) + " dozen per tick",
+        ],
+        price: objRoughDiamond.price,
+        silos: objRoughDiamond.storage,
+        siloCap: objRoughDiamond.storageCap,
+        siloPrice: objRoughDiamond.storagePrice,
+        hint:
+          "Een mijn levert " +
+          FixUnit(objDiamondMine.production, "karaat") +
+          " ruwe diamant per tick voor " +
+          FixNumber(objDiamondMine.energy) +
+          " energie; het personeel eet 1 doos pasta per tick (het uraniumpersoneel gaat voor). Is de opslag vol, dan stoppen de mijnen.",
+      }) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objRoughDiamond.sell(0)' id='sellRoughDiamondButton'>Verkoop ruwe diamant</button> " +
+      "<button type='button' class='btn btn-primary' onClick='objRoughDiamond.addSilo();' id='roughDiamondSiloButton'>Bouw diamantopslag</button>" +
+      "</div>";
+  },
+};
+
+var objRoughDiamond = {
+  amount: 0,
+  storage: 1,
+  storageCap: 100000, // karaat
+  storagePrice: 100000000,
+  price: 200000, // per karaat
+  space: function () {
+    return (
+      +objRoughDiamond.storage * +objRoughDiamond.storageCap -
+      +objRoughDiamond.amount
+    );
+  },
+  add: function (amountAdded) {
+    fillStorage("objRoughDiamond", amountAdded, "roughDiamondAmount");
+  },
+  use: function (amount) {
+    return useResource("objRoughDiamond", amount, "roughDiamondAmount");
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot ruwe diamant";
+    var priceValue = +objRoughDiamond.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objRoughDiamond.amount;
+      if (amountSold <= 0) return 0;
+      objRoughDiamond.use(amountSold);
+      reason = "Handmatige verkoop ruwe diamant";
+      priceValue = +objRoughDiamond.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 30, amountSold);
+  },
+  addSilo: function () {
+    if (moneyCheck(+objRoughDiamond.storagePrice) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Diamantopslag",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    objMoney.use(+objRoughDiamond.storagePrice);
+    objRoughDiamond.storage++;
+    store.setItem("roughDiamondSilos", objRoughDiamond.storage);
+    objRoughDiamond.show();
+  },
+  show: function () {
+    objDiamondMine.show();
+  },
+  init: function () {
+    objRoughDiamond.amount = +store.getItem("roughDiamondAmount") || 0;
+    objRoughDiamond.storage = +store.getItem("roughDiamondSilos") || 1;
+    objRoughDiamond.show();
+  },
+};
+
+// De slijperij verdeelt iedere batch willekeurig: 50 tot 70% wordt edelsteen, de rest
+// industriële diamant. Soms zit er een topsteen tussen, die meteen veel geld oplevert.
+var objDiamondCutter = {
+  amount: 0,
+  cost: 100000000000,
+  steelNeeded: 1000000,
+  roughNeeded: 50, // karaat per tick
+  energy: 25000,
+  gemShareMin: 0.5,
+  gemShareMax: 0.7,
+  topChance: 0.002, // per actieve slijperij per tick
+  topValue: 5000000000,
+  active: 0,
+  topStones: 0,
+  add: function (amount) {
+    if (!objDiamondMine.unlocked()) return 0;
+    if (+amount < 0) {
+      if (+objDiamondCutter.amount < 1) {
+        notificationOverlay(
+          "Geen slijperijen om te verkopen",
+          "Slijperij",
+          "fa-industry"
+        );
+        return 0;
+      }
+      objDiamondCutter.amount--;
+      objMoney.add(+objDiamondCutter.cost * 0.75, "Verkoop slijperij", 31, 1);
+    } else {
+      if (moneyCheck(+objDiamondCutter.cost) == 0) {
+        notificationOverlay("Niet genoeg doekoe!", "Slijperij", "fa-euro-sign");
+        return 0;
+      }
+      if (+objSteel.amount < +objDiamondCutter.steelNeeded) {
+        notificationOverlay("Niet genoeg staal!", "Slijperij", "fa-box");
+        return 0;
+      }
+      objMoney.use(+objDiamondCutter.cost);
+      objSteel.use(+objDiamondCutter.steelNeeded);
+      objSteel.show();
+      objFlows.pulse("SteelInfo-col", "DiamondCutter-col");
+      objDiamondCutter.amount++;
+    }
+    store.setItem("diamondCutters", objDiamondCutter.amount);
+    objDiamondCutter.show();
+  },
+  // Draait iedere tick zolang er ruwe diamant, energie en ruimte in de kluizen is
+  produce: function () {
+    if (objPause.is("DiamondCutter-col")) {
+      objDiamondCutter.active = 0;
+      return 0;
+    }
+    var space = Math.min(objGems.space(), objIndustrialDiamond.space());
+    var active = Math.min(
+      +objDiamondCutter.amount,
+      Math.floor(+objRoughDiamond.amount / objDiamondCutter.roughNeeded),
+      Math.floor(+objEnergy.available / objDiamondCutter.energy),
+      Math.floor(space / objDiamondCutter.roughNeeded)
+    );
+    objDiamondCutter.active = Math.max(0, active);
+    if (active < 1) return 0;
+    var rough = active * objDiamondCutter.roughNeeded;
+    var share =
+      objDiamondCutter.gemShareMin +
+      Math.random() *
+        (objDiamondCutter.gemShareMax - objDiamondCutter.gemShareMin);
+    var gems = Math.round(rough * share);
+    objRoughDiamond.use(rough);
+    objEnergy.use(active * objDiamondCutter.energy, "Slijperij");
+    objGems.add(gems);
+    objIndustrialDiamond.add(rough - gems);
+    for (var i = 0; i < active; i++) {
+      if (Math.random() < objDiamondCutter.topChance) {
+        objDiamondCutter.topStones++;
+        store.setItem("diamondTopStones", objDiamondCutter.topStones);
+        objMoney.add(objDiamondCutter.topValue, "Topsteen verkocht", 32, 1);
+      }
+    }
+  },
+  show: function () {
+    var left = document.getElementById("diamondCutter");
+    var right = document.getElementById("diamondCutterStats");
+    if (!objDiamondMine.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objDiamondCutter.amount;
+    var a = objDiamondCutter.active;
+    var rough = a * objDiamondCutter.roughNeeded;
+    left.innerHTML =
+      "<h2>Slijperij</h2>" +
+      renderStats([
+        ["Slijperijen", FixNumber(n)],
+        ["Prijs per slijperij", FixMoney(objDiamondCutter.cost)],
+        ["Staal per slijperij", FixUnit(objDiamondCutter.steelNeeded, "ton")],
+        ["Verkoopwaarde", FixMoney(objDiamondCutter.cost * 0.75)],
+      ]) +
+      "<h3>Per slijperij per tick</h3>" +
+      renderStats([
+        ["Ruwe diamant", FixUnit(objDiamondCutter.roughNeeded, "karaat")],
+        ["Energie", FixNumber(objDiamondCutter.energy)],
+        ["Edelsteen", "50 tot 70%"],
+        ["Industriële diamant", "de rest"],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objDiamondCutter.add(1);' id='buyDiamondCutter'>Bouw slijperij</button>" +
+      objBulk.buttons("diamondCutter") +
+      " <button type='button' class='btn btn-danger' onClick='objDiamondCutter.add(-1);' id='sellDiamondCutter'>Verkoop slijperij</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(a) + " van " + FixNumber(n)],
+        ["Ruwe diamant", FixUnit(rough, "karaat per tick")],
+        ["Energie", FixNumber(a * objDiamondCutter.energy) + " per tick"],
+        ["Topstenen gevonden", FixNumber(objDiamondCutter.topStones)],
+      ]) +
+      renderHint(
+        "Een slijperij draait vanzelf iedere tick zolang er ruwe diamant, energie en ruimte in je kluizen is. Gemiddeld 1 op de 500 ticks vindt een slijperij een topsteen; die wordt meteen verkocht voor " +
+          FixMoney(objDiamondCutter.topValue) +
+          "."
+      );
+  },
+  init: function () {
+    objDiamondCutter.amount = +store.getItem("diamondCutters") || 0;
+    objDiamondCutter.topStones = +store.getItem("diamondTopStones") || 0;
+    objDiamondCutter.show();
+  },
+};
+
+// Edelstenen en industriële diamant liggen samen in diamantkluizen
+var objGems = {
+  amount: 0,
+  storage: 1,
+  storageCap: 50000, // karaat per kluis
+  price: 6000000, // per karaat
+  space: function () {
+    return +objGems.storage * +objGems.storageCap - +objGems.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objGems", amountAdded, "gemsAmount");
+  },
+  use: function (amount) {
+    return useResource("objGems", amount, "gemsAmount");
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot edelstenen";
+    var priceValue = +objGems.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objGems.amount;
+      if (amountSold <= 0) return 0;
+      objGems.use(amountSold);
+      reason = "Handmatige verkoop edelstenen";
+      priceValue = +objGems.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 33, amountSold);
+  },
+  show: function () {
+    objDiamondVault.show();
+  },
+};
+
+var objIndustrialDiamond = {
+  amount: 0,
+  storage: 1,
+  storageCap: 50000, // karaat per kluis
+  price: 500000, // per karaat
+  space: function () {
+    return (
+      +objIndustrialDiamond.storage * +objIndustrialDiamond.storageCap -
+      +objIndustrialDiamond.amount
+    );
+  },
+  add: function (amountAdded) {
+    fillStorage("objIndustrialDiamond", amountAdded, "industrialDiamondAmount");
+  },
+  use: function (amount) {
+    return useResource(
+      "objIndustrialDiamond",
+      amount,
+      "industrialDiamondAmount"
+    );
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot industriële diamant";
+    var priceValue = +objIndustrialDiamond.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = +objIndustrialDiamond.amount;
+      if (amountSold <= 0) return 0;
+      objIndustrialDiamond.use(amountSold);
+      reason = "Handmatige verkoop industriële diamant";
+      priceValue = +objIndustrialDiamond.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 34, amountSold);
+  },
+  show: function () {
+    objDiamondVault.show();
+  },
+};
+
+var objDiamondVault = {
+  storage: 1,
+  price: 10000000000,
+  add: function () {
+    if (moneyCheck(+objDiamondVault.price) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Diamantkluis",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    objMoney.use(+objDiamondVault.price);
+    objDiamondVault.set(+objDiamondVault.storage + 1);
+    store.setItem("diamondVaults", objDiamondVault.storage);
+    objDiamondVault.show();
+  },
+  set: function (amount) {
+    objDiamondVault.storage = amount;
+    objGems.storage = amount;
+    objIndustrialDiamond.storage = amount;
+  },
+  show: function () {
+    var left = document.getElementById("Diamonds");
+    var right = document.getElementById("diamondStorage");
+    if (!objDiamondMine.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var capacity = +objDiamondVault.storage * +objGems.storageCap;
+    left.innerHTML =
+      "<h2>Diamanten</h2>" +
+      renderBar(
+        "Edelstenen",
+        FixUnit(objGems.amount, "karaat"),
+        (+objGems.amount / capacity) * 100
+      ) +
+      renderBar(
+        "Industriële diamant",
+        FixUnit(objIndustrialDiamond.amount, "karaat"),
+        (+objIndustrialDiamond.amount / capacity) * 100
+      ) +
+      renderStats([
+        ["Prijs edelsteen", FixMoney(objGems.price) + " per karaat"],
+        [
+          "Prijs industriële diamant",
+          FixMoney(objIndustrialDiamond.price) + " per karaat",
+        ],
+      ]) +
+      renderHint(
+        "Industriële diamant heb je nodig voor diamantboren. Wat niet past wordt verkocht voor 20% van de prijs."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objGems.sell(0)' id='sellGems'>Verkoop edelstenen</button> " +
+      "<button type='button' class='btn btn-danger' onClick='objIndustrialDiamond.sell(0)' id='sellIndustrialDiamond'>Verkoop industriële diamant</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
+        [
+          "Kluizen",
+          FixNumber(objDiamondVault.storage) +
+            " (" +
+            FixUnit(capacity, "karaat") +
+            " per soort)",
+        ],
+        ["Prijs extra kluis", FixMoney(objDiamondVault.price)],
+        [
+          "Capaciteit per kluis",
+          FixUnit(objGems.storageCap, "karaat") + " per soort",
+        ],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objDiamondVault.add();' id='addDiamondVault'>Koop kluis</button>" +
+      "</div>";
+  },
+  init: function () {
+    objGems.amount = +store.getItem("gemsAmount") || 0;
+    objIndustrialDiamond.amount =
+      +store.getItem("industrialDiamondAmount") || 0;
+    objDiamondVault.set(+store.getItem("diamondVaults") || 1);
+    objDiamondVault.show();
+  },
+};
+
+// Diamantboren (#79): eenmalig per mijntype, betaald in industriële diamant. Alle mijnen van
+// dat type maken daarna 50% meer voor dezelfde energie (en hetzelfde pasta).
+var objDiamondDrill = {
+  bonus: 1.5,
+  types: ["iron", "coal", "uranium", "copper", "gold", "diamond"],
+  names: {
+    iron: "IJzerertsmijnen",
+    coal: "Steenkoolmijnen",
+    uranium: "Uraniummijnen",
+    copper: "Kopermijnen",
+    gold: "Goudmijnen",
+    diamond: "Diamantmijnen",
+  },
+  cost: {
+    iron: 2000,
+    coal: 2000,
+    uranium: 5000,
+    copper: 5000,
+    gold: 10000,
+    diamond: 20000,
+  },
+  owned: [],
+  base: null,
+  mine: function (type) {
+    return {
+      iron: objIronMine,
+      coal: objCoalMine,
+      uranium: objUraniumMine,
+      copper: objCopperMine,
+      gold: objGoldMine,
+      diamond: objDiamondMine,
+    }[type];
+  },
+  has: function (type) {
+    return BETA && objDiamondDrill.owned.indexOf(type) !== -1;
+  },
+  // Zet de productie per mijn op basis van de gekochte boren
+  apply: function () {
+    if (!objDiamondDrill.base) {
+      objDiamondDrill.base = {};
+      objDiamondDrill.types.forEach(function (type) {
+        objDiamondDrill.base[type] = objDiamondDrill.mine(type).production;
+      });
+    }
+    objDiamondDrill.types.forEach(function (type) {
+      objDiamondDrill.mine(type).production =
+        objDiamondDrill.base[type] *
+        (objDiamondDrill.has(type) ? objDiamondDrill.bonus : 1);
+    });
+  },
+  buy: function (type) {
+    if (!objDiamondMine.unlocked()) return 0;
+    if (objDiamondDrill.types.indexOf(type) === -1) return 0;
+    if (objDiamondDrill.has(type)) return 0;
+    var cost = objDiamondDrill.cost[type];
+    if (+objIndustrialDiamond.amount < cost) {
+      notificationOverlay(
+        "Niet genoeg industriële diamant! Nodig: " +
+          FixUnit(cost, "karaat") +
+          ".",
+        "Diamantboren",
+        "fa-box"
+      );
+      return 0;
+    }
+    objIndustrialDiamond.use(cost);
+    objDiamondDrill.owned.push(type);
+    store.setItem("diamondDrills", JSON.stringify(objDiamondDrill.owned));
+    objDiamondDrill.apply();
+    objDiamondVault.show();
+    objDiamondDrill.show();
+    objMines.showAll();
+    objCoalMine.show();
+    objIronMine.show();
+    objUraniumMine.show();
+  },
+  show: function () {
+    var el = document.getElementById("DiamondDrill");
+    if (!objDiamondMine.unlocked()) {
+      el.innerHTML = "";
+      return;
+    }
+    var rows = objDiamondDrill.types
+      .map(function (type) {
+        var name = objDiamondDrill.names[type];
+        if (objDiamondDrill.has(type)) {
+          return (
+            "<div class='drill-row'><span>" +
+            name +
+            "</span><span class='drill-done'>+50%</span></div>"
+          );
+        }
+        var cost = objDiamondDrill.cost[type];
+        return (
+          "<div class='drill-row'><span>" +
+          name +
+          "</span><button type='button' class='btn btn-primary' onClick='objDiamondDrill.buy(\"" +
+          type +
+          "\");' id='drill-" +
+          type +
+          "'" +
+          (+objIndustrialDiamond.amount < cost ? " disabled" : "") +
+          ">" +
+          FixUnit(cost, "karaat") +
+          "</button></div>"
+        );
+      })
+      .join("");
+    el.innerHTML =
+      "<h2>Diamantboren</h2>" +
+      rows +
+      renderHint(
+        "Een diamantboor koop je één keer per soort mijn, met industriële diamant. Alle mijnen van die soort maken daarna 50% meer voor dezelfde energie."
+      );
+  },
+  init: function () {
+    var owned = [];
+    try {
+      owned = JSON.parse(store.getItem("diamondDrills") || "[]");
+    } catch (e) {
+      owned = [];
+    }
+    objDiamondDrill.owned = Array.isArray(owned)
+      ? owned.filter(function (type) {
+          return objDiamondDrill.types.indexOf(type) !== -1;
+        })
+      : [];
+    objDiamondDrill.apply();
+    objDiamondDrill.show();
+  },
+};
+
 // Splijtstofstavenfabriek
 var objFuelCellFactory = {
   amount: 0,
@@ -8813,6 +9490,14 @@ var loopsProduction = setInterval(function () {
       objGoldRefinery.show();
       objGold.show();
       objNuclearPowerPlant.showControl();
+    }
+    if (objDiamondMine.unlocked()) {
+      objDiamondMine.produce();
+      objDiamondCutter.produce();
+      objDiamondMine.show();
+      objDiamondCutter.show();
+      objDiamondVault.show();
+      objDiamondDrill.show();
     }
     if (objElectronics.unlocked()) {
       objElectronics.produce();
