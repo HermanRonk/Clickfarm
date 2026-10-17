@@ -9073,11 +9073,6 @@ var objFuelRod = {
     document.getElementById("sellWaste").innerHTML = renderStats([
       ["Laten opruimen per staaf", FixMoney(objFuelRod.wastePrice)],
     ]);
-    if (objFuelRod.waste == 0) {
-      document.getElementById("fcSellWasteButton").disabled = true;
-    } else {
-      document.getElementById("fcSellWasteButton").disabled = false;
-    }
     return 0;
   },
   sellWaste: function () {
@@ -9161,6 +9156,9 @@ var objFuelRod = {
       renderHint(
         "Verbruikte staven, en staven uit een gesloten fabriek of centrale, gaan naar het afval en kunnen niet hergebruikt worden."
       );
+    // Hier en niet bij de prijs: die wordt zonder fabrieken niet altijd berekend (#107)
+    document.getElementById("fcSellWasteButton").disabled =
+      +objFuelRod.waste == 0;
   },
   init: function () {
     objFuelRod.waste = store.getItem("frWaste") || 0;
@@ -10244,7 +10242,7 @@ var loopsProduction = setInterval(function () {
         objSalesComputer.showKunststof(store.getItem("autoKunststof"));
       }
       if (objChicken.amount >= 1) objChicken.makeEggs();
-      if (+objFuelCellFactory.amount > 0)
+      if (+objFuelCellFactory.amount > 0 || +objFuelRod.waste > 0)
         objFuelRod.calculateWastePrice(50000, 99999);
     }
     // Nieuwe marktprijzen: in de beta iedere 5 seconden, zoals in de oorspronkelijke versie (#83)

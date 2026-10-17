@@ -418,3 +418,29 @@ test.describe("Levelup werkt kaarten direct bij (#85)", () => {
     await expect(page.locator("#pastaHelperDiv")).toContainText("Pastahelpers");
   });
 });
+
+test.describe("Afval opruimen zonder splijtstofstavenfabriek (#107)", () => {
+  const nuclear = (extra = {}) =>
+    atLevel(12, { Rlevel: 4, Money: 1e9, nppAmount: 1, nrAmount: 1, fuellCellFactory: 1, frWaste: 0, ...extra });
+
+  test("na verkoop van de laatste fabriek gaat de knop weer aan zodra er afval is", async ({ page }) => {
+    await startGame(page, { state: nuclear() });
+    const button = page.locator("#fcSellWasteButton");
+    await expect(button).toBeDisabled();
+    await page.locator("#fcfSellButton").click();
+    expect(await game(page, () => +objFuelCellFactory.amount)).toBe(0);
+    await game(page, () => objFuelRod.wasteFunction(1));
+    await expect(button).toBeEnabled();
+    await button.click();
+    expect(await game(page, () => +objFuelRod.waste)).toBe(0);
+    await expect(button).toBeDisabled();
+  });
+
+  test("de opruimprijs wordt ook zonder fabrieken opnieuw berekend als er afval is", async ({ page }) => {
+    await startGame(page, { state: nuclear({ fuellCellFactory: 0, frWaste: 3 }) });
+    await expect(page.locator("#fcSellWasteButton")).toBeEnabled();
+    await game(page, () => (objFuelRod.wastePrice = 1));
+    await tick(page, 10);
+    expect(await game(page, () => objFuelRod.wastePrice)).toBeGreaterThanOrEqual(50000);
+  });
+});
