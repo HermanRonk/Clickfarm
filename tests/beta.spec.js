@@ -294,6 +294,15 @@ test.describe("Beta: koper (level 12)", () => {
     await expect(page.locator("#copperSmelterStats dt:text-is('Steenkool') + dd")).toHaveText("400 ton per tick");
   });
 
+  test("is de koperopslag vol, dan stopt de smelterij en wordt er niets verkocht", async ({ page }) => {
+    await startGame(page, { beta: true, state: copper({ copperOreAmount: 50000, copperSmelters: 1, copperAmount: 100000 }) });
+    const money = await game(page, () => +objMoney.amount);
+    await tick(page, 3);
+    expect(await game(page, () => [objCopperSmelter.active, +objCopperOre.amount, +objMoney.amount])).toEqual([0, 50000, money]);
+    await expect(page.locator("#CopperInfo-col")).toContainText("dan stoppen de smelterijen");
+    await expect(page.locator("#CopperInfo-col")).not.toContainText("20%");
+  });
+
   test("koper verkopen levert de volle prijs op; wat niet past 20%", async ({ page }) => {
     await startGame(page, { beta: true, state: copper({ copperAmount: 1000 }) });
     await page.locator("#sellCopper").click();
@@ -576,6 +585,15 @@ test.describe("Beta: level 13 (#71-#74)", () => {
     await startGame(page, { beta: true, state: l13({ electronicsFactories: 1, copperAmount: 100, plasticAmount: 0 }) });
     await tick(page, 3);
     expect(await val(page, () => +objPCB.amount)).toBe(0);
+  });
+
+  test("#71 is de printplatenopslag vol, dan stopt de fabriek en wordt er niets verkocht", async ({ page }) => {
+    await startGame(page, { beta: true, state: l13({ electronicsFactories: 1, copperAmount: 1000, plasticAmount: 90000, plasticStorage: 2, pcbAmount: 100000 }) });
+    const money = await val(page, () => +objMoney.amount);
+    await tick(page, 3);
+    expect(await val(page, () => [+objPCB.amount, +objCopper.amount, +objMoney.amount])).toEqual([100000, 1000, money]);
+    await expect(page.locator("#PCB-col")).toContainText("dan stoppen de elektronicafabrieken");
+    await expect(page.locator("#PCB-col")).not.toContainText("20%");
   });
 
   test("#71 printplaten verkopen: volle prijs, en wat niet past voor 20%", async ({ page }) => {
@@ -906,6 +924,15 @@ test.describe("Beta: goud en reactorbesturing (#76, #77)", () => {
     await startGame(page, { beta: true, state: l14({ goldOreAmount: 6000, goldRefineries: 1, Oil: 0 }) });
     await tick(page, 3);
     expect(await val(page, () => +objGold.amount)).toBe(0);
+  });
+
+  test("#76 zijn de goudkluizen vol, dan stopt de raffinaderij en wordt er niets verkocht", async ({ page }) => {
+    await startGame(page, { beta: true, state: l14({ goldOreAmount: 6000, goldRefineries: 1, Oil: 5000, OilTankAmountBig: 1, goldAmount: 10000 }) });
+    const money = await val(page, () => +objMoney.amount);
+    await tick(page, 3);
+    expect(await val(page, () => [+objGold.amount, +objGoldOre.amount, +objMoney.amount])).toEqual([10000, 6000, money]);
+    await expect(page.locator("#GoldInfo-col")).toContainText("dan stoppen de raffinaderijen");
+    await expect(page.locator("#GoldInfo-col")).not.toContainText("20%");
   });
 
   test("#76 goud verkopen: volle prijs, en wat niet in de kluis past 20%", async ({ page }) => {

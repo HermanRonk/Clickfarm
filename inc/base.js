@@ -454,7 +454,7 @@ if (BETA) {
     ],
     "CopperInfo-col": [
       "Koper",
-      "Koper wordt in loodsen opgeslagen en levert € 40.000 per ton op. Wat niet past, wordt verkocht voor 20% van de prijs.",
+      "Koper wordt in loodsen opgeslagen en levert € 40.000 per ton op. Zijn de loodsen vol, dan stoppen de smelterijen tot er weer ruimte is.",
     ],
   });
 }
@@ -6631,7 +6631,9 @@ var objCopper = {
         ["Vrije ruimte", FixUnit(objCopper.space(), "ton")],
         ["Prijs per ton", FixMoney(objCopper.price)],
       ]) +
-      renderHint("Wat niet past wordt verkocht voor 20% van de prijs.") +
+      renderHint(
+        "Is de opslag vol, dan stoppen de smelterijen tot er weer ruimte is."
+      ) +
       "<div class='actions'>" +
       "<button type='button' class='btn btn-danger' onClick='objCopper.sell(0)' id='sellCopper'>Verkoop koper</button>" +
       "</div>";
@@ -6861,7 +6863,7 @@ var objPCB = {
         ["Prijs per printplaat", FixMoney(objPCB.price)],
       ]) +
       renderHint(
-        "Nodig voor hoogovenbesturing, seismische scanners en zonneparken. Wat niet past wordt verkocht voor 20% van de prijs."
+        "Nodig voor hoogovenbesturing, seismische scanners en zonneparken. Is de opslag vol, dan stoppen de elektronicafabrieken tot er weer ruimte is."
       ) +
       "<div class='actions'>" +
       "<button type='button' class='btn btn-danger' onClick='objPCB.sell(0)' id='sellPCB'>Verkoop printplaten</button>" +
@@ -7422,7 +7424,7 @@ var objGold = {
         ["Prijs per kg", FixMoney(objGold.price)],
       ]) +
       renderHint(
-        "Nodig voor de reactorbesturing. Wat niet past wordt verkocht voor 20% van de prijs."
+        "Nodig voor de reactorbesturing. Zijn de kluizen vol, dan stoppen de raffinaderijen tot er weer ruimte is."
       ) +
       "<div class='actions'>" +
       "<button type='button' class='btn btn-danger' onClick='objGold.sell(0)' id='sellGold'>Verkoop goud</button>" +
