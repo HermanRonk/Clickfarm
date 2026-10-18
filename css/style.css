@@ -1296,3 +1296,343 @@ body:has(.rows > .dragging) .flow-layer {
     margin: 0;
     text-decoration: none;
 }
+
+/* Statistieken (beta, zie objStats in inc/base.js) */
+.stats-view {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--gap);
+}
+
+.stats-view[hidden],
+.container-fluid[hidden],
+.site-footer[hidden] {
+    display: none;
+}
+
+.stats-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    margin: 0.25rem 0 var(--gap);
+}
+
+.stats-head h1 {
+    margin: 0 auto 0 0;
+    font-size: 1.4rem;
+}
+
+.stats-head h1:focus {
+    outline: none;
+}
+
+.stats-head .btn {
+    margin: 0;
+}
+
+.segmented {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.segmented button {
+    padding: 0.3rem 0.8rem;
+    border: 0;
+    border-radius: 6px;
+    background: none;
+    color: var(--muted);
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.segmented button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: var(--shadow);
+}
+
+.stats-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: var(--gap);
+    margin-bottom: var(--gap);
+}
+
+.stats-tile,
+.stats-card {
+    min-width: 0;
+    padding: 0.9rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.stats-tile-label {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.stats-tile-value {
+    margin: 0.15rem 0 0.25rem;
+    font-size: 1.45rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+}
+
+.stats-tile-sub {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+
+.stats-tile-sub .progress {
+    margin: 0.35rem 0 0.3rem;
+}
+
+.stats-up {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.stats-down {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--gap);
+}
+
+@media (min-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-wide {
+        grid-column: 1 / -1;
+    }
+}
+
+.stats-card h2 {
+    margin-bottom: 0.25rem;
+}
+
+.stats-card > .hint {
+    margin: 0 0 0.4rem;
+}
+
+.stats-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 1rem;
+    margin-bottom: 0.3rem;
+    font-size: 0.85rem;
+}
+
+.stats-legend .hint {
+    margin: 0 0 0 auto;
+}
+
+.stats-legend i,
+.stats-tip i {
+    display: inline-block;
+    width: 0.9rem;
+    height: 0.2rem;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+    border-radius: 2px;
+}
+
+.stats-plot {
+    position: relative;
+    touch-action: pan-y;
+}
+
+.stats-svg {
+    display: block;
+    max-width: 100%;
+    overflow: visible;
+}
+
+.stats-gridline {
+    stroke: var(--border);
+    stroke-width: 1;
+}
+
+.stats-axis {
+    fill: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-line {
+    fill: none;
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+
+.stats-mark {
+    stroke: var(--muted);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    opacity: 0.6;
+}
+
+.stats-mark-label {
+    fill: var(--muted);
+    font-size: 10px;
+}
+
+.stats-cursor {
+    stroke: var(--text);
+    stroke-width: 1;
+    opacity: 0.35;
+}
+
+.stats-tip {
+    position: absolute;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.4rem 0.6rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.stats-tip[hidden] {
+    display: none;
+}
+
+.stats-empty {
+    margin: 0.5rem 0;
+    padding: 1.5rem 1rem;
+    color: var(--muted);
+    text-align: center;
+    background: var(--surface-2);
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-table th,
+.stats-table td {
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    vertical-align: top;
+}
+
+.stats-table thead th {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.stats-table th:first-child {
+    text-align: left;
+    font-weight: 500;
+}
+
+.stats-table td .progress {
+    width: 100%;
+    max-width: 140px;
+    height: 0.35rem;
+    margin: 0.3rem 0 0 auto;
+}
+
+.stats-dot {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    margin-right: 0.5rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.stats-timeline {
+    margin: 0.4rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.stats-timeline li {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0 0.75rem;
+    padding: 0 0 0.75rem 1.2rem;
+    border-left: 2px solid var(--border);
+    margin-left: 0.35rem;
+}
+
+.stats-timeline li:last-child {
+    border-left-color: transparent;
+}
+
+.stats-timeline li::before {
+    content: "";
+    position: absolute;
+    left: -0.42rem;
+    top: 0.25rem;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--surface);
+}
+
+.stats-timeline li.stats-start::before {
+    background: var(--muted);
+}
+
+.stats-level {
+    font-weight: 600;
+}
+
+.stats-when {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: right;
+}
+
+.stats-timeline .hint {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .stats-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-tile-value {
+        font-size: 1.2rem;
+    }
+
+    .stats-head .segmented {
+        order: 3;
+    }
+}

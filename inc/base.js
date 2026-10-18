@@ -169,6 +169,7 @@ window.onload = function () {
   objResearch.init();
   objFuelCellFactory.init();
   objNuclearPowerPlant.init();
+  objStats.init();
   objGrain.priceCalc();
   objMarket.init();
   showQuickSell(0);
@@ -2446,6 +2447,7 @@ var objPlayerInfo = {
     if (+objMoney.amount >= +objPlayerInfo.nextlevel) {
       +objPlayerInfo.level++;
       store.setItem("PlayerLevel", objPlayerInfo.level);
+      objStats.levelup(objPlayerInfo.level);
       objPlayerInfo.proceslevel("levelup");
       notificationOverlay(
         "Levelup! je bent nu level: " + objPlayerInfo.level,
@@ -2557,15 +2559,15 @@ var objOil = {
     if (objOilPump.amount > 0) {
       if (+objEnergy.available >= objOilPump.amount) {
         objEnergy.use(+objOilPump.amount, "Oliepomp");
-        objOilTank.fill(+objOilPump.amount);
+        objOilTank.fill(objStats.count("olie", +objOilPump.amount));
       } else {
         var activePumps = +objEnergy.available;
         objEnergy.use(+activePumps, "Oliepomp");
-        objOilTank.fill(+activePumps);
+        objOilTank.fill(objStats.count("olie", +activePumps));
       }
     }
     if (objOilPumpAdv.amount > 0) {
-      objOilTank.fill(objOilPumpAdv.produce());
+      objOilTank.fill(objStats.count("olie", objOilPumpAdv.produce()));
     }
     objEnergy.show();
   },
@@ -2677,7 +2679,7 @@ var objFarmRobot = {
     if (objFarmRobot.robotTimer < 1) {
       //nog rekening houden met max aan de hand van aanwezige velden.
       var production = objFarmRobot.activeFields * +objFarmland.harvest;
-      objGrainSilo.fill(production);
+      objGrainSilo.fill(objStats.count("graan", production));
       objGrainSilo.show();
       objFarmRobot.work();
     }
@@ -3148,7 +3150,7 @@ var objFarmland = {
     objFarmland.timerCountdown();
     if (this.FarmTimer < 1) {
       var filling = +this.FarmAmount * +objFarmland.harvest;
-      objGrainSilo.fill(filling);
+      objGrainSilo.fill(objStats.count("graan", filling));
 
       //button enable
       document.getElementById("farmlandWorkBTN").disabled = false;
@@ -3308,7 +3310,7 @@ var objWindmill = {
   grind_loop: function () {
     objWindmill.GrindTimer--;
     objWindmill.grindTimerCountdown();
-    objFlourSilo.fill(this.GrindAmount / 10);
+    objFlourSilo.fill(objStats.count("bloem", this.GrindAmount / 10));
     if (objWindmill.GrindTimer < 1) objWindmill.grind_buttonstate();
   },
   tempAmountAuto: 0,
@@ -3394,7 +3396,7 @@ var objWindmill = {
     objGrainSilo.use(objWindmill.tempAmountAuto / 10);
     objWindmill.autoGrindTimer--;
     objWindmill.autoGrindTimerCountdown();
-    objFlourSilo.fill(objWindmill.tempAmountAuto / 10);
+    objFlourSilo.fill(objStats.count("bloem", objWindmill.tempAmountAuto / 10));
     if (objWindmill.autoGrindTimer < 1) {
       objWindmill.autoGrindTimer = 0;
       objWindmill.running = 0;
@@ -3582,6 +3584,7 @@ function resetGame() {
   ) {
     return;
   }
+  objStats.stop();
   store.clear();
   location.reload();
 }
@@ -3667,6 +3670,7 @@ var objEnergy = {
     showMessage(reason, requestedAmount);
     if (+requestedAmount <= +objEnergy.available) {
       objEnergy.available = +objEnergy.available - +requestedAmount;
+      objStats.count("energieVerbruik", requestedAmount);
       store.setItem("EnergyAvailable", +objEnergy.available);
       objEnergy.show();
       return +requestedAmount;
@@ -3924,7 +3928,7 @@ var objChicken = {
   makeEggs: function () {
     objChicken.eat();
     var aantalEieren = +objChicken.amount * +objChicken.eggProduction;
-    objEgg.add(AfrondenGewicht(aantalEieren));
+    objEgg.add(objStats.count("eieren", AfrondenGewicht(aantalEieren)));
     objChicken.show();
   },
   add: function (aantal) {
@@ -4328,7 +4332,7 @@ var objPastaFactory = {
       if (typeAction == "automated") {
         pasta = +pasta * (1 - +objPastaHelper.cut);
       }
-      objStorehouse.addPasta(pasta);
+      objStorehouse.addPasta(objStats.count("pasta", pasta));
       objFlows.pulseAll([
         ["flour-col", "pasta-col"],
         ["chicken-col", "pasta-col"],
@@ -5594,7 +5598,9 @@ var objCoalMine = {
       return 0;
     }
     objEnergy.use(+activeMines * +objCoalMine.energy, "Steenkoolmijn");
-    objCoal.add(+activeMines * +objCoalMine.production);
+    objCoal.add(
+      objStats.count("steenkool", +activeMines * +objCoalMine.production)
+    );
     objCoal.show();
   },
   show: function () {
@@ -5739,7 +5745,9 @@ var objIronMine = {
       return 0;
     }
     objEnergy.use(+activeMines * +objIronMine.energy, "IJzermijn");
-    objIronOre.add(+activeMines * +objIronMine.production);
+    objIronOre.add(
+      objStats.count("ijzererts", +activeMines * +objIronMine.production)
+    );
     objIronOre.show();
   },
   show: function () {
@@ -5919,7 +5927,12 @@ var objIronMelter = {
     objCoal.use(+coalNeededT);
     objIronOre.use(+ironOreNeededT);
     objEnergy.use(+energyNeededT, "Staalproductie");
-    objSteel.add(+objIronMelter.activeSmelters * +objIronMelter.production);
+    objSteel.add(
+      objStats.count(
+        "staal",
+        +objIronMelter.activeSmelters * +objIronMelter.production
+      )
+    );
     objFlows.pulseAll([
       ["Coal-col", "SteelProduction-col"],
       ["Iron-col", "SteelProduction-col"],
@@ -5961,7 +5974,7 @@ var objIronMelter = {
     objIronOre.use(active * +objIronMelter.ironOreNeeded);
     objCoal.use(active * +objIronMelter.coalNeeded);
     objEnergy.use(active * +objIronMelter.energy, "Hoogovenbesturing");
-    objSteel.add(active * +objIronMelter.production);
+    objSteel.add(objStats.count("staal", active * +objIronMelter.production));
     objSteel.show();
   },
   showControl: function () {
@@ -6309,7 +6322,12 @@ var objPlasticFactory = {
         +factoriesActive * +objPlasticFactory.workerFood
       );
     }
-    objPlastic.add(+factoriesActive * +objPlasticFactory.production);
+    objPlastic.add(
+      objStats.count(
+        "kunststof",
+        +factoriesActive * +objPlasticFactory.production
+      )
+    );
     objFlows.pulseAll([
       ["olie-col", "platicFactory-col"],
       ["platicFactory-col", "plasticStorage-col"],
@@ -6510,7 +6528,9 @@ var objUraniumMine = {
     objStorehouse.removePasta(
       activeMines * (+objUraniumMine.workers * +objUraniumMine.workerFood)
     );
-    objUraniumOre.add(+activeMines * +objUraniumMine.production);
+    objUraniumOre.add(
+      objStats.count("uranium", +activeMines * +objUraniumMine.production)
+    );
     objUraniumOre.show();
   },
   show: function () {
@@ -6641,7 +6661,9 @@ var objCopperMine = {
     if (active < 1) return 0;
     objEnergy.use(active * objCopperMine.energy, "Kopermijn");
     objStorehouse.removePasta(active * objCopperMine.pasta);
-    objCopperOre.add(active * objCopperMine.production);
+    objCopperOre.add(
+      objStats.count("kopererts", active * objCopperMine.production)
+    );
   },
   show: function () {
     var el = document.getElementById("CopperMine");
@@ -6798,7 +6820,9 @@ var objCopperSmelter = {
     objCopperOre.use(active * objCopperSmelter.oreNeeded);
     objCoal.use(active * objCopperSmelter.coalNeeded);
     objEnergy.use(active * objCopperSmelter.energy, "Kopersmelterij");
-    objCopper.add(active * objCopperSmelter.production);
+    objCopper.add(
+      objStats.count("koper", active * objCopperSmelter.production)
+    );
   },
   show: function () {
     var left = document.getElementById("copperSmelter");
@@ -7033,7 +7057,9 @@ var objElectronics = {
     objPlastic.use(active * objElectronics.plasticNeeded);
     objPlastic.show();
     objEnergy.use(active * objElectronics.energy, "Elektronicafabriek");
-    objPCB.add(active * objElectronics.production);
+    objPCB.add(
+      objStats.count("printplaten", active * objElectronics.production)
+    );
   },
   show: function () {
     var left = document.getElementById("electronicsFactory");
@@ -7447,7 +7473,7 @@ var objGoldMine = {
     if (active < 1) return 0;
     objEnergy.use(active * objGoldMine.energy, "Goudmijn");
     objStorehouse.removePasta(active * objGoldMine.pasta);
-    objGoldOre.add(active * objGoldMine.production);
+    objGoldOre.add(objStats.count("gouderts", active * objGoldMine.production));
   },
   show: function () {
     var el = document.getElementById("GoldMine");
@@ -7603,7 +7629,7 @@ var objGoldRefinery = {
     objGoldOre.use(active * objGoldRefinery.oreNeeded);
     objOilTank.use(active * objGoldRefinery.oilNeeded, "Goudraffinaderij");
     objEnergy.use(active * objGoldRefinery.energy, "Goudraffinaderij");
-    objGold.add(active * objGoldRefinery.production);
+    objGold.add(objStats.count("goud", active * objGoldRefinery.production));
   },
   show: function () {
     var left = document.getElementById("goldRefinery");
@@ -7778,7 +7804,9 @@ var objDiamondMine = {
     if (active < 1) return 0;
     objEnergy.use(active * objDiamondMine.energy, "Diamantmijn");
     objStorehouse.removePasta(active * objDiamondMine.pasta);
-    objRoughDiamond.add(active * objDiamondMine.production);
+    objRoughDiamond.add(
+      objStats.count("ruwediamant", active * objDiamondMine.production)
+    );
   },
   show: function () {
     var el = document.getElementById("DiamondMine");
@@ -7940,8 +7968,8 @@ var objDiamondCutter = {
     var gems = Math.round(rough * share);
     objRoughDiamond.use(rough);
     objEnergy.use(active * objDiamondCutter.energy, "Slijperij");
-    objGems.add(gems);
-    objIndustrialDiamond.add(rough - gems);
+    objGems.add(objStats.count("edelstenen", gems));
+    objIndustrialDiamond.add(objStats.count("industriediamant", rough - gems));
     for (var i = 0; i < active; i++) {
       if (Math.random() < objDiamondCutter.topChance) {
         objDiamondCutter.topStones++;
@@ -8360,7 +8388,7 @@ var objChipFactory = {
     objGold.use(active * objChipFactory.goldNeeded);
     objIndustrialDiamond.use(active * objChipFactory.diamondNeeded);
     objEnergy.use(active * objChipFactory.energy, "Chipfabriek");
-    objChips.add(active * objChipFactory.production);
+    objChips.add(objStats.count("chips", active * objChipFactory.production));
   },
   show: function () {
     var left = document.getElementById("chipFactory");
@@ -8573,7 +8601,7 @@ var objDatacenter = {
         objEnergy.use(active * objDatacenter.energy, "Datacenter");
         objChips.use(active * objDatacenter.chipUse);
         objDatacenter.pending += active * objDatacenter.income;
-        objAICoin.add(active * objDatacenter.coins);
+        objAICoin.add(objStats.count("aicoin", active * objDatacenter.coins));
       }
     }
     objDatacenter.counter++;
@@ -8997,7 +9025,10 @@ var objFuelCellFactory = {
     objFuelCellFactory.counter++;
     if (+objFuelCellFactory.counter == +objFuelCellFactory.timeNeeded) {
       objFuelRod.add(
-        +objFuelCellFactory.activeFactories * +objFuelCellFactory.production
+        objStats.count(
+          "splijtstof",
+          +objFuelCellFactory.activeFactories * +objFuelCellFactory.production
+        )
       );
       objFuelCellFactory.counter = 0;
     }
@@ -9750,6 +9781,979 @@ function fillStorage(typeStorage, amountAdded, lsValue) {
   scope[typeStorage].show();
 }
 
+// Korte weergave van grote getallen voor het dashboard: 5200000000 -> "5,2 mld"
+function FixShort(value, money) {
+  value = +value || 0;
+  var units = [
+    [1e18, "trln"],
+    [1e15, "bld"],
+    [1e12, "bln"],
+    [1e9, "mld"],
+    [1e6, "mln"],
+  ];
+  var text = FixNumber(Math.round(value));
+  for (var i = 0; i < units.length; i++) {
+    if (Math.abs(value) >= units[i][0]) {
+      text =
+        (value / units[i][0]).toLocaleString("nl-NL", {
+          maximumSignificantDigits: 3,
+        }) +
+        " " +
+        units[i][1];
+      break;
+    }
+  }
+  return money ? "€ " + text : text;
+}
+
+// Speeltijd in minuten als "45m", "5u 12m" of "3d 4u"
+function FixDuration(minutes) {
+  minutes = Math.max(0, Math.round(+minutes || 0));
+  if (minutes < 60) return minutes + "m";
+  var hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours + "u " + (minutes % 60) + "m";
+  return Math.floor(hours / 24) + "d " + (hours % 24) + "u";
+}
+
+// Statistieken (beta): speeltijd, mijlpalen, totale productie en een compacte geschiedenis
+// voor het dashboard (Game opties → Statistieken). De geschiedenis heeft een vaste omvang,
+// hoe lang er ook gespeeld wordt, en gaat gewoon mee in de save-code.
+var objStats = {
+  enabled: BETA,
+  budget: 20000, // maximale lengte van statsHistory in tekens
+  ticks: 0, // speeltijd: ticks waarin het spel niet gepauzeerd was
+  start: 0, // begin van de statistieken, in seconden
+  startLevel: 1,
+  base: [0, 0, 0, 0], // verdiend, uitgegeven, energie gemaakt en verbruikt bij het vorige meetpunt
+  totals: {},
+  levels: [], // mijlpalen: [level, speeltijd in ticks, datum in seconden]
+  // Meetpunten per laag: per minuut (1 uur), per kwartier (24 uur) en alles. De laatste laag voegt
+  // steeds twee punten samen als hij vol is. Een meetpunt is
+  // [minuut, vermogen, verdiend, uitgegeven, energie gemaakt, energie verbruikt, energievoorraad, level],
+  // waarbij verdiend t/m energie verbruikt optellen over de periode van het punt.
+  tiers: [],
+  range: 0, // gekozen periode in het dashboard (index in tiers)
+  open: false,
+  failed: false,
+  newTiers: function () {
+    return [
+      [1, 60, false],
+      [15, 96, false],
+      [1, 120, true],
+    ].map(function (t) {
+      return {
+        step: t[0],
+        max: t[1],
+        merge: t[2],
+        n: 0,
+        acc: [0, 0, 0, 0],
+        pts: [],
+      };
+    });
+  },
+  // Productie optellen. Geeft de hoeveelheid terug, zodat het om bestaande aanroepen heen past.
+  count: function (key, amount) {
+    if (objStats.enabled && +amount > 0)
+      objStats.totals[key] = (+objStats.totals[key] || 0) + +amount;
+    return amount;
+  },
+  tick: function () {
+    if (!objStats.enabled) return;
+    objStats.ticks++;
+    if (objStats.ticks % 60 === 0) objStats.snapshot();
+    else if (objStats.open && objStats.ticks % 5 === 0) objStats.render();
+  },
+  snapshot: function () {
+    var now = [
+      +made,
+      +spend,
+      +objStats.totals.energie || 0,
+      +objStats.totals.energieVerbruik || 0,
+    ];
+    var delta = now.map(function (value, i) {
+      return Math.max(0, value - objStats.base[i]);
+    });
+    objStats.base = now;
+    var minute = Math.round(objStats.ticks / 60);
+    objStats.tiers.forEach(function (tier) {
+      tier.n++;
+      tier.acc = tier.acc.map(function (value, i) {
+        return value + delta[i];
+      });
+      if (tier.n < tier.step) return;
+      tier.pts.push(
+        [minute, +objMoney.amount].concat(tier.acc, [
+          +objEnergy.available,
+          +objPlayerInfo.level,
+        ])
+      );
+      tier.n = 0;
+      tier.acc = [0, 0, 0, 0];
+      if (tier.pts.length <= tier.max) return;
+      if (tier.merge) objStats.merge(tier);
+      else tier.pts.shift();
+    });
+    objStats.save();
+    if (objStats.open) objStats.render();
+  },
+  // Twee punten worden één: de bedragen tellen op, de standen komen van het laatste punt
+  merge: function (tier) {
+    var merged = [];
+    for (var i = 0; i < tier.pts.length; i += 2) {
+      var a = tier.pts[i];
+      var b = tier.pts[i + 1];
+      if (!b) {
+        merged.push(a);
+        break;
+      }
+      merged.push(
+        b.map(function (value, k) {
+          return k >= 2 && k <= 5 ? a[k] + value : value;
+        })
+      );
+    }
+    tier.pts = merged;
+    tier.step *= 2;
+  },
+  levelup: function (level) {
+    if (!objStats.enabled) return;
+    objStats.levels.push([
+      +level,
+      objStats.ticks,
+      Math.round(Date.now() / 1000),
+    ]);
+    objStats.save();
+  },
+  // Getal op 3 significante cijfers, zo kort mogelijk: 1234567 -> "1.23e6"
+  num: function (value) {
+    value = +(+value || 0).toPrecision(3);
+    var plain = String(value);
+    var exp = value.toExponential().replace("+", "");
+    return exp.length < plain.length ? exp : plain;
+  },
+  // Lagen gescheiden door "|", regels door ";": eerst stap, teller en de lopende som, dan de punten.
+  // Minuut en level blijven exact, de rest wordt afgerond.
+  encode: function () {
+    return objStats.tiers
+      .map(function (tier) {
+        var head = [tier.step, tier.n].concat(tier.acc.map(objStats.num));
+        return [head.join(",")]
+          .concat(
+            tier.pts.map(function (p) {
+              return [p[0]]
+                .concat(p.slice(1, 7).map(objStats.num), [p[7]])
+                .join(",");
+            })
+          )
+          .join(";");
+      })
+      .join("|");
+  },
+  decode: function (text) {
+    var tiers = objStats.newTiers();
+    if (!text) return tiers;
+    var parts = text.split("|");
+    for (var i = 0; i < tiers.length; i++) {
+      if (!parts[i]) continue;
+      var rows = parts[i].split(";").map(function (row) {
+        return row.split(",").map(Number);
+      });
+      var head = rows.shift();
+      var valid =
+        head.length === 6 &&
+        head[0] >= 1 &&
+        rows.every(function (row) {
+          return row.length === 8 && row.every(isFinite);
+        }) &&
+        head.every(isFinite);
+      // Onleesbaar: dan begint de geschiedenis opnieuw, het spel zelf werkt gewoon door
+      if (!valid) return objStats.newTiers();
+      tiers[i].step = head[0];
+      tiers[i].n = head[1];
+      tiers[i].acc = head.slice(2);
+      tiers[i].pts = rows;
+    }
+    return tiers;
+  },
+  parse: function (text, fallback) {
+    try {
+      var value = JSON.parse(text);
+      return value && typeof value === "object" ? value : fallback;
+    } catch (error) {
+      return fallback;
+    }
+  },
+  save: function () {
+    if (!objStats.enabled || objStats.failed) return;
+    var history = objStats.encode();
+    // Vangnet: past de geschiedenis niet in het budget, dan gaan de oudste punten van de grootste laag eraf
+    while (history.length > objStats.budget) {
+      var biggest = objStats.tiers.reduce(function (a, b) {
+        return b.pts.length > a.pts.length ? b : a;
+      });
+      biggest.pts.shift();
+      history = objStats.encode();
+    }
+    try {
+      objStats.write(history);
+    } catch (error) {
+      // Opslag van de browser vol: zonder de laag per minuut nog één keer, anders stopt de statistiek
+      objStats.tiers[0].pts = [];
+      try {
+        objStats.write(objStats.encode());
+      } catch (error2) {
+        objStats.failed = true;
+      }
+    }
+  },
+  write: function (history) {
+    var totals = {};
+    Object.keys(objStats.totals).forEach(function (key) {
+      totals[key] = Math.round(objStats.totals[key]);
+    });
+    store.setItem(
+      "statsPlay",
+      JSON.stringify({
+        t: objStats.ticks,
+        s: objStats.start,
+        l: objStats.startLevel,
+        b: objStats.base,
+      })
+    );
+    store.setItem("statsTotals", JSON.stringify(totals));
+    store.setItem("statsLevels", JSON.stringify(objStats.levels));
+    store.setItem("statsHistory", history);
+  },
+  // Voor een reset of import: daarna niets meer wegschrijven, anders komt de oude stand terug
+  stop: function () {
+    objStats.enabled = false;
+  },
+  init: function () {
+    if (!objStats.enabled) return;
+    document.getElementById("statsBTN").hidden = false;
+    var play = objStats.parse(store.getItem("statsPlay"), null);
+    if (play && Array.isArray(play.b) && play.b.length === 4) {
+      objStats.ticks = +play.t || 0;
+      objStats.start = +play.s || 0;
+      objStats.startLevel = +play.l || 1;
+      objStats.base = play.b.map(Number);
+    } else {
+      objStats.start = Math.round(Date.now() / 1000);
+      objStats.startLevel = +objPlayerInfo.level;
+      objStats.base = [+made, +spend, 0, 0];
+    }
+    objStats.totals = objStats.parse(store.getItem("statsTotals"), {});
+    var levels = objStats.parse(store.getItem("statsLevels"), []);
+    objStats.levels = Array.isArray(levels) ? levels : [];
+    objStats.tiers = objStats.decode(store.getItem("statsHistory"));
+    objStats.range = Math.min(2, +store.getItem("statsRange") || 0);
+    window.addEventListener("pagehide", objStats.save);
+    window.addEventListener("resize", function () {
+      if (objStats.open) objStats.render();
+    });
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && objStats.open) objStats.close();
+    });
+  },
+  show: function () {
+    if (objLayout.editing) objLayout.toggleEdit();
+    objStats.open = true;
+    document.getElementById("FirstTab").hidden = true;
+    document.querySelector(".site-footer").hidden = true;
+    document.getElementById("statsView").hidden = false;
+    window.scrollTo(0, 0);
+    objStats.render();
+    document.getElementById("statsTitle").focus();
+  },
+  close: function () {
+    objStats.open = false;
+    document.getElementById("statsView").hidden = true;
+    document.getElementById("FirstTab").hidden = false;
+    document.querySelector(".site-footer").hidden = false;
+    objFlows.schedule();
+  },
+  setRange: function (range) {
+    objStats.range = range;
+    store.setItem("statsRange", range);
+    objStats.render();
+  },
+  // Grondstoffen in de productietabel: [sleutel, naam, eenheid, kleur, [voorraad, opslag]]
+  resources: function () {
+    var stock = function (o) {
+      return [o.amount, o.storage * o.storageCap];
+    };
+    return [
+      [
+        "graan",
+        "Graan",
+        "kg",
+        "graan",
+        [objGrainSilo.contents, objGrainSilo.amount * objGrainSilo.cap],
+      ],
+      [
+        "bloem",
+        "Bloem",
+        "kg",
+        "bloem",
+        [objFlourSilo.contents, objFlourSilo.amount * objFlourSilo.cap],
+      ],
+      [
+        "eieren",
+        "Eieren",
+        "eieren",
+        "eieren",
+        [objEgg.amount, objEgg.storageUnits * objEgg.storageCap],
+      ],
+      [
+        "pasta",
+        "Pasta",
+        "dozen",
+        "pasta",
+        [objStorehouse.pasta, objStorehouse.amount * objStorehouse.cap],
+      ],
+      [
+        "olie",
+        "Olie",
+        "vaten",
+        "olie",
+        [objOilTank.contents, objOilTank.totalCap],
+      ],
+      ["kunststof", "Kunststof", "eenheden", "kunststof", stock(objPlastic)],
+      ["steenkool", "Steenkool", "ton", "steenkool", stock(objCoal)],
+      ["ijzererts", "IJzererts", "ton", "ijzererts", stock(objIronOre)],
+      ["staal", "Staal", "ton", "staal", stock(objSteel)],
+      ["uranium", "Uranium", "ton", "uranium", stock(objUraniumOre)],
+      [
+        "splijtstof",
+        "Splijtstofstaven",
+        "staven",
+        "splijtstof",
+        [
+          objFuelRod.amount,
+          objFuelCellFactory.amount * objFuelRod.storageFactor,
+        ],
+      ],
+      ["kopererts", "Kopererts", "ton", "koper", stock(objCopperOre)],
+      ["koper", "Koper", "ton", "koper", stock(objCopper)],
+      ["printplaten", "Printplaten", "", "printplaten", stock(objPCB)],
+      ["gouderts", "Gouderts", "ton", "goud", stock(objGoldOre)],
+      ["goud", "Goud", "kg", "goud", stock(objGold)],
+      [
+        "ruwediamant",
+        "Ruwe diamant",
+        "karaat",
+        "diamant",
+        stock(objRoughDiamond),
+      ],
+      ["edelstenen", "Edelstenen", "karaat", "diamant", stock(objGems)],
+      [
+        "industriediamant",
+        "Industriële diamant",
+        "karaat",
+        "diamant",
+        stock(objIndustrialDiamond),
+      ],
+      ["chips", "Chips", "", "chips", stock(objChips)],
+      ["aicoin", "AICoin", "", "chips", [objAICoin.amount, 0]],
+      [
+        "energie",
+        "Energie",
+        "",
+        "energie",
+        [objEnergy.available, objEnergy.storageCap * objEnergy.capacitors],
+      ],
+    ];
+  },
+  // Gebouwen per groep, zoals de rijen in het spel
+  company: function () {
+    var mines = ["coal", "iron", "uranium", "copper", "gold", "diamond"].reduce(
+      function (sum, type) {
+        return sum + (+objMines[type + "AmountActive"] || 0);
+      },
+      0
+    );
+    return [
+      [
+        "Landbouw",
+        [
+          ["Velden", objFarmland.amount],
+          ["Farmrobots", objFarmRobot.robots],
+          ["Windmolens", objWindmill.amount],
+          ["Windmolencontrollers", objWindmillController.amount],
+          ["Kippenboerderijen", objChickenFarm.amount],
+          ["Kippen", objChicken.amount],
+          ["Pastafabrieken", objPastaFactory.amount],
+        ],
+      ],
+      [
+        "Olie en energie",
+        [
+          ["Oliepompen", objOilPump.amount],
+          ["High-tech oliepompen", objOilPumpAdv.amount],
+          ["Olietanks", objOilTank.amount],
+          ["Oliecentrales", objPowerPlant.amount],
+          ["Kolencentrales", objCoalPowerPlant.amount],
+          ["Kerncentrales", objNuclearPowerPlant.amount],
+          ["Kernreactoren", objNuclearPowerPlant.reactors],
+          ["Zonneparken", objSolar.amount],
+          ["Fusiecentrales", objFusion.amount],
+          ["Energieopslag", objEnergy.capacitors],
+        ],
+      ],
+      [
+        "Industrie",
+        [
+          ["Mijnen", mines],
+          ["Hoogovens", objIronMelter.amount],
+          ["Kunststoffabrieken", objPlasticFactory.amount],
+          ["Splijtstofstavenfabrieken", objFuelCellFactory.amount],
+          ["Kopersmelterijen", objCopperSmelter.amount],
+          ["Elektronicafabrieken", objElectronics.amount],
+          ["Goudraffinaderijen", objGoldRefinery.amount],
+          ["Slijperijen", objDiamondCutter.amount],
+          ["Chipfabrieken", objChipFactory.amount],
+          ["Datacenterrekken", objDatacenter.racks],
+          ["Seismische scanners", objScanner.amount],
+          ["CPU's salescomputer", objSalesComputer.cpu],
+        ],
+      ],
+    ];
+  },
+  // Per punt het aantal minuten dat het beslaat (voor bedragen per minuut)
+  minutes: function (pts, i) {
+    if (i > 0) return Math.max(1, pts[i][0] - pts[i - 1][0]);
+    return pts.length > 1 ? Math.max(1, pts[1][0] - pts[0][0]) : 1;
+  },
+  perMinute: function (pts, field) {
+    return pts.map(function (p, i) {
+      return p[field] / objStats.minutes(pts, i);
+    });
+  },
+  render: function () {
+    var pts = objStats.tiers[objStats.range].pts;
+    var xs = pts.map(function (p) {
+      return p[0];
+    });
+    document
+      .querySelectorAll("#statsRange button")
+      .forEach(function (button, i) {
+        button.setAttribute("aria-pressed", String(i === objStats.range));
+      });
+    document.getElementById("statsTiles").innerHTML = objStats.renderTiles();
+    var money = function (v) {
+      return FixShort(v, true);
+    };
+    var levelMarks = objStats.levels.map(function (l) {
+      return [l[1] / 60, "L" + l[0]];
+    });
+    objStats.chart(
+      document.getElementById("statsChartMoney"),
+      xs,
+      [
+        {
+          name: "Vermogen",
+          color: "var(--accent)",
+          values: pts.map(function (p) {
+            return p[1];
+          }),
+        },
+      ],
+      { log: true, format: money, marks: levelMarks }
+    );
+    objStats.chart(
+      document.getElementById("statsChartIncome"),
+      xs,
+      [
+        {
+          name: "Inkomsten",
+          color: "var(--accent)",
+          values: objStats.perMinute(pts, 2),
+        },
+        {
+          name: "Uitgaven",
+          color: "var(--danger)",
+          values: objStats.perMinute(pts, 3),
+        },
+      ],
+      { format: money, unit: "per minuut", log: "auto" }
+    );
+    var perTick = function (field) {
+      return objStats.perMinute(pts, field).map(function (v) {
+        return v / 60;
+      });
+    };
+    objStats.chart(
+      document.getElementById("statsChartEnergy"),
+      xs,
+      [
+        { name: "Productie", color: "var(--flow-energie)", values: perTick(4) },
+        { name: "Verbruik", color: "var(--warning)", values: perTick(5) },
+      ],
+      { format: FixShort, unit: "per tick", log: "auto" }
+    );
+    document.getElementById("statsLevels").innerHTML = objStats.renderLevels();
+    document.getElementById("statsProduction").innerHTML =
+      objStats.renderProduction();
+    document.getElementById("statsCompany").innerHTML =
+      objStats.renderCompany();
+  },
+  tile: function (label, value, sub, title) {
+    return (
+      '<div class="stats-tile"><div class="stats-tile-label">' +
+      label +
+      '</div><div class="stats-tile-value"' +
+      (title ? ' title="' + title + '"' : "") +
+      ">" +
+      value +
+      '</div><div class="stats-tile-sub">' +
+      sub +
+      "</div></div>"
+    );
+  },
+  renderTiles: function () {
+    var minute = objStats.tiers[0].pts;
+    var sum = function (pts, field) {
+      return pts.reduce(function (total, p) {
+        return total + p[field];
+      }, 0);
+    };
+    var span = function (pts) {
+      return pts.length
+        ? Math.max(1, pts[pts.length - 1][0] - pts[0][0] + 1)
+        : 0;
+    };
+    // Inkomsten per minuut over het laatste half uur, vergeleken met het half uur ervoor
+    var recent = minute.slice(-30);
+    var before = minute.slice(-60, -30);
+    var income = recent.length ? sum(recent, 2) / span(recent) : null;
+    var change = "";
+    if (income !== null && before.length >= 5) {
+      var previous = sum(before, 2) / span(before);
+      if (previous > 0) {
+        var pct = Math.round((income / previous - 1) * 100);
+        change =
+          '<span class="' +
+          (pct >= 0 ? "stats-up" : "stats-down") +
+          '">' +
+          (pct >= 0 ? "▲ " : "▼ ") +
+          Math.abs(pct) +
+          "%</span> t.o.v. het half uur ervoor";
+      }
+    }
+    var peak = objStats.tiers.reduce(function (max, tier) {
+      return tier.pts.reduce(function (m, p) {
+        return Math.max(m, p[1]);
+      }, max);
+    }, +objMoney.amount);
+    var progress = Math.max(
+      0,
+      Math.min(100, (+objMoney.amount / +objPlayerInfo.nextlevel) * 100)
+    );
+    var last = minute[minute.length - 1];
+    var netto = last
+      ? (last[4] - last[5]) / objStats.minutes(minute, minute.length - 1) / 60
+      : null;
+    var capacity = +objEnergy.storageCap * +objEnergy.capacitors;
+    var since = objStats.start
+      ? new Date(objStats.start * 1000).toLocaleDateString("nl-NL", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })
+      : "";
+    return [
+      objStats.tile(
+        "Vermogen",
+        FixShort(objMoney.amount, true),
+        "Hoogste: " + FixShort(peak, true),
+        FixMoney(objMoney.amount)
+      ),
+      objStats.tile(
+        "Inkomsten per minuut",
+        income === null ? "–" : FixShort(income, true),
+        change ||
+          (income === null
+            ? "Na de eerste minuut zichtbaar"
+            : "Gemiddeld, laatste half uur")
+      ),
+      objStats.tile(
+        "Level",
+        objPlayerInfo.level,
+        '<div class="progress"><div class="progress-bar" style="width:' +
+          progress +
+          '%"></div></div>Volgend level bij ' +
+          FixShort(objPlayerInfo.nextlevel, true)
+      ),
+      objStats.tile(
+        "Speeltijd",
+        FixDuration(objStats.ticks / 60),
+        since ? "Bijgehouden sinds " + since : ""
+      ),
+      objStats.tile(
+        "Totaal verdiend",
+        FixShort(made, true),
+        "Uitgegeven: " + FixShort(spend, true),
+        FixMoney(made)
+      ),
+      objStats.tile(
+        "Energie per tick",
+        netto === null ? "–" : (netto > 0 ? "+" : "") + FixShort(netto),
+        "Opslag " +
+          Math.round(capacity ? (+objEnergy.available / capacity) * 100 : 0) +
+          "% vol"
+      ),
+    ].join("");
+  },
+  renderLevels: function () {
+    var date = function (seconds) {
+      var d = new Date(seconds * 1000);
+      return (
+        d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" }) +
+        ", " +
+        d.toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })
+      );
+    };
+    var items = objStats.levels.map(function (l, i) {
+      var prev = objStats.levels[i - 1];
+      var detail = "speeltijd " + FixDuration(l[1] / 60);
+      if (prev && prev[0] === l[0] - 1)
+        detail +=
+          " · " + FixDuration((l[1] - prev[1]) / 60) + " na level " + prev[0];
+      return (
+        '<li><span class="stats-level">Level ' +
+        l[0] +
+        '</span><span class="stats-when">' +
+        date(l[2]) +
+        '</span><span class="hint">' +
+        detail +
+        "</span></li>"
+      );
+    });
+    items.unshift(
+      '<li class="stats-start"><span class="stats-level">' +
+        (objStats.startLevel > 1
+          ? "Level 1–" + objStats.startLevel
+          : "Level 1") +
+        '</span><span class="stats-when">' +
+        (objStats.start ? date(objStats.start) : "") +
+        '</span><span class="hint">' +
+        (objStats.startLevel > 1
+          ? "Bereikt voordat de statistieken begonnen"
+          : "Begin van je bedrijf") +
+        "</span></li>"
+    );
+    return items.reverse().join("");
+  },
+  renderProduction: function () {
+    var rows = objStats
+      .resources()
+      .map(function (r) {
+        var total = +objStats.totals[r[0]] || 0;
+        var amount = +r[4][0] || 0;
+        var cap = +r[4][1] || 0;
+        if (!total && !amount) return "";
+        var unit = r[2] ? " " + r[2] : "";
+        var bar = cap
+          ? '<div class="progress" title="' +
+            Math.round((amount / cap) * 100) +
+            '% vol"><div class="progress-bar" style="width:' +
+            Math.min(100, (amount / cap) * 100) +
+            '%"></div></div>'
+          : "";
+        return (
+          '<tr><th scope="row"><span class="stats-dot flow-' +
+          r[3] +
+          '"></span>' +
+          r[1] +
+          '</th><td title="' +
+          FixNumber(Math.round(total)) +
+          unit +
+          '">' +
+          FixShort(total) +
+          unit +
+          "</td><td>" +
+          FixShort(amount) +
+          unit +
+          bar +
+          "</td></tr>"
+        );
+      })
+      .join("");
+    if (!rows)
+      return '<p class="stats-empty">Zodra je iets produceert, zie je het hier.</p>';
+    return (
+      '<table class="stats-table"><thead><tr><th scope="col">Grondstof</th>' +
+      '<th scope="col">Totaal gemaakt</th><th scope="col">Voorraad</th></tr></thead><tbody>' +
+      rows +
+      "</tbody></table>" +
+      '<p class="hint">Totaal gemaakt telt sinds het begin van de statistieken. Gekocht op de markt telt niet mee.</p>'
+    );
+  },
+  renderCompany: function () {
+    return objStats
+      .company()
+      .map(function (group) {
+        var rows = group[1].filter(function (row) {
+          return +row[1] > 0;
+        });
+        if (!rows.length) return "";
+        return (
+          "<h3>" +
+          group[0] +
+          "</h3>" +
+          renderStats(
+            rows.map(function (row) {
+              return [row[0], FixNumber(row[1])];
+            })
+          )
+        );
+      })
+      .join("");
+  },
+  // Lijngrafiek als inline SVG. series: [{ name, color, values }],
+  // opts: { log, format, unit, marks: [[minuut, label]] }
+  chart: function (el, xs, series, opts) {
+    if (xs.length < 2) {
+      el._chart = null;
+      el.innerHTML =
+        '<p class="stats-empty">We houden je statistieken bij vanaf nu. Na twee meetpunten (een paar minuten spelen) verschijnt hier een lijn.</p>';
+      return;
+    }
+    var width = Math.max(260, el.clientWidth || 600);
+    var height = 200;
+    var pad = { l: 70, r: 12, t: 12, b: 26 };
+    var innerW = width - pad.l - pad.r;
+    var innerH = height - pad.t - pad.b;
+    var all = [];
+    series.forEach(function (s) {
+      s.values.forEach(function (v) {
+        if (isFinite(v)) all.push(v);
+      });
+    });
+    var max = Math.max.apply(null, all.concat([0]));
+    var ticks = [];
+    var y;
+    var positive = all.filter(function (v) {
+      return v > 0;
+    });
+    // "auto": logaritmisch zodra de waarden meer dan een factor 100 uiteenlopen (exponentiële groei)
+    var log =
+      opts.log === "auto"
+        ? positive.length > 1 && max / Math.min.apply(null, positive) > 100
+        : opts.log;
+    if (log) {
+      var lo = Math.pow(
+        10,
+        Math.floor(Math.log10(Math.min.apply(null, positive.concat([1]))))
+      );
+      var hi = Math.pow(10, Math.ceil(Math.log10(Math.max(max, lo * 10))));
+      var decades = Math.log10(hi / lo);
+      y = function (v) {
+        var r = (Math.log10(Math.max(v, lo)) - Math.log10(lo)) / decades;
+        return pad.t + (1 - r) * innerH;
+      };
+      var every = Math.ceil(decades / 5);
+      for (var d = 0; d <= decades; d += every)
+        ticks.push(lo * Math.pow(10, d));
+    } else {
+      // Ronde bovengrens: 1, 2, 2,5 of 5 maal een macht van 10
+      var magnitude = Math.pow(10, Math.floor(Math.log10(max || 1)));
+      var top = [1, 2, 2.5, 5, 10]
+        .map(function (f) {
+          return f * magnitude;
+        })
+        .filter(function (v) {
+          return v >= max;
+        })[0];
+      y = function (v) {
+        return pad.t + (1 - Math.max(0, v) / top) * innerH;
+      };
+      for (var t = 0; t <= 4; t++) ticks.push((top / 4) * t);
+    }
+    var x0 = xs[0];
+    var x1 = xs[xs.length - 1];
+    var x = function (m) {
+      return pad.l + ((m - x0) / (x1 - x0)) * innerW;
+    };
+    var svg =
+      '<svg class="stats-svg" width="' +
+      width +
+      '" height="' +
+      height +
+      '" viewBox="0 0 ' +
+      width +
+      " " +
+      height +
+      '">';
+    ticks.forEach(function (v) {
+      svg +=
+        '<line class="stats-gridline" x1="' +
+        pad.l +
+        '" x2="' +
+        (width - pad.r) +
+        '" y1="' +
+        y(v) +
+        '" y2="' +
+        y(v) +
+        '"/>' +
+        '<text class="stats-axis" x="' +
+        (pad.l - 6) +
+        '" y="' +
+        (y(v) + 4) +
+        '" text-anchor="end">' +
+        opts.format(v) +
+        "</text>";
+    });
+    for (var i = 0; i <= 4; i++) {
+      var m = x0 + ((x1 - x0) * i) / 4;
+      svg +=
+        '<text class="stats-axis" x="' +
+        x(m) +
+        '" y="' +
+        (height - 6) +
+        '" text-anchor="' +
+        (i === 0 ? "start" : i === 4 ? "end" : "middle") +
+        '">' +
+        FixDuration(m) +
+        "</text>";
+    }
+    (opts.marks || []).forEach(function (mark) {
+      if (mark[0] < x0 || mark[0] > x1) return;
+      svg +=
+        '<line class="stats-mark" x1="' +
+        x(mark[0]) +
+        '" x2="' +
+        x(mark[0]) +
+        '" y1="' +
+        pad.t +
+        '" y2="' +
+        (pad.t + innerH) +
+        '"/>' +
+        '<text class="stats-mark-label" x="' +
+        (x(mark[0]) + 3) +
+        '" y="' +
+        (pad.t + 10) +
+        '">' +
+        mark[1] +
+        "</text>";
+    });
+    series.forEach(function (s) {
+      var d = s.values
+        .map(function (v, i) {
+          return (i ? "L" : "M") + x(xs[i]).toFixed(1) + "," + y(v).toFixed(1);
+        })
+        .join("");
+      svg +=
+        '<path class="stats-line" style="stroke:' +
+        s.color +
+        '" d="' +
+        d +
+        '"/>';
+    });
+    svg +=
+      '<line class="stats-cursor" y1="' +
+      pad.t +
+      '" y2="' +
+      (pad.t + innerH) +
+      '" visibility="hidden"/></svg>';
+    var legend =
+      series.length > 1 || opts.unit
+        ? '<div class="stats-legend">' +
+          series
+            .map(function (s) {
+              return (
+                '<span><i style="background:' +
+                s.color +
+                '"></i>' +
+                s.name +
+                "</span>"
+              );
+            })
+            .join("") +
+          (opts.unit
+            ? '<span class="hint">' +
+              opts.unit +
+              (log && opts.log === "auto" ? ", logaritmisch" : "") +
+              "</span>"
+            : "") +
+          "</div>"
+        : "";
+    var summary = series
+      .map(function (s) {
+        return (
+          s.name +
+          " van " +
+          opts.format(s.values[0]) +
+          " naar " +
+          opts.format(s.values[s.values.length - 1])
+        );
+      })
+      .join(", ");
+    el.innerHTML =
+      legend +
+      '<div class="stats-plot" role="img" aria-label="' +
+      summary +
+      " (" +
+      FixDuration(x1 - x0) +
+      ' speeltijd)">' +
+      svg +
+      '<div class="stats-tip" hidden></div></div>';
+    el._chart = { xs: xs, series: series, opts: opts, x: x, width: width };
+    var plot = el.querySelector(".stats-plot");
+    plot.addEventListener("pointermove", function (event) {
+      el._hover = event.clientX - plot.getBoundingClientRect().left;
+      objStats.hover(el);
+    });
+    plot.addEventListener("pointerleave", function () {
+      el._hover = null;
+      objStats.hover(el);
+    });
+    objStats.hover(el);
+  },
+  // Kruisdraad met de waarden van het dichtstbijzijnde meetpunt
+  hover: function (el) {
+    var c = el._chart;
+    var cursor = el.querySelector(".stats-cursor");
+    var tip = el.querySelector(".stats-tip");
+    if (!c || !cursor) return;
+    if (el._hover === null || el._hover === undefined) {
+      cursor.setAttribute("visibility", "hidden");
+      tip.hidden = true;
+      return;
+    }
+    var best = 0;
+    c.xs.forEach(function (m, i) {
+      if (Math.abs(c.x(m) - el._hover) < Math.abs(c.x(c.xs[best]) - el._hover))
+        best = i;
+    });
+    var px = c.x(c.xs[best]);
+    cursor.setAttribute("x1", px);
+    cursor.setAttribute("x2", px);
+    cursor.setAttribute("visibility", "visible");
+    tip.innerHTML =
+      "<strong>" +
+      FixDuration(c.xs[best]) +
+      " speeltijd</strong>" +
+      c.series
+        .map(function (s) {
+          return (
+            '<span><i style="background:' +
+            s.color +
+            '"></i>' +
+            s.name +
+            ": " +
+            c.opts.format(s.values[best]) +
+            "</span>"
+          );
+        })
+        .join("");
+    tip.hidden = false;
+    var left = px + 12;
+    if (left + tip.offsetWidth > c.width) left = px - 12 - tip.offsetWidth;
+    tip.style.left = Math.max(0, left) + "px";
+  },
+};
+
 // Debug functie
 function showMessage(description, value) {
   if (store.getItem("debug") == 1) {
@@ -9760,6 +10764,7 @@ function showMessage(description, value) {
 
 // LS omzetten in base64 string
 function saveProgress() {
+  objStats.save();
   let lsExport = [];
   store.keys().forEach((storageKey) => {
     lsExport.push(`${storageKey}:${store.getItem(storageKey)}`);
@@ -9798,6 +10803,7 @@ function getSaveGame(code) {
     alert("Ongeldige save-code!");
     return;
   }
+  objStats.stop();
   store.clear();
   decodedFile.forEach((item) => {
     const split = item.indexOf(":");
@@ -10219,7 +11225,9 @@ var loopsProduction = setInterval(function () {
       objPause.update("Prospecting-col");
     }
 
+    var energyBefore = +objEnergy.available;
     objEnergy.produce();
+    objStats.count("energie", +objEnergy.available - energyBefore);
     if (objFarmRobot.robotTimer > 0) objFarmRobot.work_loop();
     if (objFarmRobot.robots > 0 && objFarmRobot.robotTimer === 0)
       objFarmRobot.work();
@@ -10268,5 +11276,6 @@ var loopsProduction = setInterval(function () {
       objFuelRod.wastePayment();
     if (quickSell === 1) quickSellMenu();
     if (objFuelCellFactory.amount > 0) objFuelCellFactory.produce();
+    objStats.tick();
   }
 }, 1000);

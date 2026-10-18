@@ -36,6 +36,7 @@ Nieuwe onderdelen en balanswijzigingen komen eerst in de beta (`/beta/`, via *Ga
 
 - De beta bewaart zijn spel los van het gewone spel: alle sleutels krijgen `beta:` ervoor (`store` in `inc/base.js`). Een reset of save-code raakt alleen het eigen spel.
 - Op de keuzepagina neem je je huidige spel mee (een kopie) of begin je opnieuw.
+- Statistieken voor de speler (`objStats`, *Game opties → Statistieken*) staan alleen in de beta aan. Ze bewaren speeltijd, mijlpalen, totale productie en een geschiedenis met een vaste omvang (per minuut voor 1 uur, per kwartier voor 24 uur, en "alles" in maximaal 120 punten die worden samengevoegd). Samen zijn dat hooguit zo'n 20 kB in `localStorage` (sleutels `statsPlay`, `statsTotals`, `statsLevels` en `statsHistory`), en ze gaan mee in de save-code.
 - Wijzigingen staan achter `if (BETA)`. Gaat een wijziging naar het gewone spel, dan haal je die voorwaarde weg.
 
 De bestanden:
