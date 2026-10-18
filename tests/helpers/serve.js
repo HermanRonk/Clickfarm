@@ -1,5 +1,5 @@
 // Minimale statische webserver voor de tests (zonder extra dependencies).
-// Serveert dezelfde bestanden als de container: index.html, info.html, favicon.ico, css/, inc/ en beta/.
+// Serveert dezelfde bestanden als de container: index.html, info.html, favicon.ico, css/, inc/, img/ en beta/.
 // /beta/spel.html is het gewone spel (zoals in nginx.conf); inc/base.js herkent de beta aan het pad.
 const http = require("node:http");
 const fs = require("node:fs");
@@ -13,6 +13,7 @@ const allowed = [
   /^\/favicon\.ico$/,
   /^\/css\/[\w.-]+$/,
   /^\/inc\/[\w.-]+$/,
+  /^\/img\/[\w.-]+$/,
   /^\/beta\/index\.html$/,
 ];
 const types = {
@@ -20,6 +21,7 @@ const types = {
   ".js": "application/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".ico": "image/x-icon",
+  ".jpg": "image/jpeg",
 };
 
 http

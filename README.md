@@ -45,6 +45,7 @@ De bestanden:
 | --- | --- |
 | `index.html` | De pagina, inclusief de iconen (geen externe bibliotheken of CDN) |
 | `info.html` | Spelinformatie: hoe het spel werkt en wat ieder level brengt |
+| `img/delen.jpg` | Afbeelding (1200×630) voor de preview als iemand een link deelt |
 | `robots.txt`, `sitemap.xml` | Voor zoekmachines: alles mag worden geïndexeerd, met de openbare pagina's |
 | `beta/index.html` | Keuzepagina van de beta: je huidige spel meenemen of opnieuw beginnen |
 | `inc/base.js` | Alle spellogica |

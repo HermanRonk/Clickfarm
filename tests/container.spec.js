@@ -51,6 +51,17 @@ test.describe("Container", () => {
     expect(locs).toEqual(["https://clickfarm.nl/", "https://clickfarm.nl/info.html", "https://clickfarm.nl/beta/"]);
   });
 
+  test("de deelafbeelding en Open Graph-tags worden meegeleverd", async ({ request }) => {
+    const image = await request.get("/img/delen.jpg");
+    expect(image.status()).toBe(200);
+    expect(image.headers()["content-type"]).toBe("image/jpeg");
+    for (const path of ["/", "/info.html", "/beta/"]) {
+      const html = await (await request.get(path)).text();
+      expect(html, path).toContain('<meta property="og:image" content="https://clickfarm.nl/img/delen.jpg">');
+      expect(html, path).toContain('<meta name="twitter:card" content="summary_large_image">');
+    }
+  });
+
   test("test- en buildbestanden zitten niet in de container", async ({ request }) => {
     for (const path of [
       "/package.json",
