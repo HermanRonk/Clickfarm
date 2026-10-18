@@ -3674,6 +3674,10 @@ var objEnergy = {
     // Niet genoeg energie: niets afboeken, zodat de energie niet verloren gaat
     return 0;
   },
+  save: function () {
+    store.setItem("EnergyAvailable", +objEnergy.available);
+    objEnergy.show();
+  },
   produce: function () {
     // Zonneparken (beta): zonder brandstof, tot de opslag vol is
     if (+objSolar.amount > 0) {
@@ -3705,6 +3709,8 @@ var objEnergy = {
         +objEnergy.storageCap * +objEnergy.capacitors - +objEnergy.available;
 
       if (capLeft == 0) {
+        // Opslag vol: wel bewaren, anders gaat zonne-, fusie- en kernenergie verloren bij herladen (#110)
+        objEnergy.save();
         return 0;
       }
     }
@@ -3730,8 +3736,7 @@ var objEnergy = {
           "Energiecentrales - Productie groter dan restcap"
         );
         objEnergy.available = +objEnergy.available + +capLeft;
-        store.setItem("EnergyAvailable", +objEnergy.available);
-        objEnergy.show();
+        objEnergy.save();
       }
     } else {
       objEnergy.available = +objEnergy.available + +producedAmount;
@@ -3739,8 +3744,7 @@ var objEnergy = {
         +activePlants,
         "Energiecentrales - Productie kleiner dan restcap"
       );
-      store.setItem("EnergyAvailable", +objEnergy.available);
-      objEnergy.show();
+      objEnergy.save();
     }
     // Steenkool
     var capLeft =
@@ -3782,8 +3786,7 @@ var objEnergy = {
       objEnergy.available = +objEnergy.available + +producedAmount;
     }
 
-    store.setItem("EnergyAvailable", +objEnergy.available);
-    objEnergy.show();
+    objEnergy.save();
   },
   show: function () {
     document.getElementById("EnergieOpslag").innerHTML = renderStats([
@@ -3794,6 +3797,10 @@ var objEnergy = {
       ["Prijs per opslagunit", FixMoney(objEnergy.capaCost)],
       ["Capaciteit per unit", FixNumber(objEnergy.storageCap)],
     ]);
+    // Grote opslagknoppen (beta): pas nodig met fusiecentrales (#110)
+    var bigCapa = !objChipFactory.unlocked();
+    document.getElementById("capaButton100k").hidden = bigCapa;
+    document.getElementById("capaButton1m").hidden = bigCapa;
     document.getElementById("EnergyStats").innerHTML =
       "Energie: <kbd2>" +
       FixNumber(objEnergy.available) +

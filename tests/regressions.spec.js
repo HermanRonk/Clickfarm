@@ -444,3 +444,37 @@ test.describe("Afval opruimen zonder splijtstofstavenfabriek (#107)", () => {
     expect(await game(page, () => objFuelRod.wastePrice)).toBeGreaterThanOrEqual(50000);
   });
 });
+
+test.describe("Energie wordt bewaard als de opslag vol raakt (#110)", () => {
+  // Kerncentrale met reactor; de opslag (10 units = 1.000) raakt in één tick vol
+  const nuclearFull = (extra = {}) =>
+    atLevel(12, {
+      Rlevel: 4, nppAmount: 1, nrAmount: 1, frAmount: 50, fuellCellFactory: 10,
+      Capacitors: 10, EnergyAvailable: 900, ...extra,
+    });
+
+  test("na een tick staat de energie ook in de opslag, en blijft na herladen", async ({ page }) => {
+    await startGame(page, { state: nuclearFull() });
+    await tick(page, 1);
+    const available = await game(page, () => +objEnergy.available);
+    expect(available).toBe(1000);
+    expect(await game(page, () => +store.getItem("EnergyAvailable"))).toBe(available);
+    await reload(page);
+    expect(await game(page, () => +objEnergy.available)).toBe(available);
+  });
+
+  test("in het gewone spel geen opslagknoppen van +100.000 en +1.000.000", async ({ page }) => {
+    await startGame(page, { state: { PlayerLevel: 16, NextLevel: threshold(13) * 125, Rlevel: 4 } });
+    await expect(page.locator("#capaButton100k")).toBeHidden();
+    await expect(page.locator("#capaButton1m")).toBeHidden();
+  });
+
+  test("de save-code bevat de actuele energie", async ({ page }) => {
+    await startGame(page, { state: nuclearFull() });
+    await tick(page, 1);
+    const saved = await game(page, () =>
+      JSON.parse(atob(saveProgress())).find((item) => item.startsWith("EnergyAvailable:"))
+    );
+    expect(saved).toBe(`EnergyAvailable:${await game(page, () => objEnergy.available)}`);
+  });
+});

@@ -703,7 +703,8 @@ kbd2 {
     cursor: pointer;
 }
 
-.pause-toggle[hidden] {
+.pause-toggle[hidden],
+.btn[hidden] {
     display: none;
 }
 
