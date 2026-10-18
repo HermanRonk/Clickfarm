@@ -1383,4 +1383,32 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     expect(unknown).toEqual([]);
     expect(await game(page, () => objFlows.edges.some((e) => e[2] === "chips"))).toBe(true);
   });
+
+  test("#110 met fusie en een reactor blijft een volle opslag bewaard na herladen", async ({ page }) => {
+    await startGame(page, {
+      beta: true,
+      state: l16({ fusionPlants: 1, nppAmount: 1, nrAmount: 1, Capacitors: 100000, EnergyAvailable: 9000000 }),
+    });
+    await tick(page, 1);
+    const available = await val(page, () => +objEnergy.available);
+    expect(available).toBe(10000000);
+    expect(await val(page, () => +store.getItem("EnergyAvailable"))).toBe(available);
+    await reload(page);
+    expect(await val(page, () => +objEnergy.available)).toBe(available);
+  });
+
+  test("#110 opslagknoppen +100.000 en +1.000.000 pas op level 16", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ PlayerLevel: 15, NextLevel: threshold(13) * 25 }) });
+    await expect(page.locator("#capaButton100k")).toBeHidden();
+    await expect(page.locator("#capaButton1m")).toBeHidden();
+  });
+
+  test("#110 opslag kopen per 1.000.000 met fusie vrijgespeeld", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16() });
+    await expect(page.locator("#capaButton100k")).toBeVisible();
+    const money = await val(page, () => objMoney.amount);
+    await page.locator("#capaButton1m").click();
+    expect(await val(page, () => +objEnergy.capacitors)).toBe(100000 + 1000000);
+    expect(await val(page, () => objMoney.amount)).toBe(money - 5e9);
+  });
 });
