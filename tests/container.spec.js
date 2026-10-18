@@ -37,6 +37,20 @@ test.describe("Container", () => {
     expect(game.headers()["content-type"]).toContain("text/html");
   });
 
+  test("robots.txt en sitemap.xml worden meegeleverd voor zoekmachines", async ({ request }) => {
+    const robots = await request.get("/robots.txt");
+    expect(robots.status()).toBe(200);
+    expect(robots.headers()["content-type"]).toContain("text/plain");
+    expect(await robots.text()).toContain("Sitemap: https://clickfarm.nl/sitemap.xml");
+
+    const sitemap = await request.get("/sitemap.xml");
+    expect(sitemap.status()).toBe(200);
+    expect(sitemap.headers()["content-type"]).toContain("application/xml");
+    const locs = [...(await sitemap.text()).matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
+    // Het spel zelf (/beta/spel.html) hoort er niet in
+    expect(locs).toEqual(["https://clickfarm.nl/", "https://clickfarm.nl/info.html", "https://clickfarm.nl/beta/"]);
+  });
+
   test("test- en buildbestanden zitten niet in de container", async ({ request }) => {
     for (const path of [
       "/package.json",
