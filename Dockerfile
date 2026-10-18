@@ -7,6 +7,7 @@ COPY docker/40-umami.sh /docker-entrypoint.d/40-umami.sh
 COPY index.html info.html favicon.ico robots.txt sitemap.xml /usr/share/nginx/html/
 COPY css /usr/share/nginx/html/css
 COPY inc /usr/share/nginx/html/inc
+COPY img /usr/share/nginx/html/img
 COPY beta /usr/share/nginx/html/beta
 
 EXPOSE 8080
