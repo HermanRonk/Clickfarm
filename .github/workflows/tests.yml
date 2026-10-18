@@ -50,18 +50,33 @@ jobs:
         run: |
           docker build -t clickfarm:test .
           docker run -d --name clickfarm -p 8080:8080 clickfarm:test
-          for i in $(seq 1 30); do
-            curl -fsS http://localhost:8080/healthz && exit 0
-            sleep 1
+          # Met testwaarden voor de bezoekersstatistieken (Umami), en met een ongeldige ID
+          docker run -d --name clickfarm-umami -p 8081:8080 -e UMAMI_HOST=$UMAMI_HOST -e UMAMI_WEBSITE_ID=$UMAMI_WEBSITE_ID -e UMAMI_DOMAINS=clickfarm.nl clickfarm:test
+          docker run -d --name clickfarm-umami-bad -p 8082:8080 -e UMAMI_HOST=$UMAMI_HOST -e 'UMAMI_WEBSITE_ID="><script>' clickfarm:test
+          for port in 8080 8081 8082; do
+            for i in $(seq 1 30); do
+              curl -fsS http://localhost:$port/healthz && continue 2
+              sleep 1
+            done
+            docker logs clickfarm; docker logs clickfarm-umami; docker logs clickfarm-umami-bad
+            exit 1
           done
-          docker logs clickfarm
-          exit 1
+        env:
+          UMAMI_HOST: https://stats.example.org
+          UMAMI_WEBSITE_ID: 00000000-1111-2222-3333-444444444444
       - run: npx playwright test
         env:
           BASE_URL: http://localhost:8080
+          UMAMI_BASE_URL: http://localhost:8081
+          UMAMI_BAD_BASE_URL: http://localhost:8082
+          UMAMI_HOST: https://stats.example.org
+          UMAMI_WEBSITE_ID: 00000000-1111-2222-3333-444444444444
       - name: Container logs
         if: ${{ failure() }}
-        run: docker logs clickfarm
+        run: |
+          docker logs clickfarm
+          docker logs clickfarm-umami
+          docker logs clickfarm-umami-bad
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
