@@ -3,7 +3,7 @@ Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je 
 
 **Spelen:** [clickfarm.nl](https://clickfarm.nl) · **Nieuwste onderdelen uitproberen:** [clickfarm.nl/beta](https://clickfarm.nl/beta/) · **Spelinformatie:** [clickfarm.nl/info.html](https://clickfarm.nl/info.html)
 
-Geen account, geen advertenties en geen tracking: je spel staat in je eigen browser.
+Geen account en geen advertenties: je spel staat in je eigen browser. Op clickfarm.nl worden bezoeken anoniem en zonder cookies geteld met een eigen [Umami](https://umami.is); de code in deze repository bevat zelf geen tracking (zie [Bezoekersstatistieken](#bezoekersstatistieken-optioneel)).
 
 ![Clickfarm op level 10: financiën, voorraden, energie, landbouw, molens en olie](docs/screenshots/overzicht.jpg)
 
@@ -48,6 +48,7 @@ De bestanden:
 | `inc/base.js` | Alle spellogica |
 | `css/style.css` | Alle opmaak, met automatisch donker thema |
 | `Dockerfile`, `nginx.conf` | Container die de statische bestanden serveert |
+| `docker/40-umami.sh` | Zet bij het starten van de container optioneel de bezoekersstatistieken aan |
 | `tests/`, `package.json`, `playwright.config.js` | End-to-end tests (gaan niet mee in de container) |
 | `docs/screenshots/` | Schermafbeeldingen voor deze README (gaan niet mee in de container) |
 
@@ -68,6 +69,21 @@ docker run --rm -p 8080:8080 clickfarm
 ```
 
 Ga daarna naar http://localhost:8080. De container luistert op poort `8080`, draait niet als root en heeft een health check op `/healthz`.
+
+## Bezoekersstatistieken (optioneel)
+De container laadt standaard geen enkel extern script. Zet je de volgende omgevingsvariabelen (bijvoorbeeld in Coolify), dan voegt nginx bij het serveren een [Umami](https://umami.is)-script toe aan iedere pagina en staat de host toe in de Content-Security-Policy:
+
+| Variabele | Voorbeeld | |
+| --- | --- | --- |
+| `UMAMI_HOST` | `https://stats.example.org` | Verplicht, alleen `https://` met een hostnaam |
+| `UMAMI_WEBSITE_ID` | `00000000-1111-2222-3333-444444444444` | Verplicht, de website-ID uit Umami |
+| `UMAMI_DOMAINS` | `clickfarm.nl` | Optioneel: alleen op deze domeinen tellen (komma-gescheiden) |
+
+```
+docker run --rm -p 8080:8080 -e UMAMI_HOST=https://stats.example.org -e UMAMI_WEBSITE_ID=... clickfarm
+```
+
+Ontbreekt een variabele of is een waarde ongeldig, dan staan de statistieken uit (met een melding in de containerlog). Do Not Track wordt gerespecteerd. Wil je bijhouden waar bezoekers vandaan komen, gebruik dan per plek een eigen link met `utm_source`, bijvoorbeeld `https://clickfarm.nl/?utm_source=tweakers`.
 
 # Testen
 De tests bespelen het spel in een echte browser (Playwright): levelen, welke onderdelen per level zichtbaar worden, spelverloop, opslaan/laden en eerder opgeloste bugs.
