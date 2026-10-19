@@ -169,6 +169,8 @@ window.onload = function () {
   objResearch.init();
   objFuelCellFactory.init();
   objNuclearPowerPlant.init();
+  // Opnieuw tonen nu alle centrales en voorraden geladen zijn (#116)
+  objEnergy.show();
   objStats.init();
   objGrain.priceCalc();
   objMarket.init();
@@ -3767,10 +3769,6 @@ var objEnergy = {
       coalUsage = +activePlants * +objCoalPowerPlant.CoalUsageTons;
     }
 
-    if (+actualUsed == 0) {
-      return 0;
-    }
-
     var actualUsed = objCoal.use(+coalUsage);
 
     var activePlants = Math.ceil(
@@ -3819,24 +3817,23 @@ var objEnergy = {
           FixNumber(objEnergy.capacitors * objEnergy.storageCap),
       ],
     ]);
-    document.getElementById("TotalEnergyProduction").innerHTML = renderStats([
-      [
-        "Productie per tick",
-        FixNumber(
-          +objPowerPlant.amount * +objPowerPlant.yield +
-            +objCoalPowerPlant.amount * +objCoalPowerPlant.yield +
-            +objNuclearPowerPlant.reactors *
-              +objNuclearPowerPlant.reactorProduction +
-            Math.min(
-              +objNuclearPowerPlant.controlled,
-              +objNuclearPowerPlant.reactors
-            ) *
-              +objNuclearPowerPlant.reactorProduction +
-            +objSolar.amount * objSolar.production +
-            +objFusion.amount * objFusion.production
-        ),
-      ],
-    ]);
+    // Reactoren zonder splijtstof leveren niets (#116)
+    var idleReactors =
+      +objNuclearPowerPlant.reactors - +objNuclearPowerPlant.activeReactors;
+    document.getElementById("TotalEnergyProduction").innerHTML =
+      renderStats([
+        ["Productie per tick", FixNumber(objEnergy.capacity())],
+        BETA && objEnergy.nettoRow(),
+      ]) +
+      (idleReactors > 0
+        ? renderHint(
+            FixNumber(idleReactors) +
+              " van " +
+              FixNumber(objNuclearPowerPlant.reactors) +
+              " reactoren staan stil: geen splijtstof."
+          )
+        : "") +
+      (BETA ? objEnergy.nettoHint() : "");
     document.getElementById("OilUsage").innerHTML = renderStats([
       [
         "Olieverbruik per tick",
@@ -3851,6 +3848,72 @@ var objEnergy = {
     document.getElementById("CurrentEnergyUsage").innerHTML = renderStats([
       ["Piekvraag per tick", FixNumber(objEnergy.demand())],
     ]);
+  },
+  // Productie: wat de centrales nu per tick kunnen leveren met de brandstof die er is,
+  // op dezelfde manier als produce() (#116). Olie- en kolencentrales draaien alleen
+  // zolang zon, fusie en kernenergie de opslag niet vol krijgen.
+  capacity: function () {
+    var oilPlants = Math.min(+objPowerPlant.amount, +objOilTank.contents);
+    var coalPlants = Math.min(
+      +objCoalPowerPlant.amount,
+      Math.ceil(+objCoal.amount / +objCoalPowerPlant.CoalUsageTons)
+    );
+    return (
+      oilPlants * +objPowerPlant.yield +
+      coalPlants * +objCoalPowerPlant.yield +
+      +objNuclearPowerPlant.activeReactors *
+        +objNuclearPowerPlant.reactorProduction +
+      objNuclearPowerPlant.controlBonus() +
+      +objSolar.amount * objSolar.production +
+      +objFusion.amount * objFusion.production
+    );
+  },
+  // Netto per tick (beta): de werkelijke verandering van de opslag over de laatste
+  // ticks, zodat ook verbruikers die eens per 15 ticks draaien meetellen (#116)
+  history: [],
+  track: function () {
+    objEnergy.history.push(+objEnergy.available);
+    if (objEnergy.history.length > 16) objEnergy.history.shift();
+  },
+  netto: function () {
+    var h = objEnergy.history;
+    if (h.length < 2) return null;
+    return (h[h.length - 1] - h[0]) / (h.length - 1);
+  },
+  full: function () {
+    return (
+      +objEnergy.available >= +objEnergy.storageCap * +objEnergy.capacitors
+    );
+  },
+  nettoRow: function () {
+    var netto = objEnergy.netto();
+    if (netto === null) return ["Netto per tick", "–"];
+    if (objEnergy.full() && netto >= 0)
+      return ["Netto per tick", "0 (opslag vol)"];
+    var rounded = Math.round(netto);
+    if (rounded === 0) return ["Netto per tick", "0"];
+    return [
+      "Netto per tick",
+      '<span class="' +
+        (rounded > 0 ? "stats-up" : "stats-down") +
+        '">' +
+        (rounded > 0 ? "▲ +" : "▼ −") +
+        FixNumber(Math.abs(rounded)) +
+        "</span>",
+    ];
+  },
+  nettoHint: function () {
+    var netto = objEnergy.netto();
+    if (netto === null || Math.round(netto) >= 0) return "";
+    // Eén tick per seconde: zoveel minuten tot de opslag leeg is
+    var minutes = +objEnergy.available / -netto / 60;
+    return renderHint(
+      minutes < 1
+        ? "Je opslag is binnen een minuut leeg: je verbruikt meer dan je centrales leveren."
+        : "Je opslag is over ongeveer " +
+            FixDuration(minutes) +
+            " leeg: je verbruikt meer dan je centrales leveren."
+    );
   },
   // Piekvraag: wat alle verbruikers samen per tick kunnen vragen
   demand: function () {
@@ -3890,6 +3953,15 @@ var objEnergy = {
       +objIronMelter.controlled *
         +objIronMelter.energy *
         f("SteelProduction-col") +
+      // Pastahelpers en kunststofmedewerkers draaien de fabrieken iedere 15 ticks (#116)
+      (+objPastaHelper.amount > 0
+        ? Math.min(+objPastaFactory.amountAutomated, +objPastaFactory.amount) *
+          +objPastaFactory.energy *
+          f("pasta-col")
+        : 0) +
+      Math.min(+objPlasticFactory.workers, +objPlasticFactory.amount) *
+        +objPlasticFactory.energy *
+        f("platicFactory-col") +
       // In de beta gebruiken splijtstoffabrieken hun stroom per tick
       (BETA
         ? +objFuelCellFactory.amount *
@@ -9521,6 +9593,14 @@ var objNuclearPowerPlant = {
         )
       : 0;
     objNuclearPowerPlant.pelletsActive = store.getItem("pelletsActive") || 0;
+    // Schatting tot de eerste tick, zodat de energiekaart direct klopt (#116)
+    objNuclearPowerPlant.activeReactors = Math.min(
+      +objNuclearPowerPlant.reactors,
+      Math.floor(
+        +objNuclearPowerPlant.pelletsActive /
+          +objNuclearPowerPlant.reactorFuelUsage
+      )
+    );
     objNuclearPowerPlant.pelletsUsed = store.getItem("pelletsUsed") || 0;
     objNuclearPowerPlant.show();
     objNuclearPowerPlant.showControl();
@@ -11228,6 +11308,10 @@ var loopsProduction = setInterval(function () {
     var energyBefore = +objEnergy.available;
     objEnergy.produce();
     objStats.count("energie", +objEnergy.available - energyBefore);
+    if (BETA) {
+      objEnergy.track();
+      objEnergy.show();
+    }
     if (objFarmRobot.robotTimer > 0) objFarmRobot.work_loop();
     if (objFarmRobot.robots > 0 && objFarmRobot.robotTimer === 0)
       objFarmRobot.work();
