@@ -53,7 +53,7 @@
         <symbol id="i-bolt" viewBox="0 0 320 512"><path d="M296 160H180.6l42.6-129.8C227.2 15 215.7 0 200 0H56C44 0 33.8 8.9 32.2 20.8l-32 240C-1.7 275.2 9.5 288 24 288h118.7L96.6 482.5c-3.6 15.2 8 29.5 23.3 29.5 8.4 0 16.4-4.4 20.8-12l176-304c9.3-15.9-2.2-36-20.7-36z"/></symbol>
     </svg>
 
-    <header class="topbar">
+    <header class="topbar topbar-game">
         <a class="brand" href="#">Clickfarm.nl</a>
         <ul class="stats" aria-label="Voorraden">
             <li class="statsbar" id="MoneyTop"></li>
@@ -72,6 +72,7 @@
                 <button id="autocloseBTN" onclick="turnAutoClose(1)" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Zet auto-sluit berichten aan</button>
                 <button id="flowsBTN" onclick="objFlows.toggle()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-check-square"></use></svg> Productieketen tonen</button>
                 <button id="editLayoutBTN" onclick="objLayout.toggleEdit()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Indeling bewerken</button>
+                <button id="shortNumbersBTN" onclick="turnShortNumbers(1)" class="dropdown-item" hidden><svg class="icon" aria-hidden="true"><use href="#i-check-square"></use></svg> Korte getallen (mln, mld)</button>
                 <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Zet debug aan</button>
                 <hr>
                 <button onclick="saveFixed()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg> Exporteer save-code</button>
