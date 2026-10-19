@@ -3976,7 +3976,14 @@ var objEnergy = {
   },
   nettoHint: function () {
     var netto = objEnergy.netto();
-    if (netto === null || Math.round(netto) >= 0) return "";
+    // Zonder tekort blijft de ruimte gereserveerd, zodat de kaart niet steeds
+    // groter en kleiner wordt en de pagina niet verspringt (#120)
+    if (netto === null || Math.round(netto) >= 0)
+      return (
+        '<p class="hint hint-reserve" aria-hidden="true">' +
+        "Je opslag is over ongeveer 23u 59m leeg: je verbruikt meer dan je centrales leveren." +
+        "</p>"
+      );
     // Eén tick per seconde: zoveel minuten tot de opslag leeg is
     var minutes = +objEnergy.available / -netto / 60;
     return renderHint(
