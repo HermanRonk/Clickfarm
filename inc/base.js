@@ -2376,14 +2376,39 @@ function renderStats(rows) {
   );
 }
 
-// Voorraadbalk met label en waarde boven de balk (percentage wordt begrensd op 0-100)
-function renderBar(label, valueText, percentage) {
+// Voorraadwaarde met een kleur naar hoe vol de opslag is (beta): groen als hij leeg is,
+// oranje half vol en rood vol. Zonder beta alleen de tekst.
+function renderStock(valueText, percentage) {
+  if (!BETA) return valueText;
+  var p = Math.round(Math.max(0, Math.min(100, +percentage || 0)));
+  var color =
+    p <= 50
+      ? "color-mix(in oklch, var(--stock-mid) " +
+        p * 2 +
+        "%, var(--stock-empty))"
+      : "color-mix(in oklch, var(--stock-full) " +
+        (p - 50) * 2 +
+        "%, var(--stock-mid))";
+  return (
+    '<span class="stock-level" style="color: ' +
+    color +
+    '" title="' +
+    p +
+    '% vol">' +
+    valueText +
+    "</span>"
+  );
+}
+
+// Voorraadbalk met label en waarde boven de balk (percentage wordt begrensd op 0-100).
+// progress = true voor een balk die geen voorraad is (zoals de voortgang naar het volgende level).
+function renderBar(label, valueText, percentage, progress) {
   var width = Math.max(0, Math.min(100, +percentage || 0));
   return (
     '<div class="bar-label"><span>' +
     label +
     "</span><span>" +
-    valueText +
+    (progress ? valueText : renderStock(valueText, width)) +
     '</span></div><div class="progress"><div class="progress-bar" style="width:' +
     width +
     '%"></div></div>'
@@ -2482,7 +2507,8 @@ var objPlayerInfo = {
         Math.floor(
           Math.min(100, (+objMoney.amount / +objPlayerInfo.nextlevel) * 100)
         ) + "%",
-        (+objMoney.amount / +objPlayerInfo.nextlevel) * 100
+        (+objMoney.amount / +objPlayerInfo.nextlevel) * 100,
+        true
       );
   },
   proceslevel: function (reason) {
@@ -2913,7 +2939,15 @@ var objGrainSilo = {
       ]) +
       renderHint("Wat niet past wordt verkocht voor 20% van de marktprijs.");
     document.getElementById("GrainAmount").innerHTML = renderStats([
-      ["Voorraad", FixUnit(objGrainSilo.contents, "kg")],
+      [
+        "Voorraad",
+        renderStock(
+          FixUnit(objGrainSilo.contents, "kg"),
+          (+objGrainSilo.contents /
+            (+objGrainSilo.amount * +objGrainSilo.cap)) *
+            100
+        ),
+      ],
     ]);
     store.setItem("GrainSiloContents", objGrainSilo.contents);
     document.getElementById("GrainSiloPrice").innerHTML = renderStats([
@@ -2987,7 +3021,15 @@ var objFlourSilo = {
   },
   show: function () {
     document.getElementById("Flour").innerHTML = renderStats([
-      ["Voorraad", FixUnit(objFlourSilo.contents, "kg")],
+      [
+        "Voorraad",
+        renderStock(
+          FixUnit(objFlourSilo.contents, "kg"),
+          (+objFlourSilo.contents /
+            (+objFlourSilo.amount * +objFlourSilo.cap)) *
+            100
+        ),
+      ],
     ]);
     var TempCap =
       +objFlourSilo.amount * +objFlourSilo.cap - +objFlourSilo.contents;
@@ -3170,7 +3212,13 @@ var objOilTank = {
       : "";
 
     document.getElementById("clickCount").innerHTML = renderStats([
-      ["Voorraad", FixUnit(objOilTank.contents, "vaten")],
+      [
+        "Voorraad",
+        renderStock(
+          FixUnit(objOilTank.contents, "vaten"),
+          (+objOilTank.contents / +objOilTank.totalCap) * 100
+        ),
+      ],
     ]);
 
     renderTop("OilTop", "Olie", objOilTank.contents, objOilTank.totalCap);
@@ -6688,7 +6736,15 @@ var objPlastic = {
   },
   show: function () {
     document.getElementById("plasticStorage").innerHTML = renderStats([
-      ["Voorraad", FixUnit(objPlastic.amount, "eenheden")],
+      [
+        "Voorraad",
+        renderStock(
+          FixUnit(objPlastic.amount, "eenheden"),
+          (+objPlastic.amount /
+            (+objPlastic.storage * +objPlastic.storageCap)) *
+            100
+        ),
+      ],
       [
         "Vrije ruimte",
         FixUnit(
@@ -9742,7 +9798,13 @@ var objFuelRod = {
     document.getElementById("fuelStorage").innerHTML =
       "<h2>Opslag splijtstofstaven</h2>" +
       renderStats([
-        ["Voorraad", FixNumber(objFuelRod.amount) + " staven"],
+        [
+          "Voorraad",
+          renderStock(
+            FixNumber(objFuelRod.amount) + " staven",
+            (+objFuelRod.amount / factoryStorage) * 100
+          ),
+        ],
         [
           "Vrije ruimte",
           FixNumber(factoryStorage - +objFuelRod.amount) + " staven",
