@@ -500,7 +500,7 @@ if (BETA) {
     ],
     "Isotopes-col": [
       "Industriële isotopen",
-      "Industriële isotopen komen uit het isotopenlab. Een chipfabriek die er 0,05 per tick van krijgt, maakt 25% meer chips (materiaalinspectie). Ze zijn € 100 miljoen per stuk waard; wat niet in de opslag past, wordt verkocht voor 20%.",
+      "Industriële isotopen komen uit het isotopenlab. Een chipfabriek die er 0,05 per tick van krijgt, maakt 25% meer chips (materiaalinspectie). Ongebruikte isotopen vervallen: na 10 minuten (600 ticks) is de helft over, en wat niet in de opslag past, is meteen verloren. Verkopen levert € 100 miljoen per stuk op.",
     ],
     "AICoin-col": [
       "AICoin",
@@ -9007,8 +9007,8 @@ var objIsotopeLab = {
     store.setItem("isotopeLabPrice", objIsotopeLab.price);
     objIsotopeLab.show();
   },
-  // Draait iedere tick zolang er uranium en energie is. Past de industriële isotopen
-  // niet meer in de opslag, dan wordt het overschot verkocht en loopt het lab door.
+  // Draait iedere tick zolang er uranium en energie is. Passen de industriële isotopen
+  // niet meer in de opslag, dan vervalt het overschot en loopt het lab gewoon door.
   produce: function () {
     if (objPause.is("IsotopeLab-col")) {
       objIsotopeLab.active = 0;
@@ -9100,33 +9100,50 @@ var objIsotopeLab = {
 };
 
 // Industriële isotopen (beta, level 16): een chipfabriek die er 0,05 per tick van krijgt,
-// maakt 25% meer chips (materiaalinspectie). Wat niet in de opslag past, wordt verkocht.
+// maakt 25% meer chips (materiaalinspectie). Isotopen die niet gebruikt worden vervallen
+// (halveringstijd 600 ticks); wat niet in de opslag past, is meteen verloren.
 var objIsotopes = {
   amount: 0,
   storage: 1,
   storageCap: 100,
   storagePrice: 10000000000,
   price: 100000000,
+  halfLife: 600, // ticks
+  decayed: 0, // vervallen in de laatste tick
   space: function () {
     return +objIsotopes.storage * +objIsotopes.storageCap - +objIsotopes.amount;
   },
   add: function (amountAdded) {
-    fillStorage("objIsotopes", amountAdded, "isotopesAmount");
+    objIsotopes.amount =
+      +objIsotopes.amount + Math.min(+amountAdded, objIsotopes.space());
+    store.setItem("isotopesAmount", +objIsotopes.amount);
+    objIsotopes.show();
   },
   use: function (amount) {
     return useResource("objIsotopes", amount, "isotopesAmount");
   },
-  sell: function (amountSold) {
-    var reason = "Verkoop overschot industriële isotopen";
-    var priceValue = +objIsotopes.price * 0.2;
-    if (+amountSold == 0) {
-      amountSold = Math.floor(+objIsotopes.amount);
-      if (amountSold <= 0) return 0;
-      objIsotopes.use(amountSold);
-      reason = "Handmatige verkoop industriële isotopen";
-      priceValue = +objIsotopes.price;
+  // Iedere tick vervalt een deel van de voorraad
+  decay: function () {
+    if (+objIsotopes.amount <= 0) {
+      objIsotopes.decayed = 0;
+      return;
     }
-    objMoney.add(+amountSold * priceValue, reason, 41, amountSold);
+    var left = +objIsotopes.amount * Math.pow(0.5, 1 / objIsotopes.halfLife);
+    if (left < 0.001) left = 0;
+    objIsotopes.decayed = +objIsotopes.amount - left;
+    objIsotopes.amount = left;
+    store.setItem("isotopesAmount", +objIsotopes.amount);
+  },
+  sell: function () {
+    var amountSold = Math.floor(+objIsotopes.amount);
+    if (amountSold <= 0) return 0;
+    objIsotopes.use(amountSold);
+    objMoney.add(
+      +amountSold * +objIsotopes.price,
+      "Verkoop industriële isotopen",
+      41,
+      amountSold
+    );
   },
   addStorage: function () {
     if (moneyCheck(+objIsotopes.storagePrice) == 0) {
@@ -9162,6 +9179,11 @@ var objIsotopes = {
         ["Vrije ruimte", FixNumber(Math.floor(objIsotopes.space()))],
         ["Prijs per isotoop", FixMoney(objIsotopes.price)],
         [
+          "Verval",
+          FixNumber(Math.round(objIsotopes.decayed * 1000) / 1000) +
+            " per tick",
+        ],
+        [
           "Chipfabrieken met inspectie",
           FixNumber(objChipFactory.inspected) +
             " van " +
@@ -9171,10 +9193,12 @@ var objIsotopes = {
       renderHint(
         "Een chipfabriek die " +
           FixNumber(objChipFactory.isotopeUse) +
-          " isotoop per tick krijgt, maakt 25% meer chips. Wat niet in de opslag past, wordt verkocht voor 20% van de prijs."
+          " isotoop per tick krijgt, maakt 25% meer chips. Isotopen die je niet gebruikt vervallen: na " +
+          FixDuration(objIsotopes.halfLife / 60) +
+          " is de helft over. Wat niet in de opslag past, is meteen verloren."
       ) +
       "<div class='actions'>" +
-      "<button type='button' class='btn btn-danger' onClick='objIsotopes.sell(0)' id='sellIsotopes'>Verkoop isotopen</button>" +
+      "<button type='button' class='btn btn-danger' onClick='objIsotopes.sell()' id='sellIsotopes'>Verkoop isotopen</button>" +
       "</div>";
     right.innerHTML =
       "<h3>Opslag</h3>" +
@@ -11662,6 +11686,7 @@ var loopsProduction = setInterval(function () {
       // Eerst het lab, zodat de chipfabrieken de nieuwe isotopen kunnen gebruiken
       objIsotopeLab.produce();
       objChipFactory.produce();
+      objIsotopes.decay();
       objDatacenter.produce();
       objChipFactory.show();
       objChips.show();

@@ -60,7 +60,11 @@ test.describe("Beta: isotopenlab (#118)", () => {
     await tick(page, 1);
     expect((await val(page, () => +objMoney.amount)) - money).toBe(2 * 2.5e8 * 10);
     expect(await val(page, () => [+objUraniumOre.amount, +objEnergy.available])).toEqual([1000 - 2 * 20 * 10, 9000000 - 2 * 50000 * 10]);
-    expect(await val(page, () => +objIsotopes.amount)).toBeCloseTo(2, 9);
+    // 0,2 per tick erbij, en iedere tick vervalt een deel (halveringstijd 600 ticks)
+    const keep = Math.pow(0.5, 1 / 600);
+    let expected = 0;
+    for (let i = 0; i < 10; i++) expected = (expected + 0.2) * keep;
+    expect(await val(page, () => +objIsotopes.amount)).toBeCloseTo(expected, 9);
     await expect(page.locator("#IsotopeLab-col")).toContainText("2 van 2");
   });
 
@@ -78,14 +82,14 @@ test.describe("Beta: isotopenlab (#118)", () => {
     expect(await val(page, () => [+objMoney.amount, +objUraniumOre.amount])).toEqual([money, 1000]);
   });
 
-  test("een volle isotopenopslag zet het lab niet stil: het overschot wordt verkocht", async ({ page }) => {
+  test("een volle isotopenopslag zet het lab niet stil: het overschot vervalt", async ({ page }) => {
     await startGame(page, { beta: true, state: l16({ isotopeLabs: 1, uraniumOreAmount: 1000, isotopesAmount: 100 }) });
     const money = await val(page, () => +objMoney.amount);
     await tick(page, 10);
-    expect(await val(page, () => +objIsotopes.amount)).toBe(100);
+    expect(await val(page, () => +objIsotopes.amount)).toBeLessThanOrEqual(100);
     expect(await val(page, () => +objUraniumOre.amount)).toBe(800);
-    // 10 x € 250 miljoen medisch + 10 x 0,1 isotoop voor 20% van € 100 miljoen
-    expect((await val(page, () => +objMoney.amount)) - money).toBeCloseTo(10 * 2.5e8 + 10 * 0.1 * 1e8 * 0.2, 0);
+    // Alleen de medische isotopen leveren geld op; het overschot wordt niet verkocht
+    expect((await val(page, () => +objMoney.amount)) - money).toBe(10 * 2.5e8);
   });
 
   test("een chipfabriek met industriële isotopen maakt 25% meer chips", async ({ page }) => {
@@ -98,6 +102,16 @@ test.describe("Beta: isotopenlab (#118)", () => {
     await expect(page.locator("#ChipFactory-col")).toContainText("Met inspectie");
     await tick(page, 1);
     expect(await val(page, () => [+objChips.amount, objChipFactory.inspected])).toEqual([21.25, 0]);
+  });
+
+  test("ongebruikte isotopen vervallen: na 600 ticks is de helft over", async ({ page }) => {
+    await startGame(page, { beta: true, state: l16({ isotopesAmount: 80 }) });
+    await tick(page, 600);
+    expect(await val(page, () => +objIsotopes.amount)).toBeCloseTo(40, 6);
+    await expect(page.locator("#Isotopes-col")).toContainText("Verval");
+    await page.locator("#sellIsotopes").click();
+    // Verkopen gaat per hele isotoop, tegen de volle prijs
+    expect(await val(page, () => +objIsotopes.amount)).toBeLessThan(1);
   });
 
   test("het lab is te pauzeren en telt mee in de piekvraag", async ({ page }) => {
@@ -115,7 +129,8 @@ test.describe("Beta: isotopenlab (#118)", () => {
     await tick(page, 5);
     await reload(page);
     expect(await val(page, () => [+objIsotopeLab.amount, Math.round(+objIsotopeLab.price)])).toEqual([1, Math.round(5e11 * 1.05)]);
-    expect(await val(page, () => +objIsotopes.amount)).toBeCloseTo(0.5, 9);
+    expect(await val(page, () => +objIsotopes.amount)).toBeGreaterThan(0.49);
+    expect(await val(page, () => +objIsotopes.amount)).toBeLessThan(0.5);
     const keys = await game(page, () => JSON.parse(atob(saveProgress())).map((item) => item.slice(0, item.indexOf(":"))));
     expect(keys).toEqual(expect.arrayContaining(["isotopeLabs", "isotopeLabPrice", "isotopesAmount"]));
   });
