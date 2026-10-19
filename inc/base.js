@@ -2432,6 +2432,29 @@ function renderResource(o) {
   );
 }
 
+// Driehoekje met de richting van een marktprijs sinds de vorige prijswissel (beta, #122):
+// groen omhoog, rood omlaag, geel gelijk. Zonder vorige prijs (net geladen) niets.
+function renderTrend(current, previous) {
+  if (!BETA || previous == null) return "";
+  var trend =
+    +current > +previous
+      ? ["up", "▲", "gestegen"]
+      : +current < +previous
+      ? ["down", "▼", "gedaald"]
+      : ["same", "■", "gelijk"];
+  return (
+    ' <span class="trend trend-' +
+    trend[0] +
+    '" title="Prijs ' +
+    trend[2] +
+    '" aria-label="Prijs ' +
+    trend[2] +
+    '">' +
+    trend[1] +
+    "</span>"
+  );
+}
+
 // Korte uitleg onder een lijst
 function renderHint(text) {
   return '<p class="hint">' + text + "</p>";
@@ -2668,7 +2691,9 @@ var objOil = {
     }
     objEnergy.show();
   },
+  previous: null, // prijs voor de vorige wissel, voor de trendpijl (#122)
   priceCalc: function () {
+    objOil.previous = +objOil.price;
     objOil.price = +objPrijslijst.Oil;
     store.setItem("OilPrice", objOil.price);
   },
@@ -3641,7 +3666,13 @@ var objWindmillController = {
 var objGrain = {
   amount: 0,
   price: 10,
+  previous: null, // prijs voor de vorige wissel, voor de trendpijl (#122)
+  priced: false,
   priceCalc: function () {
+    // De eerste prijs na het laden heeft geen vorige
+    objGrain.previous = objGrain.priced ? +objGrain.price : null;
+    objFlour.previous = objGrain.priced ? +objFlour.price : null;
+    objGrain.priced = true;
     if (objPlayerInfo.level > 3) {
       objGrain.price = +objPrijslijst.GrainHigh;
       objFlour.price = +objPrijslijst.FlourHigh;
@@ -4576,6 +4607,10 @@ var objPasta = {
     var PastaTempPrice = (+objFlour.price * 5) / 10;
     return PastaTempPrice;
   },
+  // Pasta volgt de bloemprijs, dus ook de trend (#122)
+  previousPrice: function () {
+    return objFlour.previous == null ? null : (+objFlour.previous * 5) / 10;
+  },
   recipe: 10,
   recipeEggs: 100,
   sell: function (reason) {
@@ -4589,7 +4624,11 @@ var objPasta = {
   },
   show: function () {
     document.getElementById("SellPasta").innerHTML = renderStats([
-      ["Prijs per doos", FixMoney(objPasta.price())],
+      [
+        "Prijs per doos",
+        FixMoney(objPasta.price()) +
+          renderTrend(objPasta.price(), objPasta.previousPrice()),
+      ],
     ]);
   },
   init: function () {
@@ -5010,7 +5049,7 @@ var objSalesComputer = {
       "Olie",
       objSalesComputer.autoSellOil == true,
       inputwaarde,
-      FixMoney(objOil.price),
+      FixMoney(objOil.price) + renderTrend(objOil.price, objOil.previous),
       objSalesComputer.lockedText("Olie")
     );
   },
@@ -5021,7 +5060,7 @@ var objSalesComputer = {
       "Bloem",
       objSalesComputer.autoSellFlour == true,
       inputwaarde,
-      FixMoney(objFlour.price),
+      FixMoney(objFlour.price) + renderTrend(objFlour.price, objFlour.previous),
       objSalesComputer.lockedText("Bloem")
     );
   },
@@ -5032,7 +5071,8 @@ var objSalesComputer = {
       "Pasta",
       objSalesComputer.autoSellPasta == true,
       inputwaarde,
-      FixMoney(objPasta.price()),
+      FixMoney(objPasta.price()) +
+        renderTrend(objPasta.price(), objPasta.previousPrice()),
       objSalesComputer.lockedText("Pasta")
     );
   },
@@ -5043,7 +5083,8 @@ var objSalesComputer = {
       "Kunststof",
       objSalesComputer.autoSellKunststof == true,
       inputwaarde,
-      FixMoney(objPlastic.price),
+      FixMoney(objPlastic.price) +
+        renderTrend(objPlastic.price, objPlastic.previousPrice()),
       objSalesComputer.lockedText("Kunststof")
     );
   },
@@ -5181,13 +5222,22 @@ var objSalesComputer = {
 
 function showPrice() {
   document.getElementById("Oilprice").innerHTML = renderStats([
-    ["Prijs per vat", FixMoney(objOil.price)],
+    [
+      "Prijs per vat",
+      FixMoney(objOil.price) + renderTrend(objOil.price, objOil.previous),
+    ],
   ]);
   document.getElementById("GrainPrice").innerHTML = renderStats([
-    ["Prijs per 1.000 kg", FixMoney(objGrain.price)],
+    [
+      "Prijs per 1.000 kg",
+      FixMoney(objGrain.price) + renderTrend(objGrain.price, objGrain.previous),
+    ],
   ]);
   document.getElementById("FlourPrice").innerHTML = renderStats([
-    ["Prijs per 1.000 kg", FixMoney(objFlour.price)],
+    [
+      "Prijs per 1.000 kg",
+      FixMoney(objFlour.price) + renderTrend(objFlour.price, objFlour.previous),
+    ],
   ]);
 }
 
@@ -6656,10 +6706,18 @@ var objPlastic = {
       ["Extra capaciteit", FixUnit(objPlastic.storageCap, "eenheden")],
     ]);
   },
+  // Kunststof volgt de olieprijs, dus ook de trend (#122)
+  previousPrice: function () {
+    return objOil.previous == null ? null : +objOil.previous * 8 + 100;
+  },
   showPrice: function () {
     objPlastic.price = +objOil.price * 8 + 100;
     document.getElementById("plasticPrice").innerHTML = renderStats([
-      ["Prijs per eenheid", FixMoney(objPlastic.price)],
+      [
+        "Prijs per eenheid",
+        FixMoney(objPlastic.price) +
+          renderTrend(objPlastic.price, objPlastic.previousPrice()),
+      ],
     ]);
   },
   init: function () {
@@ -8968,7 +9026,9 @@ var objAICoin = {
         ["Koers", FixMoney(objAICoin.price)],
         [
           "Verandering",
-          (change >= 0 ? "+" : "") +
+          renderTrend(objAICoin.price, objAICoin.previous).trim() +
+            " " +
+            (change >= 0 ? "+" : "") +
             FixNumber(Math.round(change * 10) / 10) +
             "%",
         ],
@@ -11571,25 +11631,33 @@ function quickSellMenu() {
       "quickGrain",
       "Graan",
       FixUnit(objGrainSilo.contents, "kg"),
-      FixMoney(objGrain.price) + " / 1.000 kg",
+      FixMoney(objGrain.price) +
+        " / 1.000 kg" +
+        renderTrend(objGrain.price, objGrain.previous),
     ],
     [
       "quickFlour",
       "Bloem",
       FixUnit(objFlourSilo.contents, "kg"),
-      FixMoney(objFlour.price) + " / 1.000 kg",
+      FixMoney(objFlour.price) +
+        " / 1.000 kg" +
+        renderTrend(objFlour.price, objFlour.previous),
     ],
     [
       "quickPasta",
       "Pasta",
       FixNumber(objStorehouse.pasta) + " dozen",
-      FixMoney(objPasta.price()) + " / doos",
+      FixMoney(objPasta.price()) +
+        " / doos" +
+        renderTrend(objPasta.price(), objPasta.previousPrice()),
     ],
     [
       "quickOil",
       "Olie",
       FixUnit(objOilTank.contents, "vaten"),
-      FixMoney(objOil.price) + " / vat",
+      FixMoney(objOil.price) +
+        " / vat" +
+        renderTrend(objOil.price, objOil.previous),
     ],
     [
       "quickCoal",

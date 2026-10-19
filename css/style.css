@@ -1436,6 +1436,23 @@ body:has(.rows > .dragging) .flow-layer {
     font-weight: 600;
 }
 
+/* Richting van een marktprijs (beta, #122) */
+.trend {
+    font-size: 0.95em;
+}
+
+.trend-up {
+    color: var(--accent);
+}
+
+.trend-down {
+    color: var(--danger);
+}
+
+.trend-same {
+    color: var(--warning);
+}
+
 .stats-grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
