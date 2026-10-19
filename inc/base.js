@@ -154,6 +154,8 @@ window.onload = function () {
   objChipFactory.init();
   objChips.init();
   objDatacenter.init();
+  objIsotopeLab.init();
+  objIsotopes.init();
   objAICoin.init();
   objFusion.init();
   objIronMelter.init();
@@ -386,7 +388,7 @@ var helpTexts = {
   "Uranium-col": [
     "Uranium",
     BETA
-      ? "Een uraniummijn levert iedere 10 ticks (een dienst) 100 ton uranium voor 2.500 energie. Het personeel eet 20 dozen pasta per dienst. Uranium is de grondstof voor splijtstofstaven."
+      ? "Een uraniummijn levert iedere 10 ticks (een dienst) 100 ton uranium voor 2.500 energie. Het personeel eet 20 dozen pasta per dienst. Uranium is de grondstof voor splijtstofstaven en, vanaf level 16, voor het isotopenlab."
       : "Een uraniummijn levert iedere 10 ticks 100 ton uranium voor 2.500 energie. Het personeel eet pasta. Uranium is de grondstof voor splijtstofstaven.",
   ],
   fuelRodFactory: [
@@ -482,7 +484,7 @@ if (BETA) {
     ],
     "ChipFactory-col": [
       "Chipfabriek",
-      "Een chipfabriek maakt iedere tick 5 chips van 50 printplaten, 0,2 kg goud, 1 karaat industriële diamant en 50.000 energie. Hij draait vanzelf zolang alles er is.",
+      "Een chipfabriek maakt iedere tick 5 chips van 50 printplaten, 0,2 kg goud, 1 karaat industriële diamant en 50.000 energie. Hij draait vanzelf zolang alles er is. Met 0,05 industriële isotoop per tick maakt hij 25% meer chips.",
     ],
     "Chips-col": [
       "Chips",
@@ -491,6 +493,14 @@ if (BETA) {
     "Datacenter-col": [
       "Datacenter",
       "Een rek gebruikt 250.000 energie en 0,1 chip per tick en levert daarvoor € 1 miljard en 0,1 AICoin. De opbrengst wordt iedere 10 ticks uitbetaald. Ieder rek is 5% duurder dan het vorige.",
+    ],
+    "IsotopeLab-col": [
+      "Isotopenlab",
+      "Een lab gebruikt iedere tick 20 ton uranium en 50.000 energie. Het maakt medische isotopen, die meteen aan ziekenhuizen worden verkocht voor € 250 miljoen per lab per tick (uitbetaald iedere 10 ticks), en 0,1 industriële isotoop. Ieder lab is 5% duurder dan het vorige.",
+    ],
+    "Isotopes-col": [
+      "Industriële isotopen",
+      "Industriële isotopen komen uit het isotopenlab. Een chipfabriek die er 0,05 per tick van krijgt, maakt 25% meer chips (materiaalinspectie). Ze zijn € 100 miljoen per stuk waard; wat niet in de opslag past, wordt verkocht voor 20%.",
     ],
     "AICoin-col": [
       "AICoin",
@@ -687,6 +697,15 @@ var objBulk = {
         objChipFactory.add(1);
       },
     ],
+    isotopeLab: [
+      "isotopenlabs",
+      function () {
+        return +objIsotopeLab.amount;
+      },
+      function () {
+        objIsotopeLab.add();
+      },
+    ],
     datacenter: [
       "datacenterrekken",
       function () {
@@ -789,6 +808,7 @@ var objPause = {
     "DiamondCutter-col",
     "ChipFactory-col",
     "Datacenter-col",
+    "IsotopeLab-col",
   ],
   paused: [],
   // Kaarten waarop pauzeren pas zin heeft als er iets automatisch draait
@@ -1798,6 +1818,55 @@ var objFlows = {
         return false;
       },
     ],
+    // Isotopenlab (#118): uranium wordt medische en industriële isotopen
+    [
+      "Uranium-col",
+      "IsotopeLab-col",
+      "uranium",
+      function () {
+        return objIsotopeLab.active > 0;
+      },
+    ],
+    [
+      "IsotopeLab-col",
+      "Isotopes-col",
+      "uranium",
+      function () {
+        return objIsotopeLab.active > 0;
+      },
+    ],
+    [
+      "Isotopes-col",
+      "ChipFactory-col",
+      "uranium",
+      function () {
+        return objChipFactory.inspected > 0;
+      },
+    ],
+    [
+      "SteelInfo-col",
+      "IsotopeLab-col",
+      "staal",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "PCB-col",
+      "IsotopeLab-col",
+      "printplaten",
+      function () {
+        return false;
+      },
+    ],
+    [
+      "GoldInfo-col",
+      "IsotopeLab-col",
+      "goud",
+      function () {
+        return false;
+      },
+    ],
     [
       "SteelInfo-col",
       "Fusion-col",
@@ -1867,6 +1936,9 @@ var objFlows = {
     },
     "Datacenter-col": function () {
       return +objDatacenter.racks * objDatacenter.energy;
+    },
+    "IsotopeLab-col": function () {
+      return +objIsotopeLab.amount * objIsotopeLab.energy;
     },
   },
   key: function (edge) {
@@ -3947,6 +4019,7 @@ var objEnergy = {
       // Level 16 (beta): chips en datacenter
       +objChipFactory.amount * objChipFactory.energy * f("ChipFactory-col") +
       +objDatacenter.racks * objDatacenter.energy * f("Datacenter-col") +
+      +objIsotopeLab.amount * objIsotopeLab.energy * f("IsotopeLab-col") +
       // Level 13 (beta): elektronica, scanners en bestuurde hoogovens
       +objElectronics.amount * objElectronics.energy * f("Electronics-col") +
       +objScanner.amount * objScanner.energy * f("Prospecting-col") +
@@ -8402,6 +8475,10 @@ var objChipFactory = {
   energy: 50000,
   production: 5, // chips per tick
   active: 0,
+  // Materiaalinspectie met industriële isotopen (#118): 25% meer chips
+  isotopeUse: 0.05, // isotopen per fabriek per tick
+  isotopeBonus: 0.25,
+  inspected: 0,
   unlocked: function () {
     return BETA && +objPlayerInfo.level >= 16 && +objResearch.level > 3;
   },
@@ -8442,6 +8519,7 @@ var objChipFactory = {
   },
   // Draait iedere tick zolang er printplaten, goud, industriële diamant, energie en ruimte is
   produce: function () {
+    objChipFactory.inspected = 0;
     if (objPause.is("ChipFactory-col")) {
       objChipFactory.active = 0;
       return 0;
@@ -8460,7 +8538,29 @@ var objChipFactory = {
     objGold.use(active * objChipFactory.goldNeeded);
     objIndustrialDiamond.use(active * objChipFactory.diamondNeeded);
     objEnergy.use(active * objChipFactory.energy, "Chipfabriek");
-    objChips.add(objStats.count("chips", active * objChipFactory.production));
+    // Fabrieken met isotopen maken extra chips, zolang die nog in de opslag passen
+    var extra = objChipFactory.production * objChipFactory.isotopeBonus;
+    var inspected = Math.max(
+      0,
+      Math.min(
+        active,
+        Math.floor(+objIsotopes.amount / objChipFactory.isotopeUse + 1e-9),
+        Math.floor(
+          (objChips.space() - active * objChipFactory.production) / extra
+        )
+      )
+    );
+    objChipFactory.inspected = inspected;
+    if (inspected > 0) {
+      objIsotopes.use(inspected * objChipFactory.isotopeUse);
+      objIsotopes.show();
+    }
+    objChips.add(
+      objStats.count(
+        "chips",
+        active * objChipFactory.production + inspected * extra
+      )
+    );
   },
   show: function () {
     var left = document.getElementById("chipFactory");
@@ -8500,7 +8600,24 @@ var objChipFactory = {
       "<h3>Nu</h3>" +
       renderStats([
         ["Actief", FixNumber(a) + " van " + FixNumber(n)],
-        ["Chips", FixNumber(a * objChipFactory.production) + " per tick"],
+        [
+          "Chips",
+          FixNumber(
+            a * objChipFactory.production +
+              objChipFactory.inspected *
+                objChipFactory.production *
+                objChipFactory.isotopeBonus
+          ) + " per tick",
+        ],
+        [
+          "Met inspectie",
+          FixNumber(objChipFactory.inspected) +
+            " van " +
+            FixNumber(a) +
+            " (" +
+            FixNumber(objChipFactory.inspected * objChipFactory.isotopeUse) +
+            " isotopen per tick)",
+        ],
         ["Printplaten", FixNumber(a * objChipFactory.pcbNeeded) + " per tick"],
         ["Goud", FixUnit(a * objChipFactory.goldNeeded, "kg per tick")],
         [
@@ -8510,7 +8627,7 @@ var objChipFactory = {
         ["Energie", FixNumber(a * objChipFactory.energy) + " per tick"],
       ]) +
       renderHint(
-        "Een chipfabriek draait vanzelf iedere tick zolang er printplaten, goud, industriële diamant, energie en ruimte in je chipopslag is."
+        "Een chipfabriek draait vanzelf iedere tick zolang er printplaten, goud, industriële diamant, energie en ruimte in je chipopslag is. Met industriële isotopen uit het isotopenlab maakt hij 25% meer chips."
       );
   },
   init: function () {
@@ -8827,6 +8944,262 @@ var objAICoin = {
     objAICoin.price = +store.getItem("aicoinPrice") || objAICoin.base;
     objAICoin.previous = +store.getItem("aicoinPrevious") || objAICoin.price;
     objAICoin.show();
+  },
+};
+
+// Isotopenlab (beta, level 16): maakt van uranium medische isotopen, die vervallen en
+// dus meteen aan ziekenhuizen worden verkocht, en industriële isotopen voor de
+// materiaalinspectie in de chipfabrieken (#118). De opbrengst wordt net als bij het
+// datacenter iedere 10 ticks in één keer uitbetaald.
+var objIsotopeLab = {
+  amount: 0,
+  price: 500000000000,
+  priceFactor: 1.05,
+  steelNeeded: 1000000,
+  pcbNeeded: 2000,
+  goldNeeded: 50, // kg
+  uraniumUse: 20, // ton per lab per tick
+  energy: 50000,
+  income: 250000000, // medische isotopen per lab per tick
+  production: 0.1, // industriële isotopen per lab per tick
+  payPeriod: 10,
+  active: 0,
+  pending: 0,
+  counter: 0,
+  add: function () {
+    if (!objChipFactory.unlocked()) return 0;
+    if (moneyCheck(+objIsotopeLab.price) == 0) {
+      notificationOverlay("Niet genoeg doekoe!", "Isotopenlab", "fa-euro-sign");
+      return 0;
+    }
+    if (+objSteel.amount < +objIsotopeLab.steelNeeded) {
+      notificationOverlay("Niet genoeg staal!", "Isotopenlab", "fa-box");
+      return 0;
+    }
+    if (!objPCB.has(objIsotopeLab.pcbNeeded, "Isotopenlab")) return 0;
+    if (!objGold.has(objIsotopeLab.goldNeeded, "Isotopenlab")) return 0;
+    objMoney.use(+objIsotopeLab.price);
+    objSteel.use(+objIsotopeLab.steelNeeded);
+    objPCB.use(objIsotopeLab.pcbNeeded);
+    objGold.use(objIsotopeLab.goldNeeded);
+    objSteel.show();
+    objFlows.pulseAll([
+      ["SteelInfo-col", "IsotopeLab-col"],
+      ["PCB-col", "IsotopeLab-col"],
+      ["GoldInfo-col", "IsotopeLab-col"],
+    ]);
+    objIsotopeLab.amount++;
+    objIsotopeLab.price = +objIsotopeLab.price * objIsotopeLab.priceFactor;
+    objIsotopeLab.save();
+  },
+  sell: function () {
+    if (+objIsotopeLab.amount < 1) {
+      notificationOverlay("Geen labs om te verkopen", "Isotopenlab", "fa-info");
+      return 0;
+    }
+    objIsotopeLab.price = +objIsotopeLab.price / objIsotopeLab.priceFactor;
+    objIsotopeLab.amount--;
+    objMoney.add(+objIsotopeLab.price * 0.75, "Verkoop isotopenlab", 39, 1);
+    objIsotopeLab.save();
+  },
+  save: function () {
+    store.setItem("isotopeLabs", objIsotopeLab.amount);
+    store.setItem("isotopeLabPrice", objIsotopeLab.price);
+    objIsotopeLab.show();
+  },
+  // Draait iedere tick zolang er uranium en energie is. Past de industriële isotopen
+  // niet meer in de opslag, dan wordt het overschot verkocht en loopt het lab door.
+  produce: function () {
+    if (objPause.is("IsotopeLab-col")) {
+      objIsotopeLab.active = 0;
+    } else {
+      var active = Math.min(
+        +objIsotopeLab.amount,
+        Math.floor(+objUraniumOre.amount / objIsotopeLab.uraniumUse),
+        Math.floor(+objEnergy.available / objIsotopeLab.energy)
+      );
+      objIsotopeLab.active = Math.max(0, active);
+      if (active >= 1) {
+        objUraniumOre.use(active * objIsotopeLab.uraniumUse);
+        objUraniumOre.show();
+        objEnergy.use(active * objIsotopeLab.energy, "Isotopenlab");
+        objIsotopeLab.pending += active * objIsotopeLab.income;
+        objIsotopes.add(
+          objStats.count("isotopen", active * objIsotopeLab.production)
+        );
+      }
+    }
+    objIsotopeLab.counter++;
+    if (objIsotopeLab.counter >= objIsotopeLab.payPeriod) {
+      objIsotopeLab.counter = 0;
+      if (objIsotopeLab.pending > 0) {
+        objMoney.add(objIsotopeLab.pending, "Medische isotopen", 40, 1);
+        objIsotopeLab.pending = 0;
+      }
+    }
+  },
+  show: function () {
+    var left = document.getElementById("isotopeLab");
+    var right = document.getElementById("isotopeLabStats");
+    if (!objChipFactory.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var n = +objIsotopeLab.amount;
+    var a = objIsotopeLab.active;
+    left.innerHTML =
+      "<h2>Isotopenlab</h2>" +
+      renderStats([
+        ["Labs", FixNumber(n)],
+        ["Prijs per lab", FixMoney(objIsotopeLab.price)],
+        ["Staal per lab", FixUnit(objIsotopeLab.steelNeeded, "ton")],
+        ["Printplaten per lab", FixNumber(objIsotopeLab.pcbNeeded)],
+        ["Goud per lab", FixUnit(objIsotopeLab.goldNeeded, "kg")],
+        [
+          "Verkoopwaarde",
+          FixMoney((+objIsotopeLab.price / objIsotopeLab.priceFactor) * 0.75),
+        ],
+      ]) +
+      "<h3>Per lab per tick</h3>" +
+      renderStats([
+        ["Uranium", FixUnit(objIsotopeLab.uraniumUse, "ton")],
+        ["Energie", FixNumber(objIsotopeLab.energy)],
+        ["Medische isotopen", FixMoney(objIsotopeLab.income)],
+        ["Industriële isotopen", FixNumber(objIsotopeLab.production)],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objIsotopeLab.add();' id='buyIsotopeLab'>Bouw lab</button>" +
+      objBulk.buttons("isotopeLab") +
+      " <button type='button' class='btn btn-danger' onClick='objIsotopeLab.sell();' id='sellIsotopeLab'>Verkoop lab</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Nu</h3>" +
+      renderStats([
+        ["Actief", FixNumber(a) + " van " + FixNumber(n)],
+        ["Uranium", FixUnit(a * objIsotopeLab.uraniumUse, "ton per tick")],
+        ["Energie", FixNumber(a * objIsotopeLab.energy) + " per tick"],
+        ["Medische isotopen", FixMoney(a * objIsotopeLab.income) + " per tick"],
+        [
+          "Industriële isotopen",
+          FixNumber(a * objIsotopeLab.production) + " per tick",
+        ],
+      ]) +
+      renderHint(
+        "Een lab draait vanzelf zolang er uranium en energie is. Medische isotopen vervallen snel en gaan meteen naar ziekenhuizen; de opbrengst wordt iedere " +
+          objIsotopeLab.payPeriod +
+          " ticks uitbetaald. Ieder lab is 5% duurder dan het vorige."
+      );
+  },
+  init: function () {
+    objIsotopeLab.amount = +store.getItem("isotopeLabs") || 0;
+    objIsotopeLab.price =
+      +store.getItem("isotopeLabPrice") || objIsotopeLab.price;
+    objIsotopeLab.show();
+  },
+};
+
+// Industriële isotopen (beta, level 16): een chipfabriek die er 0,05 per tick van krijgt,
+// maakt 25% meer chips (materiaalinspectie). Wat niet in de opslag past, wordt verkocht.
+var objIsotopes = {
+  amount: 0,
+  storage: 1,
+  storageCap: 100,
+  storagePrice: 10000000000,
+  price: 100000000,
+  space: function () {
+    return +objIsotopes.storage * +objIsotopes.storageCap - +objIsotopes.amount;
+  },
+  add: function (amountAdded) {
+    fillStorage("objIsotopes", amountAdded, "isotopesAmount");
+  },
+  use: function (amount) {
+    return useResource("objIsotopes", amount, "isotopesAmount");
+  },
+  sell: function (amountSold) {
+    var reason = "Verkoop overschot industriële isotopen";
+    var priceValue = +objIsotopes.price * 0.2;
+    if (+amountSold == 0) {
+      amountSold = Math.floor(+objIsotopes.amount);
+      if (amountSold <= 0) return 0;
+      objIsotopes.use(amountSold);
+      reason = "Handmatige verkoop industriële isotopen";
+      priceValue = +objIsotopes.price;
+    }
+    objMoney.add(+amountSold * priceValue, reason, 41, amountSold);
+  },
+  addStorage: function () {
+    if (moneyCheck(+objIsotopes.storagePrice) == 0) {
+      notificationOverlay(
+        "Niet genoeg doekoe!",
+        "Isotopenopslag",
+        "fa-euro-sign"
+      );
+      return 0;
+    }
+    objMoney.use(+objIsotopes.storagePrice);
+    objIsotopes.storage++;
+    store.setItem("isotopesStorage", objIsotopes.storage);
+    objIsotopes.show();
+  },
+  show: function () {
+    var left = document.getElementById("isotopes");
+    var right = document.getElementById("isotopesStorage");
+    if (!objChipFactory.unlocked()) {
+      left.innerHTML = "";
+      right.innerHTML = "";
+      return;
+    }
+    var capacity = +objIsotopes.storage * +objIsotopes.storageCap;
+    left.innerHTML =
+      "<h2>Industriële isotopen</h2>" +
+      renderBar(
+        "Voorraad",
+        FixNumber(Math.floor(objIsotopes.amount * 100) / 100),
+        (+objIsotopes.amount / capacity) * 100
+      ) +
+      renderStats([
+        ["Vrije ruimte", FixNumber(Math.floor(objIsotopes.space()))],
+        ["Prijs per isotoop", FixMoney(objIsotopes.price)],
+        [
+          "Chipfabrieken met inspectie",
+          FixNumber(objChipFactory.inspected) +
+            " van " +
+            FixNumber(objChipFactory.amount),
+        ],
+      ]) +
+      renderHint(
+        "Een chipfabriek die " +
+          FixNumber(objChipFactory.isotopeUse) +
+          " isotoop per tick krijgt, maakt 25% meer chips. Wat niet in de opslag past, wordt verkocht voor 20% van de prijs."
+      ) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-danger' onClick='objIsotopes.sell(0)' id='sellIsotopes'>Verkoop isotopen</button>" +
+      "</div>";
+    right.innerHTML =
+      "<h3>Opslag</h3>" +
+      renderStats([
+        [
+          "Opslagen",
+          FixNumber(objIsotopes.storage) +
+            " (" +
+            FixNumber(capacity) +
+            " isotopen)",
+        ],
+        ["Prijs extra opslag", FixMoney(objIsotopes.storagePrice)],
+        [
+          "Capaciteit per opslag",
+          FixNumber(objIsotopes.storageCap) + " isotopen",
+        ],
+      ]) +
+      "<div class='actions'>" +
+      "<button type='button' class='btn btn-primary' onClick='objIsotopes.addStorage();' id='addIsotopesStorage'>Koop opslag</button>" +
+      "</div>";
+  },
+  init: function () {
+    objIsotopes.amount = +store.getItem("isotopesAmount") || 0;
+    objIsotopes.storage = +store.getItem("isotopesStorage") || 1;
+    objIsotopes.show();
   },
 };
 
@@ -10234,6 +10607,7 @@ var objStats = {
         stock(objIndustrialDiamond),
       ],
       ["chips", "Chips", "", "chips", stock(objChips)],
+      ["isotopen", "Industriële isotopen", "", "uranium", stock(objIsotopes)],
       ["aicoin", "AICoin", "", "chips", [objAICoin.amount, 0]],
       [
         "energie",
@@ -10293,6 +10667,7 @@ var objStats = {
           ["Slijperijen", objDiamondCutter.amount],
           ["Chipfabrieken", objChipFactory.amount],
           ["Datacenterrekken", objDatacenter.racks],
+          ["Isotopenlabs", objIsotopeLab.amount],
           ["Seismische scanners", objScanner.amount],
           ["CPU's salescomputer", objSalesComputer.cpu],
         ],
@@ -11284,11 +11659,15 @@ var loopsProduction = setInterval(function () {
       objDiamondDrill.show();
     }
     if (objChipFactory.unlocked()) {
+      // Eerst het lab, zodat de chipfabrieken de nieuwe isotopen kunnen gebruiken
+      objIsotopeLab.produce();
       objChipFactory.produce();
       objDatacenter.produce();
       objChipFactory.show();
       objChips.show();
       objDatacenter.show();
+      objIsotopeLab.show();
+      objIsotopes.show();
       objAICoin.show();
       objFusion.show();
     }
