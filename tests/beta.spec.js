@@ -1335,7 +1335,7 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     const energy = await val(page, () => +objEnergy.available);
     await tick(page, 1);
     expect(await val(page, () => +objEnergy.available)).toBe(energy + 2000000);
-    await expect(page.locator("#TotalEnergyProduction")).toContainText("2.000.000");
+    await expect(page.locator("#TotalEnergyProduction")).toContainText("2 mln");
   });
 
   test("#81 zonder chips geen fusiecentrale", async ({ page }) => {

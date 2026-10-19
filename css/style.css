@@ -166,12 +166,38 @@ kbd2 {
     margin-left: auto;
 }
 
+/* In het spel: naam, waarden en menu in vaste kolommen. Lange waarden lopen door
+   naar een volgende regel binnen hun eigen kolom, zodat "Game opties" niet verspringt
+   en er geen horizontale scrollbalk komt (#124) */
+.topbar-game {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+}
+
+.topbar-game .brand,
+.topbar-game .stats {
+    min-height: 2.1rem;
+    display: flex;
+    align-items: center;
+}
+
+.topbar-game .stats {
+    flex-wrap: wrap;
+    overflow-x: visible;
+}
+
 @media (max-width: 760px) {
     .stats {
         order: 3;
         flex-basis: 100%;
         flex-wrap: wrap;
         gap: 0.3rem 0.9rem;
+    }
+
+    .topbar-game .stats {
+        grid-column: 1 / -1;
+        grid-row: 2;
     }
 
     .statsbar {

@@ -35,6 +35,10 @@ var store = {
   },
 };
 
+// Korte getallen (beta, #124): vanaf 1 miljoen "1,23 mln" in plaats van "1.234.567".
+// Standaard aan; de volledige waarde in de bovenbalk staat in de tooltip.
+var shortNumbers = BETA && store.getItem("shortNumbers") !== "0";
+
 var spend = parseInt(store.getItem("spend")) || 10;
 var made = parseInt(store.getItem("made")) || 0;
 var PriceFactor = 25;
@@ -178,6 +182,7 @@ window.onload = function () {
   objMarket.init();
   showQuickSell(0);
   turnAutoClose(0);
+  turnShortNumbers(0);
   turnDebug(0);
   // Initialiseren overige gegevens en display
   showPrice();
@@ -2320,8 +2325,10 @@ var objFlows = {
 };
 
 // Functie voor het goed weergeven van bedragen
-function FixMoney(InputMoney) {
+function FixMoney(InputMoney, full) {
   InputMoney = parseFloat(+InputMoney);
+  if (!full && shortNumbers && Math.abs(InputMoney) >= 1e6)
+    return FixShort(InputMoney, true);
   return InputMoney.toLocaleString("nl-NL", {
     style: "currency",
     currency: "EUR",
@@ -2329,14 +2336,29 @@ function FixMoney(InputMoney) {
 }
 
 // Functie voor het goed weergeven van hoeveelheden
-function FixNumber(InputNumber) {
+function FixNumber(InputNumber, full) {
   InputNumber = parseFloat(+InputNumber);
+  if (!full && shortNumbers && Math.abs(InputNumber) >= 1e6)
+    return FixShort(InputNumber);
   return InputNumber.toLocaleString("nl-NL");
 }
 
 // Hoeveelheid met eenheid, bijvoorbeeld FixUnit(1500, "kg") -> "1.500 kg"
 function FixUnit(InputNumber, unit) {
   return FixNumber(InputNumber) + " " + unit;
+}
+
+// Waarde in de bovenbalk als "Label: voorraad/capaciteit", met de volledige getallen als tooltip
+function renderTop(id, label, amount, capacity) {
+  var el = document.getElementById(id);
+  el.innerHTML =
+    label +
+    ": <kbd2>" +
+    FixNumber(amount) +
+    "/" +
+    FixNumber(capacity) +
+    "</kbd2>";
+  el.title = FixNumber(amount, true) + " / " + FixNumber(capacity, true);
 }
 
 // Compacte lijst met waardes: renderStats([["Voorraad", "1.500 kg"], ...]).
@@ -2565,6 +2587,7 @@ var objMoney = {
     ]);
     document.getElementById("MoneyTop").innerHTML =
       "Vermogen: <kbd2>" + FixMoney(MoneyRound) + "</kbd2>";
+    document.getElementById("MoneyTop").title = FixMoney(MoneyRound, true);
     store.setItem("Money", +MoneyRound);
   },
   showUpdate: function (description, moneyProfit) {
@@ -2871,12 +2894,12 @@ var objGrainSilo = {
       ["Prijs per silo", FixMoney(objGrainSilo.price)],
       ["Capaciteit per silo", FixUnit(objGrainSilo.cap, "kg")],
     ]);
-    document.getElementById("GrainTop").innerHTML =
-      "Graan: <kbd2>" +
-      FixNumber(objGrainSilo.contents) +
-      "/" +
-      FixNumber(objGrainSilo.amount * objGrainSilo.cap) +
-      "</kbd2>";
+    renderTop(
+      "GrainTop",
+      "Graan",
+      objGrainSilo.contents,
+      objGrainSilo.amount * objGrainSilo.cap
+    );
     objGrainSilo.visual();
   },
   init: function () {
@@ -2953,12 +2976,12 @@ var objFlourSilo = {
       ["Prijs per silo", FixMoney(objFlourSilo.price)],
       ["Capaciteit per silo", FixUnit(objFlourSilo.cap, "kg")],
     ]);
-    document.getElementById("FlourTop").innerHTML =
-      "Bloem: <kbd2>" +
-      FixNumber(objFlourSilo.contents) +
-      "/" +
-      FixNumber(objFlourSilo.amount * objFlourSilo.cap) +
-      "</kbd2>";
+    renderTop(
+      "FlourTop",
+      "Bloem",
+      objFlourSilo.contents,
+      objFlourSilo.amount * objFlourSilo.cap
+    );
     objFlourSilo.visual();
   },
   init: function () {
@@ -3124,12 +3147,7 @@ var objOilTank = {
       ["Voorraad", FixUnit(objOilTank.contents, "vaten")],
     ]);
 
-    document.getElementById("OilTop").innerHTML =
-      "Olie: <kbd2>" +
-      FixNumber(objOilTank.contents) +
-      "/" +
-      FixNumber(objOilTank.totalCap) +
-      "</kbd2>";
+    renderTop("OilTop", "Olie", objOilTank.contents, objOilTank.totalCap);
     objOilTank.visual();
   },
   init: function () {
@@ -3875,12 +3893,12 @@ var objEnergy = {
     var bigCapa = !objChipFactory.unlocked();
     document.getElementById("capaButton100k").hidden = bigCapa;
     document.getElementById("capaButton1m").hidden = bigCapa;
-    document.getElementById("EnergyStats").innerHTML =
-      "Energie: <kbd2>" +
-      FixNumber(objEnergy.available) +
-      "/" +
-      FixNumber(objEnergy.capacitors * objEnergy.storageCap) +
-      "</kbd2>";
+    renderTop(
+      "EnergyStats",
+      "Energie",
+      objEnergy.available,
+      objEnergy.capacitors * objEnergy.storageCap
+    );
     document.getElementById("AvailableEnergy").innerHTML = renderStats([
       [
         "Opgeslagen",
@@ -8918,6 +8936,7 @@ var objAICoin = {
     top.innerHTML = visible
       ? "AICoin: <kbd2>" + FixNumber(objAICoin.amount) + "</kbd2>"
       : "";
+    top.title = FixNumber(objAICoin.amount, true);
     if (!visible) {
       el.innerHTML = "";
       return;
@@ -10275,7 +10294,7 @@ function FixShort(value, money) {
     [1e9, "mld"],
     [1e6, "mln"],
   ];
-  var text = FixNumber(Math.round(value));
+  var text = Math.round(value).toLocaleString("nl-NL");
   for (var i = 0; i < units.length; i++) {
     if (Math.abs(value) >= units[i][0]) {
       text =
@@ -11507,6 +11526,21 @@ function turnAutoClose(input) {
   } else {
     elAutoCloseBTN.innerHTML = icon("square") + " Zet auto-sluit berichten aan";
   }
+}
+
+function turnShortNumbers(input) {
+  var btn = document.getElementById("shortNumbersBTN");
+  btn.hidden = !BETA;
+  if (!BETA) return;
+  if (input) {
+    store.setItem("shortNumbers", shortNumbers ? "0" : "1");
+    // Alles opnieuw tekenen gaat het eenvoudigst via herladen; de voortgang staat al in de opslag
+    location.reload();
+    return;
+  }
+  btn.innerHTML =
+    icon(shortNumbers ? "check-square" : "square") +
+    " Korte getallen (mln, mld)";
 }
 
 function quickSellMenu() {
