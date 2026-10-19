@@ -479,6 +479,11 @@ kbd2 {
     margin-top: 0.4rem;
 }
 
+/* Houdt plek vrij voor een hint die steeds komt en gaat (#120) */
+.hint-reserve {
+    visibility: hidden;
+}
+
 .actions {
     margin: 0.6rem 0 0.4rem;
 }

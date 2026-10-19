@@ -17,7 +17,7 @@ test.describe("Energie: productie en piekvraag (#116)", () => {
     test(`${beta ? "beta" : "gewoon spel"}: reactoren zonder splijtstof tellen niet mee`, async ({ page }) => {
       await startGame(page, { beta, state: nuclear() });
       await expect(production(page)).toHaveText("0");
-      await expect(page.locator("#TotalEnergyProduction .hint")).toContainText(
+      await expect(page.locator("#TotalEnergyProduction .hint:not(.hint-reserve)")).toContainText(
         "10 van 10 reactoren staan stil: geen splijtstof."
       );
       await tick(page, 2);
@@ -28,7 +28,7 @@ test.describe("Energie: productie en piekvraag (#116)", () => {
   test("reactoren met splijtstof tellen mee, gelijk aan de kerncentralekaart", async ({ page }) => {
     await startGame(page, { state: nuclear({ pelletsActive: 100 }) });
     await expect(production(page)).toHaveText("50.000");
-    await expect(page.locator("#TotalEnergyProduction .hint")).toHaveCount(0);
+    await expect(page.locator("#TotalEnergyProduction .hint:not(.hint-reserve)")).toHaveCount(0);
     await tick(page, 1);
     await expect(production(page)).toHaveText("50.000");
     await expect(page.locator("#nppsum")).toContainText("50.000");
@@ -38,7 +38,7 @@ test.describe("Energie: productie en piekvraag (#116)", () => {
     // 4 bestuurde reactoren, maar pellets voor maar 2 reactoren
     await startGame(page, { beta: true, state: nuclear({ PlayerLevel: 14, NextLevel: threshold(13) * 5, reactorControls: 4, pelletsActive: 2 }) });
     expect(await game(page, () => objEnergy.capacity())).toBe(2 * 5000 + 2 * 5000);
-    await expect(page.locator("#TotalEnergyProduction .hint")).toContainText("8 van 10 reactoren staan stil");
+    await expect(page.locator("#TotalEnergyProduction .hint:not(.hint-reserve)")).toContainText("8 van 10 reactoren staan stil");
   });
 
   test("olie- en kolencentrales tellen alleen mee voor zover er brandstof is", async ({ page }) => {
@@ -85,7 +85,7 @@ test.describe("Energie: netto per tick (beta, #116)", () => {
     await tick(page, 16);
     const netto = page.locator("#TotalEnergyProduction .stats-down");
     await expect(netto).toHaveText("▼ −5");
-    await expect(page.locator("#TotalEnergyProduction .hint")).toContainText("Je opslag is over ongeveer 2u 4");
+    await expect(page.locator("#TotalEnergyProduction .hint:not(.hint-reserve)")).toContainText("Je opslag is over ongeveer 2u 4");
   });
 
   test("een volle opslag toont 'opslag vol'", async ({ page }) => {
@@ -96,6 +96,18 @@ test.describe("Energie: netto per tick (beta, #116)", () => {
     await tick(page, 5);
     expect(await game(page, () => objEnergy.full())).toBe(true);
     await expect(page.locator("#TotalEnergyProduction")).toContainText("0 (opslag vol)");
-    await expect(page.locator("#TotalEnergyProduction .hint")).toHaveCount(0);
+    await expect(page.locator("#TotalEnergyProduction .hint:not(.hint-reserve)")).toHaveCount(0);
+    await expect(page.locator("#TotalEnergyProduction .hint-reserve")).toBeHidden();
+  });
+
+  test("de energiekaart verspringt niet als de hint komt en gaat (#120)", async ({ page }) => {
+    await startGame(page, { beta: true, state: pumps });
+    const card = page.locator("#TotalEnergyProduction");
+    await tick(page, 1);
+    await expect(card.locator(".hint-reserve")).toHaveCount(1);
+    const before = (await card.boundingBox()).height;
+    await tick(page, 16);
+    await expect(card.locator(".hint:not(.hint-reserve)")).toBeVisible();
+    expect((await card.boundingBox()).height).toBe(before);
   });
 });
