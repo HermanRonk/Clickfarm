@@ -2787,6 +2787,7 @@ var objFarmRobot = {
       working * +objFarmRobot.robotCap,
       +objFarmland.amount
     );
+    objFarmland.showHarvest();
     document.getElementById("ShowFarmRobot").innerHTML = renderStats([
       ["Robots", FixNumber(objFarmRobot.robots)],
       ["Velden bewerkt", FixNumber(fields)],
@@ -3214,11 +3215,28 @@ var objFarmland = {
     document.getElementById("FarmlandPrice").innerHTML = renderStats([
       ["Prijs per veld", FixMoney(objFarmland.cost)],
     ]);
-    document.getElementById("FarmHarvestPerField").innerHTML = renderStats([
-      ["Opbrengst per veld", FixUnit(objFarmland.harvest, "kg")],
-    ]);
+    objFarmland.showHarvest();
     store.setItem("FarmlandCost", objFarmland.cost);
     store.setItem("Harvest", objFarmland.harvest);
+  },
+  // Opbrengst per veld, en in de beta ook van alle velden samen per oogstronde,
+  // met de waarde tegen de huidige graanprijs (#123)
+  showHarvest: function () {
+    var total = +objFarmland.amount * +objFarmland.harvest;
+    var robotFields = Math.min(
+      +objFarmRobot.robots * +objFarmRobot.robotCap,
+      +objFarmland.amount
+    );
+    document.getElementById("FarmHarvestPerField").innerHTML = renderStats([
+      ["Opbrengst per veld", FixUnit(objFarmland.harvest, "kg")],
+      BETA && ["Opbrengst per ronde", FixUnit(total, "kg")],
+      BETA &&
+        robotFields > 0 && [
+          "Waarvan robots",
+          FixUnit(robotFields * +objFarmland.harvest, "kg"),
+        ],
+      BETA && ["Waarde per ronde", FixMoney((total / 1000) * objGrain.price)],
+    ]);
   },
   calcPrice: function () {
     objFarmland.cost = objFarmland.cost * 1.05;
@@ -3631,6 +3649,7 @@ var objGrain = {
       objGrain.price = +objPrijslijst.GrainLow;
       objFlour.price = +objPrijslijst.FlourLow;
     }
+    if (BETA) objFarmland.showHarvest();
 
     objPasta.show();
   },
