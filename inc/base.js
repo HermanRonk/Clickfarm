@@ -186,6 +186,7 @@ window.onload = function () {
   turnDebug(0);
   // Initialiseren overige gegevens en display
   showPrice();
+  objButtons.init();
 };
 
 // Functie voor het onzichtbaar maken van DOM elementen
@@ -11482,6 +11483,354 @@ function moneyCheck(amountNeeded) {
   }
 }
 
+// Knoppen die nu niets kunnen doen grijs maken: te weinig geld of grondstoffen, of (bij de
+// handmatige productie) alle fabrieken worden al automatisch bestuurd. Iedere regel geeft de
+// reden terug (als tooltip), of "" als de knop werkt. De regels volgen de controles in de
+// koopfuncties zelf; een grijze knop doet niets bij klikken.
+var objButtons = {
+  money: function (cost, strict) {
+    var ok = strict ? +objMoney.amount > +cost : +objMoney.amount >= +cost;
+    return ok ? "" : "Niet genoeg geld (" + FixMoney(cost) + ")";
+  },
+  need: function (have, amount, label) {
+    return +have >= +amount ? "" : "Niet genoeg " + label;
+  },
+  steel: function (amount) {
+    return objButtons.need(objSteel.amount, amount, "staal");
+  },
+  pcb: function (amount) {
+    return objButtons.need(objPCB.amount, amount, "printplaten");
+  },
+  gold: function (amount) {
+    return objButtons.need(objGold.amount, amount, "goud");
+  },
+  chips: function (amount) {
+    return objButtons.need(objChips.amount, amount, "chips");
+  },
+  // Per functie (uit onClick) een controle; args zijn de argumenten van de aanroep
+  rules: {
+    "objEnergy.addCapa": function (args) {
+      return objButtons.money(+objEnergy.capaCost * +args[0]);
+    },
+    "objFarmland.addfarm": function () {
+      return objButtons.money(objFarmland.cost, true);
+    },
+    "objFarmland.research": function () {
+      return objButtons.money(objFarmland.GrainResearchCostVar);
+    },
+    "objGrainSilo.add": function () {
+      return objButtons.money(objGrainSilo.price, true);
+    },
+    "objFlourSilo.add": function () {
+      return objButtons.money(objFlourSilo.price, true);
+    },
+    "objResearch.doResearch": function () {
+      var step = objResearch.research_tree[objResearch.level - 1];
+      if (objResearch.running === 1 || !step) return "";
+      return objButtons.money(step.cost);
+    },
+    "objFarmRobot.add": function () {
+      return objButtons.money(objFarmRobot.robotCost);
+    },
+    "objWindmill.add": function () {
+      return objButtons.money(objWindmill.cost, true);
+    },
+    "objWindmill.grind": function () {
+      return +objWindmill.amount - +objWindmill.amountAutomated < 1
+        ? "Alle windmolens worden bestuurd door controllers"
+        : "";
+    },
+    "objWindmillController.add": function () {
+      return objButtons.money(objWindmillController.price, true);
+    },
+    "objOilTank.add": function (args) {
+      return +args[0] == 0
+        ? objButtons.money(objOilTank.price, true)
+        : objButtons.money(objOilTank.priceBig, true);
+    },
+    "objOilPump.add": function () {
+      return objButtons.money(objOilPump.price);
+    },
+    "objOilPumpAdv.add": function () {
+      return (
+        objButtons.money(objOilPumpAdv.price) ||
+        objButtons.steel(objOilPumpAdv.steelNeeded)
+      );
+    },
+    "objOilPumpAdv.upgrade": function () {
+      if (+objOilPump.amount < 1) return "Geen pompen om te upgraden";
+      return objButtons.rules["objOilPumpAdv.add"]();
+    },
+    "objPowerPlant.add": function () {
+      return objButtons.money(objPowerPlant.price, true);
+    },
+    "objCoalPowerPlant.add": function () {
+      return objButtons.money(objCoalPowerPlant.price, true);
+    },
+    "objChicken.add": function (args) {
+      return objButtons.money(+args[0] * +objChicken.cost);
+    },
+    "objChickenFarm.add": function () {
+      return objButtons.money(objChickenFarm.cost);
+    },
+    "objEgg.addStorageUnit": function () {
+      return objButtons.money(objEgg.storageUnitCost);
+    },
+    "objPastaFactory.add": function () {
+      return objButtons.money(objPastaFactory.cost);
+    },
+    "objPastaFactory.produce": function () {
+      if (+objPastaFactory.amount < 1) return "Geen pastafabrieken";
+      return +objPastaFactory.amount - +objPastaFactory.amountAutomated < 1
+        ? "Alle pastafabrieken worden bestuurd door pastahelpers"
+        : "";
+    },
+    "objPastaHelper.add": function (args) {
+      return +args[0] == 1 ? objButtons.money(objPastaHelper.cost) : "";
+    },
+    "objSalesComputer.add": function () {
+      return objButtons.money(objSalesComputer.cpuCost, true);
+    },
+    "objPlasticFactory.addFactory": function (args) {
+      return +args[0] > 0 ? objButtons.money(objPlasticFactory.cost, true) : "";
+    },
+    "objPlasticFactory.addWorker": function (args) {
+      return +args[0] > 0
+        ? objButtons.money(objPlasticFactory.workerCost, true)
+        : "";
+    },
+    "objMines.prospect": function () {
+      if (+objMines.prospecting === 1) return "";
+      return objButtons.money(objMines.prospectPrice());
+    },
+    "objMines.addMine": function (args) {
+      if (+args[1] != 1) return "";
+      var type = [null, "iron", "coal", "uranium", "copper", "gold", "diamond"][
+        +args[0]
+      ];
+      if (
+        +objMines[type + "AmountProspected"] -
+          +objMines[type + "AmountActive"] <
+        1
+      )
+        return "Geen locaties meer beschikbaar";
+      return (
+        objButtons.money(objMines[type + "MineCost"]) ||
+        objButtons.steel(objMines.steelNeeded(type))
+      );
+    },
+    "objCoal.buy": function (args) {
+      if (+objCoal.amount >= +objCoal.storage * +objCoal.storageCap * 0.05)
+        return "Bijkopen kan alleen onder 5% voorraad";
+      return objButtons.money(+args[0] * +objCoal.price * 1.5);
+    },
+    "objIronMelter.add": function (args) {
+      return +args[0] > 0 ? objButtons.money(objIronMelter.cost, true) : "";
+    },
+    "objIronMelter.produce": function () {
+      if (+objIronMelter.amount < 1) return "Geen hoogovens";
+      return +objIronMelter.amount - +objIronMelter.controlled < 1
+        ? "Al je hoogovens hebben besturing en maken zelf staal"
+        : "";
+    },
+    "objIronMelter.addControl": function () {
+      return objButtons.pcb(objIronMelter.controlPCB);
+    },
+    "objCopperSmelter.add": function (args) {
+      if (+args[0] < 0) return "";
+      return (
+        objButtons.money(objCopperSmelter.cost) ||
+        objButtons.steel(objCopperSmelter.steelNeeded)
+      );
+    },
+    "objElectronics.add": function (args) {
+      if (+args[0] < 0) return "";
+      return (
+        objButtons.money(objElectronics.cost) ||
+        objButtons.steel(objElectronics.steelNeeded)
+      );
+    },
+    "objSolar.add": function () {
+      return (
+        objButtons.money(objSolar.price) ||
+        objButtons.steel(objSolar.steelNeeded) ||
+        objButtons.pcb(objSolar.pcbNeeded)
+      );
+    },
+    "objScanner.add": function () {
+      return objButtons.pcb(objScanner.pcbNeeded);
+    },
+    "objGoldRefinery.add": function (args) {
+      if (+args[0] < 0) return "";
+      return (
+        objButtons.money(objGoldRefinery.cost) ||
+        objButtons.steel(objGoldRefinery.steelNeeded)
+      );
+    },
+    "objDiamondCutter.add": function (args) {
+      if (+args[0] < 0) return "";
+      return (
+        objButtons.money(objDiamondCutter.cost) ||
+        objButtons.steel(objDiamondCutter.steelNeeded)
+      );
+    },
+    "objDiamondVault.add": function () {
+      return objButtons.money(objDiamondVault.price);
+    },
+    "objDiamondDrill.buy": function (args) {
+      return objButtons.need(
+        objIndustrialDiamond.amount,
+        objDiamondDrill.cost[args[0]],
+        "industriële diamant"
+      );
+    },
+    "objChipFactory.add": function (args) {
+      if (+args[0] < 0) return "";
+      return (
+        objButtons.money(objChipFactory.cost) ||
+        objButtons.steel(objChipFactory.steelNeeded)
+      );
+    },
+    "objDatacenter.add": function () {
+      return (
+        objButtons.money(objDatacenter.price) ||
+        objButtons.chips(objDatacenter.chipsNeeded)
+      );
+    },
+    "objIsotopeLab.add": function () {
+      return (
+        objButtons.money(objIsotopeLab.price) ||
+        objButtons.steel(objIsotopeLab.steelNeeded) ||
+        objButtons.pcb(objIsotopeLab.pcbNeeded) ||
+        objButtons.gold(objIsotopeLab.goldNeeded)
+      );
+    },
+    "objFusion.add": function () {
+      return (
+        objButtons.money(objFusion.price) ||
+        objButtons.steel(objFusion.steelNeeded) ||
+        objButtons.chips(objFusion.chipsNeeded)
+      );
+    },
+    "objFuelCellFactory.addFactory": function (args) {
+      return +args[0] == 1 ? objButtons.money(objFuelCellFactory.cost) : "";
+    },
+    "objFuelRod.sellWaste": function () {
+      return objButtons.money(+objFuelRod.waste * +objFuelRod.wastePrice);
+    },
+    "objNuclearPowerPlant.buildPlant": function () {
+      return (
+        objButtons.steel(objNuclearPowerPlant.plantSteelNeeded) ||
+        objButtons.money(objNuclearPowerPlant.plantCost)
+      );
+    },
+    "objNuclearPowerPlant.buildReactor": function () {
+      return (
+        objButtons.steel(objNuclearPowerPlant.reactorSteelNeeded) ||
+        objButtons.money(objNuclearPowerPlant.reactorCost) ||
+        (+objNuclearPowerPlant.reactors >=
+        +objNuclearPowerPlant.amount * +objNuclearPowerPlant.plantReactorCap
+          ? "Geen ruimte in een kerncentrale"
+          : "")
+      );
+    },
+    "objNuclearPowerPlant.addControl": function () {
+      return (
+        objButtons.pcb(objNuclearPowerPlant.controlPCB) ||
+        objButtons.gold(objNuclearPowerPlant.controlGold)
+      );
+    },
+    "objMarket.buy": function (args) {
+      var cost = {
+        eggs: +objEgg.price * 1.5,
+        steel: +objSteel.price * 1.25,
+        used_fuelrod: +objFuelRod.wastePrice * 0.5,
+      }[args[0]];
+      return objButtons.money(+cost * +args[1]);
+    },
+  },
+  // Bulkknoppen (+10, Max) volgen de gewone bouwknop: grijs als er niet één bij kan
+  bulk: {
+    iron: "objMines.addMine(1, 1)",
+    coal: "objMines.addMine(2, 1)",
+    uranium: "objMines.addMine(3, 1)",
+    copper: "objMines.addMine(4, 1)",
+    gold: "objMines.addMine(5, 1)",
+    diamond: "objMines.addMine(6, 1)",
+    coalPlant: "objCoalPowerPlant.add()",
+    nuclearPlant: "objNuclearPowerPlant.buildPlant()",
+    reactor: "objNuclearPowerPlant.buildReactor()",
+    smelter: "objIronMelter.add(1)",
+    copperSmelter: "objCopperSmelter.add(1)",
+    electronics: "objElectronics.add(1)",
+    solar: "objSolar.add()",
+    goldRefinery: "objGoldRefinery.add(1)",
+    diamondCutter: "objDiamondCutter.add(1)",
+    chipFactory: "objChipFactory.add(1)",
+    isotopeLab: "objIsotopeLab.add()",
+    datacenter: "objDatacenter.add()",
+    fusion: "objFusion.add()",
+    reactorControl: "objNuclearPowerPlant.addControl()",
+  },
+  // Opslag kopen: objX.addSilo() / objX.addStorage() kost objX.storagePrice
+  storage: /^(obj\w+)\.(addSilo|addStorage)$/,
+  reason: function (code) {
+    var call = /^\s*([\w.]+)\((.*)\)/.exec(code || "");
+    if (!call) return "";
+    var args = call[2].split(",").map(function (arg) {
+      return arg.trim().replace(/^["']|["']$/g, "");
+    });
+    var rule = objButtons.rules[call[1]];
+    if (rule) return rule(args);
+    var storage = objButtons.storage.exec(call[1]);
+    if (storage && window[storage[1]])
+      return objButtons.money(window[storage[1]].storagePrice);
+    return "";
+  },
+  update: function () {
+    document
+      .querySelectorAll("button[onclick], button[data-bulk]")
+      .forEach(function (button) {
+        var code = button.dataset.bulk
+          ? objButtons.bulk[button.dataset.bulk.replace(/-(10|max)$/, "")]
+          : button.getAttribute("onclick");
+        var reason = objButtons.reason(code);
+        if (
+          button.classList.contains("btn-blocked") === !!reason &&
+          (button.dataset.blocked || "") === reason
+        )
+          return;
+        button.classList.toggle("btn-blocked", !!reason);
+        if (reason) {
+          button.setAttribute("aria-disabled", "true");
+          button.dataset.blocked = reason;
+          button.title = reason;
+        } else {
+          button.removeAttribute("aria-disabled");
+          delete button.dataset.blocked;
+          button.removeAttribute("title");
+        }
+      });
+  },
+  init: function () {
+    // Een grijze knop doet niets (ook niet met het toetsenbord); na iedere klik bijwerken
+    document.addEventListener(
+      "click",
+      function (event) {
+        var button =
+          event.target.closest && event.target.closest(".btn-blocked");
+        if (button) {
+          event.stopPropagation();
+          event.preventDefault();
+        }
+      },
+      true
+    );
+    document.addEventListener("click", objButtons.update);
+    objButtons.update();
+  },
+};
+
 // Inkopen resources
 var objMarket = {
   marketState: 0,
@@ -11956,4 +12305,5 @@ var loopsProduction = setInterval(function () {
     if (objFuelCellFactory.amount > 0) objFuelCellFactory.produce();
     objStats.tick();
   }
+  objButtons.update();
 }, 1000);

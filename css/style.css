@@ -337,7 +337,7 @@ kbd2 {
     border-color: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled):not(.btn-blocked) {
     border-color: var(--accent);
 }
 
@@ -348,9 +348,9 @@ kbd2 {
     color: var(--on-accent);
 }
 
-.btn-success:hover:not(:disabled),
-.btn-dark:hover:not(:disabled),
-.btn-outline-success:hover:not(:disabled) {
+.btn-success:hover:not(:disabled):not(.btn-blocked),
+.btn-dark:hover:not(:disabled):not(.btn-blocked),
+.btn-outline-success:hover:not(:disabled):not(.btn-blocked) {
     background: var(--accent-hover);
 }
 
@@ -362,13 +362,14 @@ kbd2 {
     border-color: color-mix(in srgb, var(--danger) 45%, transparent);
 }
 
-.btn-danger:hover:not(:disabled),
-.btn-warning:hover:not(:disabled),
-.btn-outline-danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled):not(.btn-blocked),
+.btn-warning:hover:not(:disabled):not(.btn-blocked),
+.btn-outline-danger:hover:not(:disabled):not(.btn-blocked) {
     background: var(--danger-soft);
 }
 
-.btn:disabled {
+.btn:disabled,
+.btn.btn-blocked {
     opacity: 0.45;
     cursor: not-allowed;
 }

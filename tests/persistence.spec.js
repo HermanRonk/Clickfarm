@@ -39,7 +39,8 @@ test.describe("Voortgang", () => {
     await reload(page);
     await expect(page.locator("#GRButton")).toBeDisabled();
     await tick(page, 40);
-    await expect(page.locator("#GRButton")).toBeEnabled();
+    // Klaar: niet meer uitgeschakeld, alleen grijs zolang het geld voor de volgende stap ontbreekt
+    await expect(page.locator("#GRButton")).not.toHaveAttribute("disabled", "");
     expect(await game(page, () => objFarmland.harvest)).toBe(110);
     expect(await game(page, () => objFarmland.GrainResearchLevel)).toBe(2);
   });
