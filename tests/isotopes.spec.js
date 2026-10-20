@@ -43,7 +43,8 @@ test.describe("Beta: isotopenlab (#118)", () => {
     ).toEqual([1, 1e14 - 5e11, 4000000, 500, 10]);
     expect(await val(page, () => +objIsotopeLab.price)).toBeCloseTo(5e11 * 1.05, 0);
     // Te weinig printplaten voor een tweede lab
-    await page.locator("#buyIsotopeLab").click();
+    await expect(page.locator("#buyIsotopeLab")).toHaveAttribute("title", "Niet genoeg printplaten");
+    await page.locator("#buyIsotopeLab").click({ force: true });
     expect(await val(page, () => +objIsotopeLab.amount)).toBe(1);
 
     await page.locator("#sellIsotopeLab").click();

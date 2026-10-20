@@ -19,7 +19,8 @@ test.describe("Exploits (2b48be9)", () => {
 
   test("steenkool kopen kan niet zonder genoeg geld", async ({ page }) => {
     await startGame(page, { state: miningUnlocked({ Money: 100000, coalAmount: 0 }) });
-    await page.getByRole("button", { name: "Koop 50.000 ton steenkool" }).click();
+    await expect(page.getByRole("button", { name: "Koop 50.000 ton steenkool" })).toBeDisabled();
+    await game(page, () => objCoal.buy(50000));
     await expect(page.locator("#notif")).toContainText("Niet genoeg doekoe!");
     expect(await game(page, () => +objCoal.amount)).toBe(0);
     expect(await game(page, () => objMoney.amount)).toBe(100000);

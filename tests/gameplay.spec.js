@@ -57,8 +57,10 @@ test.describe("Landbouw (level 1)", () => {
 
   test("zonder genoeg geld gebeurt er niets", async ({ page }) => {
     await startGame(page, { state: { Money: 5 } });
-    await button(page, "Koop landbouwgrond").click();
-    await button(page, "Koop graansilo").click();
+    await expect(button(page, "Koop landbouwgrond")).toBeDisabled();
+    await expect(button(page, "Koop graansilo")).toBeDisabled();
+    await button(page, "Koop landbouwgrond").click({ force: true });
+    await button(page, "Koop graansilo").click({ force: true });
     expect(await game(page, () => objFarmland.amount)).toBe(1);
     expect(await game(page, () => +objGrainSilo.amount)).toBe(1);
     expect(await game(page, () => objMoney.amount)).toBe(5);

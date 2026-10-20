@@ -234,7 +234,12 @@ test.describe("Beta: koper (level 12)", () => {
     expect(s.steel).toBe(5000);
     expect(await game(page, () => +objMoney.amount)).toBe(1e11 - 150000000);
 
-    await page.locator("#copperMineButton").click();
+    // Te weinig staal: de knop is grijs en doet niets
+    await expect(page.locator("#copperMineButton")).toBeDisabled();
+    await expect(page.locator("#copperMineButton")).toHaveAttribute("title", "Niet genoeg staal");
+    await page.locator("#copperMineButton").click({ force: true });
+    expect((await state(page)).mines).toBe(1);
+    await game(page, () => objMines.addMine(4, 1));
     expect((await state(page)).mines).toBe(1);
     await expect(page.locator("#notif")).toContainText("Niet genoeg staal");
   });
@@ -629,7 +634,8 @@ test.describe("Beta: level 13 (#71-#74)", () => {
 
   test("#72 zonder 5.000 printplaten geen besturing", async ({ page }) => {
     await startGame(page, { beta: true, state: smelters({ pcbAmount: 4999 }) });
-    await page.locator("#addSmelterControl").click();
+    await expect(page.locator("#addSmelterControl")).toHaveAttribute("title", "Niet genoeg printplaten");
+    await game(page, () => objIronMelter.addControl());
     expect(await val(page, () => [+objIronMelter.controlled, +objPCB.amount])).toEqual([0, 4999]);
     await expect(page.locator("#notif")).toContainText("Niet genoeg printplaten");
   });
@@ -645,7 +651,9 @@ test.describe("Beta: level 13 (#71-#74)", () => {
 
   test("#72 met alle hoogovens bestuurd geeft Maak staal een melding", async ({ page }) => {
     await startGame(page, { beta: true, state: smelters({ smelterControls: 2, EnergyAvailable: 0 }) });
-    await page.locator("#makeSteelButton").click();
+    await expect(page.locator("#makeSteelButton")).toBeDisabled();
+    await expect(page.locator("#makeSteelButton")).toHaveAttribute("title", /Al je hoogovens hebben besturing/);
+    await game(page, () => objIronMelter.produce());
     expect(await val(page, () => +objSteel.amount)).toBe(900000);
     await expect(page.locator("#notif")).toContainText("Al je hoogovens hebben besturing");
   });
@@ -714,7 +722,8 @@ test.describe("Beta: level 13 (#71-#74)", () => {
 
   test("#74 zonder printplaten geen zonnepark", async ({ page }) => {
     await startGame(page, { beta: true, state: l13({ pcbAmount: 999 }) });
-    await page.locator("#buySolar").click();
+    await expect(page.locator("#buySolar")).toHaveAttribute("title", "Niet genoeg printplaten");
+    await game(page, () => objSolar.add());
     expect(await val(page, () => +objSolar.amount)).toBe(0);
     await expect(page.locator("#notif")).toContainText("Niet genoeg printplaten");
   });
@@ -1340,7 +1349,8 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
 
   test("#81 zonder chips geen fusiecentrale", async ({ page }) => {
     await startGame(page, { beta: true, state: l16({ chipsAmount: 1999 }) });
-    await page.locator("#buyFusion").click();
+    await expect(page.locator("#buyFusion")).toHaveAttribute("title", "Niet genoeg chips");
+    await game(page, () => objFusion.add());
     expect(await val(page, () => +objFusion.amount)).toBe(0);
     await expect(page.locator("#notif")).toContainText("Niet genoeg chips");
   });
