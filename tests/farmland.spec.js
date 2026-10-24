@@ -7,12 +7,6 @@ const farm = { Farmland: 12, Harvest: 100, FarmlandCost: 500, Money: 1e6 };
 const card = "#landbouw-col";
 
 test.describe("Landbouw: opbrengst per ronde (#123)", () => {
-  test("het gewone spel toont alleen de opbrengst per veld", async ({ page }) => {
-    await startGame(page, { state: farm });
-    await expect(stat(page, card, "Opbrengst per veld")).toHaveText("100 kg");
-    await expect(page.locator(card)).not.toContainText("Opbrengst per ronde");
-  });
-
   test("de beta telt alle velden samen en rekent de waarde uit", async ({ page }) => {
     await startGame(page, { beta: true, state: farm });
     await expect(stat(page, card, "Opbrengst per ronde")).toHaveText("1.200 kg");

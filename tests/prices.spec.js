@@ -23,14 +23,6 @@ const setPrices = (page, oil, grain, flour) =>
 const trend = (page, scope) => page.locator(scope).locator(".trend");
 
 test.describe("Prijstrend (#122)", () => {
-  test("het gewone spel toont geen driehoekjes", async ({ page }) => {
-    await startGame(page, { state });
-    await setPrices(page, 10, 100, 200);
-    await setPrices(page, 15, 50, 200);
-    await tick(page, 1);
-    await expect(page.locator(".trend")).toHaveCount(0);
-  });
-
   test("direct na het laden staat er nog geen driehoekje bij graan en bloem", async ({ page }) => {
     await startGame(page, { beta: true, state });
     await expect(trend(page, "#GrainPrice")).toHaveCount(0);

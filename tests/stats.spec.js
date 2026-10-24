@@ -13,14 +13,6 @@ const statKeys = (page) =>
   game(page, () => Object.keys(localStorage).filter((key) => /(^|:)stats/.test(key)));
 
 test.describe("Statistieken", () => {
-  test("het gewone spel houdt geen statistieken bij en heeft geen menuknop", async ({ page }) => {
-    await startGame(page, { state: oil });
-    await tick(page, 120);
-    expect(await statKeys(page)).toEqual([]);
-    await page.locator("#navbarOptionDropdown").click();
-    await expect(page.locator("#statsBTN")).toBeHidden();
-  });
-
   test("de beta maakt iedere minuut speeltijd een meetpunt, niet tijdens pauze", async ({ page }) => {
     await startGame(page, { beta: true, state: oil });
     await tick(page, 59);

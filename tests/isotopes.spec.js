@@ -20,13 +20,6 @@ const l16 = (extra = {}) => ({
 const val = (page, fn) => game(page, fn);
 
 test.describe("Beta: isotopenlab (#118)", () => {
-  test("in het gewone spel en op level 15 bestaat het lab niet", async ({ page }) => {
-    await startGame(page, { state: l16({ pcbAmount: 2000, goldAmount: 50 }) });
-    await game(page, () => objIsotopeLab.add());
-    expect(await val(page, () => +objIsotopeLab.amount)).toBe(0);
-    expect(await game(page, () => document.getElementById("isotopen-row").checkVisibility())).toBe(false);
-  });
-
   test("beta op level 15: nog geen lab", async ({ page }) => {
     await startGame(page, { beta: true, state: l16({ PlayerLevel: 15, NextLevel: threshold(13) * 25, pcbAmount: 2000, goldAmount: 50 }) });
     await game(page, () => objIsotopeLab.add());

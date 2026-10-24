@@ -80,7 +80,7 @@ test.describe("Opmaak", () => {
   });
 
   test("lege kolommen nemen geen ruimte in", async ({ page }) => {
-    await startGame(page, { state: { PlayerLevel: 12, NextLevel: threshold(12), Rlevel: 4 } });
+    await startGame(page, { state: { PlayerLevel: 11, NextLevel: threshold(11), Rlevel: 4 } });
     for (const id of ["Gold-col", "Diamond-col", "Copper-col"]) {
       expect(await isShown(page, id), id).toBe(false);
     }

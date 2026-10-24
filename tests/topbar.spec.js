@@ -36,12 +36,6 @@ test.describe("Bovenbalk (#124)", () => {
     });
   }
 
-  test("het gewone spel toont volledige getallen en heeft geen keuze", async ({ page }) => {
-    await startGame(page, { state: rich() });
-    await expect(page.locator("#MoneyTop kbd2")).toHaveText("€ 1.234.567.890.123,45");
-    await expect(page.locator("#shortNumbersBTN")).toBeHidden();
-  });
-
   test("de beta toont korte getallen, met de volledige waarde als tooltip", async ({ page }) => {
     await startGame(page, { beta: true, state: rich() });
     await expect(page.locator("#MoneyTop kbd2")).toHaveText("€ 1,23 bln");

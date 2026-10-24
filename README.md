@@ -1,5 +1,5 @@
 # Clickfarm
-Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je begint met één veld graan en bouwt via molens, kippen, pasta, olie, staal en kernenergie een industrieel imperium op. In de beta loopt het door tot koper, elektronica, goud, diamant, een datacenter dat de munt AICoin oplevert en een isotopenlab dat uranium nuttig houdt.
+Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je begint met één veld graan en bouwt via molens, kippen, pasta, olie, staal en kernenergie een industrieel imperium op, door tot koper, elektronica, goud, diamant, een datacenter dat de munt AICoin oplevert en een isotopenlab dat uranium nuttig houdt.
 
 **Spelen:** [clickfarm.nl](https://clickfarm.nl) · **Nieuwste onderdelen uitproberen:** [clickfarm.nl/beta](https://clickfarm.nl/beta/) · **Spelinformatie:** [clickfarm.nl/info.html](https://clickfarm.nl/info.html)
 
@@ -7,7 +7,7 @@ Geen account en geen advertenties: je spel staat in je eigen browser. Op clickfa
 
 ![Clickfarm op level 10: financiën, voorraden, energie, landbouw, molens en olie](docs/screenshots/overzicht.jpg)
 
-![De productieketen in de beta: lijnen tonen hoe grondstoffen tussen mijnen, hoogovens en staal stromen](docs/screenshots/productieketen.jpg)
+![De productieketen: lijnen tonen hoe grondstoffen tussen mijnen, hoogovens en staal stromen](docs/screenshots/productieketen.jpg)
 
 # Hoe is het begonnen
 Ik wilde graag weten hoe ver ik zou komen als ik zelf iets in HTML/CSS/Javascript zou schrijven, en dat pakte uiteindelijk iets uitgebreider uit dan ik verwacht had moet ik zeggen.
@@ -19,8 +19,7 @@ Het spel is open source. Bijdragen, bugmeldingen en ideeën zijn welkom via de [
 # Wat moet er gebeuren
 De actuele lijst staat in de [issues](https://github.com/HermanRonk/Clickfarm/issues). De grote lijnen:
 
-- de beta (level 12 tot en met 16) testen met spelers en daarna naar het gewone spel brengen (#84);
-- de resterende mijnen (#48) zijn in de beta gebouwd en gaan mee met #84;
+- nieuwe onderdelen eerst in de beta testen met spelers;
 - bugfixing en documentatie;
 - de startcapaciteit van de olieopslag is te groot.
 
@@ -36,8 +35,9 @@ Nieuwe onderdelen en balanswijzigingen komen eerst in de beta (`/beta/`, via *Ga
 
 - De beta bewaart zijn spel los van het gewone spel: alle sleutels krijgen `beta:` ervoor (`store` in `inc/base.js`). Een reset of save-code raakt alleen het eigen spel.
 - Op de keuzepagina neem je je huidige spel mee (een kopie) of begin je opnieuw.
-- Statistieken voor de speler (`objStats`, *Game opties → Statistieken*) staan alleen in de beta aan. Ze bewaren speeltijd, mijlpalen, totale productie en een geschiedenis met een vaste omvang (per minuut voor 1 uur, per kwartier voor 24 uur, en "alles" in maximaal 120 punten die worden samengevoegd). Samen zijn dat hooguit zo'n 20 kB in `localStorage` (sleutels `statsPlay`, `statsTotals`, `statsLevels` en `statsHistory`), en ze gaan mee in de save-code.
-- Wijzigingen staan achter `if (BETA)`. Gaat een wijziging naar het gewone spel, dan haal je die voorwaarde weg.
+- Statistieken voor de speler (`objStats`, *Game opties → Statistieken*) bewaren speeltijd, mijlpalen, totale productie en een geschiedenis met een vaste omvang (per minuut voor 1 uur, per kwartier voor 24 uur, en "alles" in maximaal 120 punten die worden samengevoegd). Samen zijn dat hooguit zo'n 20 kB in `localStorage` (sleutels `statsPlay`, `statsTotals`, `statsLevels` en `statsHistory`), en ze gaan mee in de save-code.
+- Wijzigingen staan achter `if (BETA)`. Gaat een wijziging naar het gewone spel, dan haal je die voorwaarde weg. Op 24 oktober 2026 is alles uit de beta (level 12 tot en met 16 en de balanswijzigingen) naar het gewone spel gegaan (#84); er staat nu niets achter `BETA` behalve de eigen save en het label.
+- Een beta-spel neem je mee naar het gewone spel met de save-code: exporteren in de beta, importeren in het gewone spel.
 
 De bestanden:
 

@@ -9,11 +9,6 @@ const value = (page) => stat(page, "#GrainAmount", "Voorraad").locator(".stock-l
 const color = (locator) => locator.evaluate((el) => getComputedStyle(el).color);
 
 test.describe("Voorraadkleuren", () => {
-  test("het gewone spel kleurt niets", async ({ page }) => {
-    await startGame(page, { state: grain(5000) });
-    await expect(page.locator(".stock-level")).toHaveCount(0);
-  });
-
   test("leeg is groen, half vol oranje en vol rood", async ({ page }) => {
     await startGame(page, { beta: true, state: grain(0) });
     await expect(value(page)).toHaveAttribute("style", /var\(--stock-mid\) 0%, var\(--stock-empty\)/);

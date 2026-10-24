@@ -464,12 +464,6 @@ test.describe("Energie wordt bewaard als de opslag vol raakt (#110)", () => {
     expect(await game(page, () => +objEnergy.available)).toBe(available);
   });
 
-  test("in het gewone spel geen opslagknoppen van +100.000 en +1.000.000", async ({ page }) => {
-    await startGame(page, { state: { PlayerLevel: 16, NextLevel: threshold(13) * 125, Rlevel: 4 } });
-    await expect(page.locator("#capaButton100k")).toBeHidden();
-    await expect(page.locator("#capaButton1m")).toBeHidden();
-  });
-
   test("de save-code bevat de actuele energie", async ({ page }) => {
     await startGame(page, { state: nuclearFull() });
     await tick(page, 1);

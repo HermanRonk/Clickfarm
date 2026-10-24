@@ -23,8 +23,8 @@ test.describe("Spelinformatie", () => {
   test("levels zijn standaard ingeklapt en verklappen in de titel niets", async ({ page }) => {
     await page.goto("/info.html");
     const levels = page.locator("details[id^='level-']");
-    await expect(levels).toHaveCount(12);
-    for (let i = 0; i < 12; i++) {
+    await expect(levels).toHaveCount(16);
+    for (let i = 0; i < 16; i++) {
       await expect(levels.nth(i)).not.toHaveAttribute("open", /.*/);
       await expect(levels.nth(i).locator("summary")).toHaveText(`Level ${i + 1}`);
     }
@@ -56,11 +56,20 @@ test.describe("Spelinformatie", () => {
     expect(external).toEqual([]);
   });
 
-  test("legt het pauzeren uit, met een link naar de beta", async ({ page }) => {
+  test("legt het pauzeren uit", async ({ page }) => {
     await page.goto("/info.html");
     const item = page.locator(".info li", { hasText: "Pauzeren" });
     await expect(item).toContainText("gebruikt geen energie");
     await expect(item).toContainText("Pomp olie");
-    await expect(item.getByRole("link", { name: "beta" })).toHaveAttribute("href", "/beta/");
+  });
+
+  test("drempels na level 12 worden iedere keer 5 keer zo hoog", async ({ page }) => {
+    await page.goto("/info.html");
+    let threshold = LEVELS.find((l) => l.level === 12).threshold;
+    for (let level = 13; level <= 16; level++) {
+      threshold *= 5;
+      const text = await page.locator(`#level-${level}`).textContent();
+      expect(text, `level ${level}`).toContain(`Volgend level bij ${euro(threshold)}`);
+    }
   });
 });
