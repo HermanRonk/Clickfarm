@@ -1,4 +1,4 @@
-FROM nginxinc/nginx-unprivileged:1.31.6-alpine
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine
 LABEL authors="Herman Ronk"
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
