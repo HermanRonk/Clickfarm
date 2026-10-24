@@ -190,6 +190,7 @@ window.onload = function () {
   turnAutoClose(0);
   turnShortNumbers(0);
   turnDebug(0);
+  restorePause();
   // Initialiseren overige gegevens en display
   showPrice();
   objButtons.init();
@@ -12171,15 +12172,31 @@ var generateWeighedList = function (list, weight) {
   return weighed_list;
 };
 
-// Pauzeer functie
+// Pauzeer functie. De pauze wordt bewaard en gaat mee in de save-code (#132): na herladen
+// of importeren staat het spel nog steeds stil.
 function changeState() {
-  var elpauseBTN = document.getElementById("pauseBTN");
-  if (paused === 0) {
-    elpauseBTN.innerHTML = icon("play") + " Continueer spel";
-    paused = 1;
-  } else {
-    elpauseBTN.innerHTML = icon("pause") + " Pauzeer spel";
-    paused = 0;
+  paused = paused === 0 ? 1 : 0;
+  store.setItem("gamePaused", paused);
+  showPauseButton();
+}
+
+function showPauseButton() {
+  document.getElementById("pauseBTN").innerHTML =
+    paused === 1
+      ? icon("play") + " Continueer spel"
+      : icon("pause") + " Pauzeer spel";
+}
+
+// Bij het laden: stond het spel op pauze, dan blijft dat zo
+function restorePause() {
+  paused = store.getItem("gamePaused") === "1" ? 1 : 0;
+  showPauseButton();
+  if (paused === 1) {
+    notificationOverlay(
+      "Het spel staat op pauze. Hervat via Game opties → Continueer spel.",
+      "Pauze",
+      "fa-info"
+    );
   }
 }
 
