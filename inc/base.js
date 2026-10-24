@@ -8,6 +8,8 @@ var BETA = /^\/beta\//.test(location.pathname);
 // in het gewone spel raakt de beta niet, en andersom.
 var store = {
   prefix: BETA ? "beta:" : "",
+  // Tijdens het herladen na een import of reset schrijft het oude spel niets meer weg (#131)
+  locked: false,
   own: function (fullKey) {
     var isBeta = fullKey.indexOf("beta:") === 0;
     return BETA ? isBeta : !isBeta;
@@ -16,9 +18,11 @@ var store = {
     return localStorage.getItem(store.prefix + key);
   },
   setItem: function (key, value) {
+    if (store.locked) return;
     localStorage.setItem(store.prefix + key, value);
   },
   removeItem: function (key) {
+    if (store.locked) return;
     localStorage.removeItem(store.prefix + key);
   },
   keys: function () {
@@ -3760,8 +3764,16 @@ function resetGame() {
   ) {
     return;
   }
-  objStats.stop();
   store.clear();
+  reloadFresh();
+}
+
+// Herladen met wat er nu in de opslag staat: de hoofdloop stopt en het oude spel schrijft
+// niets meer weg, ook niet in de tick die nog kan vallen voordat de pagina echt herlaadt (#131)
+function reloadFresh() {
+  clearInterval(loopsProduction);
+  objStats.stop();
+  store.locked = true;
   location.reload();
 }
 
@@ -11419,7 +11431,7 @@ function getSaveGame(code) {
       store.setItem(item.slice(0, split), item.slice(split + 1));
     }
   });
-  location.reload();
+  reloadFresh();
 }
 
 // Marktvoorraad (voorheen centraal in de database, nu gesimuleerd)
@@ -11982,7 +11994,7 @@ function turnShortNumbers(input) {
   if (input) {
     store.setItem("shortNumbers", shortNumbers ? "0" : "1");
     // Alles opnieuw tekenen gaat het eenvoudigst via herladen; de voortgang staat al in de opslag
-    location.reload();
+    reloadFresh();
     return;
   }
   btn.innerHTML =
