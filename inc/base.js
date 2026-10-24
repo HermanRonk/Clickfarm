@@ -2357,7 +2357,9 @@ function renderStats(rows) {
     rows
       .filter(Boolean)
       .map(function (row) {
-        return "<dt>" + row[0] + "</dt><dd>" + row[1] + "</dd>";
+        // Gewone tekst als tooltip, voor als de omschrijving wordt afgekapt (#133)
+        var title = /[<>"]/.test(row[0]) ? "" : ' title="' + row[0] + '"';
+        return "<dt" + title + ">" + row[0] + "</dt><dd>" + row[1] + "</dd>";
       })
       .join("") +
     "</dl>"
