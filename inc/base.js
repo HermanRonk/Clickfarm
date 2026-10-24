@@ -11407,6 +11407,41 @@ async function saveFixed() {
   }
 }
 
+// Save als bestand downloaden (#135): handig voor wie in een privévenster speelt of zijn
+// browsergegevens wist. Het bestand bevat dezelfde save-code als Exporteer save-code.
+function downloadSave() {
+  const date = new Date().toISOString().slice(0, 10);
+  const name =
+    "clickfarm-" +
+    (BETA ? "beta-" : "") +
+    "level-" +
+    objPlayerInfo.level +
+    "-" +
+    date +
+    ".txt";
+  const url = URL.createObjectURL(
+    new Blob([saveProgress()], { type: "text/plain" })
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  notificationOverlay("Save gedownload: " + name, "Savegame", "fa-upload");
+}
+
+// Save-code uit een bestand importeren (#135)
+function importSaveFile(input) {
+  const file = input.files && input.files[0];
+  input.value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => getSaveGame(String(reader.result).trim());
+  reader.readAsText(file);
+}
+
 // Savegame-code importeren
 function importFile() {
   const code = prompt("Voer de geëxporteerde save-code in:");

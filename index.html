@@ -76,7 +76,10 @@
                 <button id="debugBTN" onclick="turnDebug(1)" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-square"></use></svg> Zet debug aan</button>
                 <hr>
                 <button onclick="saveFixed()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg> Exporteer save-code</button>
+                <button onclick="downloadSave()" class="dropdown-item" id="downloadSaveBTN"><svg class="icon" aria-hidden="true"><use href="#i-upload"></use></svg> Download save</button>
                 <button onclick="importFile()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Importeer save-code</button>
+                <button onclick="document.getElementById('saveFileInput').click()" class="dropdown-item" id="importSaveFileBTN"><svg class="icon" aria-hidden="true"><use href="#i-download"></use></svg> Importeer uit bestand</button>
+                <input type="file" id="saveFileInput" accept=".txt,text/plain" hidden onchange="importSaveFile(this)">
                 <hr>
                 <button onclick="resetGame()" class="dropdown-item"><svg class="icon" aria-hidden="true"><use href="#i-power-off"></use></svg> Reset Game</button>
                 <hr>
