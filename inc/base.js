@@ -1,5 +1,7 @@
 // Beta: dezelfde code, maar met de wijzigingen die eerst getest worden (zie /beta/).
 // De beta bewaart zijn spel los van het gewone spel, met "beta:" voor iedere sleutel.
+// Nieuwe onderdelen zet je achter `if (BETA)`; bij het overzetten naar het gewone spel
+// verdwijnen die controles weer.
 var BETA = /^\/beta\//.test(location.pathname);
 
 // Opslag van het spel. Alleen de eigen sleutels tellen mee: een reset of save-code
@@ -35,9 +37,9 @@ var store = {
   },
 };
 
-// Korte getallen (beta, #124): vanaf 1 miljoen "1,23 mln" in plaats van "1.234.567".
+// Korte getallen (#124): vanaf 1 miljoen "1,23 mln" in plaats van "1.234.567".
 // Standaard aan; de volledige waarde in de bovenbalk staat in de tooltip.
-var shortNumbers = BETA && store.getItem("shortNumbers") !== "0";
+var shortNumbers = store.getItem("shortNumbers") !== "0";
 
 var spend = parseInt(store.getItem("spend")) || 10;
 var made = parseInt(store.getItem("made")) || 0;
@@ -321,9 +323,7 @@ var helpTexts = {
   ],
   WindmillController: [
     "Windmolencontrollers",
-    BETA
-      ? "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per maalrun van 10 ticks (0,8 per tick)."
-      : "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per tick.",
+    "Een controller laat één windmolen automatisch malen zolang er graan en energie is. Iedere controller gebruikt 8 energie per maalrun van 10 ticks (0,8 per tick).",
   ],
   "olie-col": [
     "Olie",
@@ -367,9 +367,7 @@ var helpTexts = {
   ],
   "Prospecting-col": [
     "Prospecting",
-    BETA
-      ? "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12, goudmijnen vanaf level 14 en diamantmijnen vanaf level 15."
-      : "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Steenkool vind je het vaakst, goud en diamant het minst. Koper-, goud- en diamantmijnen kun je nog niet bouwen.",
+    "Een zoektocht duurt 15 seconden en vindt een willekeurige mijnlocatie. Hij kost € 10 miljoen op level 8, € 25 miljoen op level 9 en daarna € 50 miljoen. Steenkool vind je het vaakst, goud en diamant het minst. Kopermijnen bouw je vanaf level 12, goudmijnen vanaf level 14 en diamantmijnen vanaf level 15.",
   ],
   "MiningSites-col": [
     "Mijnlocaties",
@@ -393,15 +391,11 @@ var helpTexts = {
   ],
   "Uranium-col": [
     "Uranium",
-    BETA
-      ? "Een uraniummijn levert iedere 10 ticks (een dienst) 100 ton uranium voor 2.500 energie. Het personeel eet 20 dozen pasta per dienst. Uranium is de grondstof voor splijtstofstaven en, vanaf level 16, voor het isotopenlab."
-      : "Een uraniummijn levert iedere 10 ticks 100 ton uranium voor 2.500 energie. Het personeel eet pasta. Uranium is de grondstof voor splijtstofstaven.",
+    "Een uraniummijn levert iedere 10 ticks (een dienst) 100 ton uranium voor 2.500 energie. Het personeel eet 20 dozen pasta per dienst. Uranium is de grondstof voor splijtstofstaven en, vanaf level 16, voor het isotopenlab.",
   ],
   fuelRodFactory: [
     "Splijtstofstaven",
-    BETA
-      ? "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium en 1.000 ton staal (bij de start van een run afgeschreven) en 150.000 energie: 1.500 per tick. Is er een tick te weinig stroom, dan wacht de fabriek. Fabrieken draaien altijd door."
-      : "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium, 1.000 ton staal en 150.000 energie; alles wordt bij de start van een run afgeschreven. Fabrieken draaien altijd door.",
+    "Een fabriek maakt in 100 ticks één splijtstofstaaf van 10.000 ton uranium en 1.000 ton staal (bij de start van een run afgeschreven) en 150.000 energie: 1.500 per tick. Is er een tick te weinig stroom, dan wacht de fabriek. Fabrieken draaien altijd door.",
   ],
   fuelRodStorage: [
     "Opslag en afval",
@@ -413,9 +407,7 @@ var helpTexts = {
   ],
   marketEggs: [
     "Markt: eieren",
-    BETA
-      ? "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht voor 50% van de normale prijs."
-      : "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht.",
+    "Op de markt koop je extra grondstoffen in; het aanbod verandert iedere 30 seconden. Eieren kosten hier 150% van de normale prijs. Wat niet in je opslag past, wordt direct weer verkocht voor 50% van de normale prijs.",
   ],
   marketSteel: [
     "Markt: staal",
@@ -427,101 +419,99 @@ var helpTexts = {
   ],
 };
 
-// Kaarten die alleen in de beta bestaan, en uitleg die in de beta verder gaat
-if (BETA) {
-  helpTexts["SteelProduction-col"] = [
-    "Hoogovens",
-    helpTexts["SteelProduction-col"][1] +
-      " Vanaf level 13 kun je een hoogoven besturing geven (5.000 printplaten): die maakt dan iedere tick zelf staal.",
-  ];
-  helpTexts["Prospecting-col"] = [
-    "Prospecting",
-    helpTexts["Prospecting-col"][1] +
-      " Vanaf level 13 zoeken seismische scanners (20.000 printplaten) vanzelf door, eventueel gericht op één grondstof.",
-  ];
-  Object.assign(helpTexts, {
-    "Copper-col": [
-      "Koper",
-      "Een kopermijn kost geld en staal. Hij levert 1.000 ton kopererts per tick voor 600 energie, en het personeel eet 1 doos pasta per 5 ticks. Is de pasta bijna op, dan gaat het personeel van de uraniummijnen voor. Kopererts wordt in de smelterij koper.",
-    ],
-    "CopperSmelter-col": [
-      "Kopersmelterij",
-      "Een smelterij maakt iedere tick 200 ton koper van 2.000 ton kopererts, 200 ton steenkool en 2.000 energie. Hij draait vanzelf zolang alles er is.",
-    ],
-    "Electronics-col": [
-      "Elektronicafabriek",
-      "Een elektronicafabriek kost geld en staal en maakt iedere tick 100 printplaten van 50 ton koper, 200 kunststof en 3.000 energie. Hij draait vanzelf zolang alles er is.",
-    ],
-    "PCB-col": [
-      "Printplaten",
-      "Printplaten zijn € 60.000 per stuk waard. Je hebt ze nodig voor hoogovenbesturing (5.000 per hoogoven), seismische scanners (20.000 per scanner) en zonneparken (1.000 per park).",
-    ],
-    solarPark: [
-      "Zonneparken",
-      "Een zonnepark kost geld, printplaten en staal en levert 3.000 energie per tick zonder brandstof. Ieder park is 3% duurder dan het vorige.",
-    ],
-    "Gold-col": [
-      "Goud",
-      "Een goudmijn kost geld en 100.000 ton staal. Hij levert 500 ton gouderts per tick voor 3.000 energie; het personeel eet 1 doos pasta per 2 ticks (het uraniumpersoneel gaat voor).",
-    ],
-    "GoldRefinery-col": [
-      "Goudraffinaderij",
-      "Een raffinaderij maakt iedere tick 5 kg goud van 2.500 ton gouderts, 500 vaten olie en 20.000 energie. Hij draait vanzelf zolang alles er is.",
-    ],
-    "GoldInfo-col": [
-      "Goud",
-      "Goud wordt in kluizen bewaard en levert € 30 miljoen per kg op. Je hebt het ook nodig voor de reactorbesturing.",
-    ],
-    "Diamond-col": [
-      "Diamant",
-      "Een diamantmijn kost geld en 200.000 ton staal. Hij levert 10 karaat ruwe diamant per tick voor 5.000 energie; het personeel eet 1 doos pasta per tick (het uraniumpersoneel gaat voor).",
-    ],
-    "DiamondCutter-col": [
-      "Slijperij",
-      "Een slijperij slijpt iedere tick 50 karaat ruwe diamant voor 25.000 energie. Daarvan wordt willekeurig 50 tot 70% edelsteen en de rest industriële diamant. Af en toe vind je een topsteen, die meteen € 5 miljard oplevert.",
-    ],
-    "DiamondInfo-col": [
-      "Diamanten",
-      "Edelstenen leveren € 6 miljoen per karaat op, industriële diamant € 500.000. Beide liggen in diamantkluizen; iedere kluis heeft ruimte voor 50.000 karaat van elke soort.",
-    ],
-    "DiamondDrill-col": [
-      "Diamantboren",
-      "Een diamantboor koop je één keer per soort mijn, met industriële diamant. Alle mijnen van die soort maken daarna 50% meer voor dezelfde energie en pasta.",
-    ],
-    "ChipFactory-col": [
-      "Chipfabriek",
-      "Een chipfabriek maakt iedere tick 5 chips van 50 printplaten, 0,2 kg goud, 1 karaat industriële diamant en 50.000 energie. Hij draait vanzelf zolang alles er is. Met 0,05 industriële isotoop per tick maakt hij 25% meer chips.",
-    ],
-    "Chips-col": [
-      "Chips",
-      "Chips zijn € 20 miljoen per stuk waard. Je hebt ze nodig voor datacenterrekken (1.000 per rek) en fusiecentrales (2.000 per centrale), en ieder rek verbruikt 0,1 chip per tick.",
-    ],
-    "Datacenter-col": [
-      "Datacenter",
-      "Een rek gebruikt 250.000 energie en 0,1 chip per tick en levert daarvoor € 1 miljard en 0,1 AICoin. De opbrengst wordt iedere 10 ticks uitbetaald. Ieder rek is 5% duurder dan het vorige.",
-    ],
-    "IsotopeLab-col": [
-      "Isotopenlab",
-      "Een lab gebruikt iedere tick 20 ton uranium en 50.000 energie. Het maakt medische isotopen, die meteen aan ziekenhuizen worden verkocht voor € 250 miljoen per lab per tick (uitbetaald iedere 10 ticks), en 0,1 industriële isotoop. Ieder lab is 5% duurder dan het vorige.",
-    ],
-    "Isotopes-col": [
-      "Industriële isotopen",
-      "Industriële isotopen komen uit het isotopenlab. Een chipfabriek die er 0,05 per tick van krijgt, maakt 25% meer chips (materiaalinspectie). Ongebruikte isotopen vervallen: na 10 minuten (600 ticks) is de helft over, en wat niet in de opslag past, is meteen verloren. Verkopen levert € 100 miljoen per stuk op.",
-    ],
-    "AICoin-col": [
-      "AICoin",
-      "AICoin komt uit het datacenter. De koers verandert bij iedere prijswissel, met uitschieters naar boven en beneden. Verkoop als de koers hoog is, of bewaar ze.",
-    ],
-    "Fusion-col": [
-      "Fusiecentrale",
-      "Een fusiecentrale kost geld, chips en staal en levert 2.000.000 energie per tick zonder brandstof. Zorg voor genoeg energieopslag. Iedere centrale is 15% duurder dan de vorige.",
-    ],
-    "CopperInfo-col": [
-      "Koper",
-      "Koper wordt in loodsen opgeslagen en levert € 40.000 per ton op. Zijn de loodsen vol, dan stoppen de smelterijen tot er weer ruimte is.",
-    ],
-  });
-}
+// Kaarten vanaf level 12, en uitleg die daarmee verder gaat
+helpTexts["SteelProduction-col"] = [
+  "Hoogovens",
+  helpTexts["SteelProduction-col"][1] +
+    " Vanaf level 13 kun je een hoogoven besturing geven (5.000 printplaten): die maakt dan iedere tick zelf staal.",
+];
+helpTexts["Prospecting-col"] = [
+  "Prospecting",
+  helpTexts["Prospecting-col"][1] +
+    " Vanaf level 13 zoeken seismische scanners (20.000 printplaten) vanzelf door, eventueel gericht op één grondstof.",
+];
+Object.assign(helpTexts, {
+  "Copper-col": [
+    "Koper",
+    "Een kopermijn kost geld en staal. Hij levert 1.000 ton kopererts per tick voor 600 energie, en het personeel eet 1 doos pasta per 5 ticks. Is de pasta bijna op, dan gaat het personeel van de uraniummijnen voor. Kopererts wordt in de smelterij koper.",
+  ],
+  "CopperSmelter-col": [
+    "Kopersmelterij",
+    "Een smelterij maakt iedere tick 200 ton koper van 2.000 ton kopererts, 200 ton steenkool en 2.000 energie. Hij draait vanzelf zolang alles er is.",
+  ],
+  "Electronics-col": [
+    "Elektronicafabriek",
+    "Een elektronicafabriek kost geld en staal en maakt iedere tick 100 printplaten van 50 ton koper, 200 kunststof en 3.000 energie. Hij draait vanzelf zolang alles er is.",
+  ],
+  "PCB-col": [
+    "Printplaten",
+    "Printplaten zijn € 60.000 per stuk waard. Je hebt ze nodig voor hoogovenbesturing (5.000 per hoogoven), seismische scanners (20.000 per scanner) en zonneparken (1.000 per park).",
+  ],
+  solarPark: [
+    "Zonneparken",
+    "Een zonnepark kost geld, printplaten en staal en levert 3.000 energie per tick zonder brandstof. Ieder park is 3% duurder dan het vorige.",
+  ],
+  "Gold-col": [
+    "Goud",
+    "Een goudmijn kost geld en 100.000 ton staal. Hij levert 500 ton gouderts per tick voor 3.000 energie; het personeel eet 1 doos pasta per 2 ticks (het uraniumpersoneel gaat voor).",
+  ],
+  "GoldRefinery-col": [
+    "Goudraffinaderij",
+    "Een raffinaderij maakt iedere tick 5 kg goud van 2.500 ton gouderts, 500 vaten olie en 20.000 energie. Hij draait vanzelf zolang alles er is.",
+  ],
+  "GoldInfo-col": [
+    "Goud",
+    "Goud wordt in kluizen bewaard en levert € 30 miljoen per kg op. Je hebt het ook nodig voor de reactorbesturing.",
+  ],
+  "Diamond-col": [
+    "Diamant",
+    "Een diamantmijn kost geld en 200.000 ton staal. Hij levert 10 karaat ruwe diamant per tick voor 5.000 energie; het personeel eet 1 doos pasta per tick (het uraniumpersoneel gaat voor).",
+  ],
+  "DiamondCutter-col": [
+    "Slijperij",
+    "Een slijperij slijpt iedere tick 50 karaat ruwe diamant voor 25.000 energie. Daarvan wordt willekeurig 50 tot 70% edelsteen en de rest industriële diamant. Af en toe vind je een topsteen, die meteen € 5 miljard oplevert.",
+  ],
+  "DiamondInfo-col": [
+    "Diamanten",
+    "Edelstenen leveren € 6 miljoen per karaat op, industriële diamant € 500.000. Beide liggen in diamantkluizen; iedere kluis heeft ruimte voor 50.000 karaat van elke soort.",
+  ],
+  "DiamondDrill-col": [
+    "Diamantboren",
+    "Een diamantboor koop je één keer per soort mijn, met industriële diamant. Alle mijnen van die soort maken daarna 50% meer voor dezelfde energie en pasta.",
+  ],
+  "ChipFactory-col": [
+    "Chipfabriek",
+    "Een chipfabriek maakt iedere tick 5 chips van 50 printplaten, 0,2 kg goud, 1 karaat industriële diamant en 50.000 energie. Hij draait vanzelf zolang alles er is. Met 0,05 industriële isotoop per tick maakt hij 25% meer chips.",
+  ],
+  "Chips-col": [
+    "Chips",
+    "Chips zijn € 20 miljoen per stuk waard. Je hebt ze nodig voor datacenterrekken (1.000 per rek) en fusiecentrales (2.000 per centrale), en ieder rek verbruikt 0,1 chip per tick.",
+  ],
+  "Datacenter-col": [
+    "Datacenter",
+    "Een rek gebruikt 250.000 energie en 0,1 chip per tick en levert daarvoor € 1 miljard en 0,1 AICoin. De opbrengst wordt iedere 10 ticks uitbetaald. Ieder rek is 5% duurder dan het vorige.",
+  ],
+  "IsotopeLab-col": [
+    "Isotopenlab",
+    "Een lab gebruikt iedere tick 20 ton uranium en 50.000 energie. Het maakt medische isotopen, die meteen aan ziekenhuizen worden verkocht voor € 250 miljoen per lab per tick (uitbetaald iedere 10 ticks), en 0,1 industriële isotoop. Ieder lab is 5% duurder dan het vorige.",
+  ],
+  "Isotopes-col": [
+    "Industriële isotopen",
+    "Industriële isotopen komen uit het isotopenlab. Een chipfabriek die er 0,05 per tick van krijgt, maakt 25% meer chips (materiaalinspectie). Ongebruikte isotopen vervallen: na 10 minuten (600 ticks) is de helft over, en wat niet in de opslag past, is meteen verloren. Verkopen levert € 100 miljoen per stuk op.",
+  ],
+  "AICoin-col": [
+    "AICoin",
+    "AICoin komt uit het datacenter. De koers verandert bij iedere prijswissel, met uitschieters naar boven en beneden. Verkoop als de koers hoog is, of bewaar ze.",
+  ],
+  "Fusion-col": [
+    "Fusiecentrale",
+    "Een fusiecentrale kost geld, chips en staal en levert 2.000.000 energie per tick zonder brandstof. Zorg voor genoeg energieopslag. Iedere centrale is 15% duurder dan de vorige.",
+  ],
+  "CopperInfo-col": [
+    "Koper",
+    "Koper wordt in loodsen opgeslagen en levert € 40.000 per ton op. Zijn de loodsen vol, dan stoppen de smelterijen tot er weer ruimte is.",
+  ],
+});
 
 // Voeg aan iedere kaart met uitleg een "?"-knop en een (verborgen) uitlegblok toe
 function initHelp() {
@@ -553,7 +543,7 @@ function initHelp() {
   });
 }
 
-// Bulk bouwen (beta): +10 en Max bouwen één voor één met de gewone bouwfunctie, tot het
+// Bulk bouwen: +10 en Max bouwen één voor één met de gewone bouwfunctie, tot het
 // aantal bereikt is of het niet meer lukt (geld, staal, locaties of ruimte op). Zo gelden alle
 // gewone regels en oplopende prijzen.
 var objBulk = {
@@ -743,7 +733,7 @@ var objBulk = {
   // Bouw er maximaal n; geeft het aantal gebouwde terug
   build: function (key, n) {
     var target = objBulk.targets[key];
-    if (!BETA || !target) return 0;
+    if (!target) return 0;
     var limit = Math.min(+n || 0, objBulk.max);
     var built = 0;
     for (var i = 0; i < limit; i++) {
@@ -761,9 +751,8 @@ var objBulk = {
     }
     return built;
   },
-  // Knoppen +10 en Max achter een gewone bouwknop (alleen in de beta)
+  // Knoppen +10 en Max achter een gewone bouwknop
   buttons: function (key) {
-    if (!BETA) return "";
     return (
       " <button type='button' class='btn btn-primary btn-bulk' onClick='objBulk.build(\"" +
       key +
@@ -789,7 +778,7 @@ var objBulk = {
   },
 };
 
-// Pauzeren per kaart (beta): een energieverbruiker even stilzetten, bijvoorbeeld om stroom
+// Pauzeren per kaart: een energieverbruiker even stilzetten, bijvoorbeeld om stroom
 // vrij te maken voor de opstart van kernenergie. Een gepauzeerde kaart gebruikt geen
 // stroom en produceert niets automatisch; handmatige knoppen blijven werken.
 var objPause = {
@@ -827,14 +816,14 @@ var objPause = {
     },
   },
   is: function (cardId) {
-    return BETA && objPause.paused.indexOf(cardId) !== -1;
+    return objPause.paused.indexOf(cardId) !== -1;
   },
   // 0 als de kaart gepauzeerd is, anders 1 (voor de piekvraag)
   factor: function (cardId) {
     return objPause.is(cardId) ? 0 : 1;
   },
   toggle: function (cardId) {
-    if (!BETA || objPause.cards.indexOf(cardId) === -1) return;
+    if (objPause.cards.indexOf(cardId) === -1) return;
     if (objPause.is(cardId)) {
       objPause.paused = objPause.paused.filter(function (id) {
         return id !== cardId;
@@ -865,7 +854,6 @@ var objPause = {
     button.title = paused ? "Hervat" : "Pauzeer";
   },
   init: function () {
-    if (!BETA) return;
     var saved = [];
     try {
       saved = JSON.parse(store.getItem("paused") || "[]");
@@ -1506,8 +1494,8 @@ var objFlows = {
       },
     ],
   ],
-  // Stromen die alleen in de beta bestaan (zie init)
-  betaEdges: [
+  // Stromen vanaf level 12 (zie init)
+  edges12: [
     [
       "Copper-col",
       "CopperSmelter-col",
@@ -1557,8 +1545,8 @@ var objFlows = {
       },
     ],
   ],
-  // Stromen van level 13 (beta): elektronica, printplaten en zonneparken
-  betaEdges13: [
+  // Stromen van level 13: elektronica, printplaten en zonneparken
+  edges13: [
     [
       "CopperInfo-col",
       "Electronics-col",
@@ -1632,8 +1620,8 @@ var objFlows = {
       },
     ],
   ],
-  // Stromen van level 14 (beta): goud en de reactorbesturing
-  betaEdges14: [
+  // Stromen van level 14: goud en de reactorbesturing
+  edges14: [
     [
       "Gold-col",
       "GoldRefinery-col",
@@ -1699,8 +1687,8 @@ var objFlows = {
       },
     ],
   ],
-  // Stromen van level 15 (beta): diamant en diamantboren
-  betaEdges15: [
+  // Stromen van level 15: diamant en diamantboren
+  edges15: [
     [
       "Diamond-col",
       "DiamondCutter-col",
@@ -1750,8 +1738,8 @@ var objFlows = {
       },
     ],
   ],
-  // Stromen van level 16 (beta): chips, datacenter, AICoin en fusie
-  betaEdges16: [
+  // Stromen van level 16: chips, datacenter, AICoin en fusie
+  edges16: [
     [
       "PCB-col",
       "ChipFactory-col",
@@ -2274,14 +2262,13 @@ var objFlows = {
     button.style.display = objFlows.canShow() ? "" : "none";
   },
   init: function () {
-    if (BETA)
-      objFlows.edges = objFlows.edges.concat(
-        objFlows.betaEdges,
-        objFlows.betaEdges13,
-        objFlows.betaEdges14,
-        objFlows.betaEdges15,
-        objFlows.betaEdges16
-      );
+    objFlows.edges = objFlows.edges.concat(
+      objFlows.edges12,
+      objFlows.edges13,
+      objFlows.edges14,
+      objFlows.edges15,
+      objFlows.edges16
+    );
     objFlows.enabled = store.getItem("showFlows") !== "0";
     // Bliksempoortjes op energieverbruikers
     Object.keys(objFlows.energyUsers).forEach(function (cardId) {
@@ -2377,10 +2364,9 @@ function renderStats(rows) {
   );
 }
 
-// Voorraadwaarde met een kleur naar hoe vol de opslag is (beta): groen als hij leeg is,
-// oranje half vol en rood vol. Zonder beta alleen de tekst.
+// Voorraadwaarde met een kleur naar hoe vol de opslag is: groen als hij leeg is,
+// oranje half vol en rood vol.
 function renderStock(valueText, percentage) {
-  if (!BETA) return valueText;
   var p = Math.round(Math.max(0, Math.min(100, +percentage || 0)));
   var color =
     p <= 50
@@ -2458,10 +2444,10 @@ function renderResource(o) {
   );
 }
 
-// Driehoekje met de richting van een marktprijs sinds de vorige prijswissel (beta, #122):
+// Driehoekje met de richting van een marktprijs sinds de vorige prijswissel (#122):
 // groen omhoog, rood omlaag, geel gelijk. Zonder vorige prijs (net geladen) niets.
 function renderTrend(current, previous) {
-  if (!BETA || previous == null) return "";
+  if (previous == null) return "";
   var trend =
     +current > +previous
       ? ["up", "▲", "gestegen"]
@@ -2676,7 +2662,7 @@ function getPrice() {
   objPrijslijst.GrainHigh = randomBetween(1, 250);
   objPrijslijst.FlourLow = randomBetween(100, 900);
   objPrijslijst.FlourHigh = randomBetween(100, 450);
-  if (BETA) objAICoin.newPrice();
+  objAICoin.newPrice();
   showMessage("Prijzen bepaald", JSON.stringify(objPrijslijst));
 }
 
@@ -3293,7 +3279,7 @@ var objFarmland = {
     store.setItem("FarmlandCost", objFarmland.cost);
     store.setItem("Harvest", objFarmland.harvest);
   },
-  // Opbrengst per veld, en in de beta ook van alle velden samen per oogstronde,
+  // Opbrengst per veld, en ook van alle velden samen per oogstronde,
   // met de waarde tegen de huidige graanprijs (#123)
   showHarvest: function () {
     var total = +objFarmland.amount * +objFarmland.harvest;
@@ -3303,13 +3289,12 @@ var objFarmland = {
     );
     document.getElementById("FarmHarvestPerField").innerHTML = renderStats([
       ["Opbrengst per veld", FixUnit(objFarmland.harvest, "kg")],
-      BETA && ["Opbrengst per ronde", FixUnit(total, "kg")],
-      BETA &&
-        robotFields > 0 && [
-          "Waarvan robots",
-          FixUnit(robotFields * +objFarmland.harvest, "kg"),
-        ],
-      BETA && ["Waarde per ronde", FixMoney((total / 1000) * objGrain.price)],
+      ["Opbrengst per ronde", FixUnit(total, "kg")],
+      robotFields > 0 && [
+        "Waarvan robots",
+        FixUnit(robotFields * +objFarmland.harvest, "kg"),
+      ],
+      ["Waarde per ronde", FixMoney((total / 1000) * objGrain.price)],
     ]);
   },
   calcPrice: function () {
@@ -3635,9 +3620,9 @@ var objWindmill = {
 var objWindmillController = {
   amount: 0,
   price: 10000,
-  // Energie per maalrun van 10 ticks. In de beta 8 (0,8 per tick, issue #64): eerst kostte
+  // Energie per maalrun van 10 ticks: 8 (0,8 per tick, issue #64). Eerst kostte
   // aansturen van een molen bijna evenveel stroom als het bewerken van 50 velden.
-  energy: BETA ? 8 : 80,
+  energy: 8,
   cap: 1,
   add: function () {
     // Een controller bedient één windmolen
@@ -3729,7 +3714,7 @@ var objGrain = {
       objGrain.price = +objPrijslijst.GrainLow;
       objFlour.price = +objPrijslijst.FlourLow;
     }
-    if (BETA) objFarmland.showHarvest();
+    objFarmland.showHarvest();
 
     objPasta.show();
   },
@@ -3874,14 +3859,14 @@ var objEnergy = {
     objEnergy.show();
   },
   produce: function () {
-    // Zonneparken (beta): zonder brandstof, tot de opslag vol is
+    // Zonneparken: zonder brandstof, tot de opslag vol is
     if (+objSolar.amount > 0) {
       objEnergy.available = Math.min(
         +objEnergy.storageCap * +objEnergy.capacitors,
         +objEnergy.available + +objSolar.amount * objSolar.production
       );
     }
-    // Fusiecentrales (beta): zonder brandstof, tot de opslag vol is
+    // Fusiecentrales: zonder brandstof, tot de opslag vol is
     if (+objFusion.amount > 0) {
       objEnergy.available = Math.min(
         +objEnergy.storageCap * +objEnergy.capacitors,
@@ -3988,7 +3973,7 @@ var objEnergy = {
       ["Prijs per opslagunit", FixMoney(objEnergy.capaCost)],
       ["Capaciteit per unit", FixNumber(objEnergy.storageCap)],
     ]);
-    // Grote opslagknoppen (beta): pas nodig met fusiecentrales (#110)
+    // Grote opslagknoppen: pas nodig met fusiecentrales (#110)
     var bigCapa = !objChipFactory.unlocked();
     document.getElementById("capaButton100k").hidden = bigCapa;
     document.getElementById("capaButton1m").hidden = bigCapa;
@@ -4012,7 +3997,7 @@ var objEnergy = {
     document.getElementById("TotalEnergyProduction").innerHTML =
       renderStats([
         ["Productie per tick", FixNumber(objEnergy.capacity())],
-        BETA && objEnergy.nettoRow(),
+        objEnergy.nettoRow(),
       ]) +
       (idleReactors > 0
         ? renderHint(
@@ -4022,7 +4007,7 @@ var objEnergy = {
               " reactoren staan stil: geen splijtstof."
           )
         : "") +
-      (BETA ? objEnergy.nettoHint() : "");
+      objEnergy.nettoHint();
     document.getElementById("OilUsage").innerHTML = renderStats([
       [
         "Olieverbruik per tick",
@@ -4057,7 +4042,7 @@ var objEnergy = {
       +objFusion.amount * objFusion.production
     );
   },
-  // Netto per tick (beta): de werkelijke verandering van de opslag over de laatste
+  // Netto per tick: de werkelijke verandering van de opslag over de laatste
   // ticks, zodat ook verbruikers die eens per 15 ticks draaien meetellen (#116)
   history: [],
   track: function () {
@@ -4113,7 +4098,7 @@ var objEnergy = {
   },
   // Piekvraag: wat alle verbruikers samen per tick kunnen vragen
   demand: function () {
-    // Gepauzeerde kaarten (beta) tellen niet mee
+    // Gepauzeerde kaarten tellen niet mee
     var f = objPause.factor;
     return (
       (+objOilPump.amount + +objOilPumpAdv.amount * +objOilPumpAdv.energy) *
@@ -4132,19 +4117,19 @@ var objEnergy = {
       +objCopperSmelter.amount *
         objCopperSmelter.energy *
         f("CopperSmelter-col") +
-      // Level 14 (beta): goud
+      // Level 14: goud
       +objMines.goldAmountActive * objGoldMine.energy * f("Gold-col") +
       +objGoldRefinery.amount * objGoldRefinery.energy * f("GoldRefinery-col") +
-      // Level 15 (beta): diamant
+      // Level 15: diamant
       +objMines.diamondAmountActive * objDiamondMine.energy * f("Diamond-col") +
       +objDiamondCutter.amount *
         objDiamondCutter.energy *
         f("DiamondCutter-col") +
-      // Level 16 (beta): chips en datacenter
+      // Level 16: chips en datacenter
       +objChipFactory.amount * objChipFactory.energy * f("ChipFactory-col") +
       +objDatacenter.racks * objDatacenter.energy * f("Datacenter-col") +
       +objIsotopeLab.amount * objIsotopeLab.energy * f("IsotopeLab-col") +
-      // Level 13 (beta): elektronica, scanners en bestuurde hoogovens
+      // Level 13: elektronica, scanners en bestuurde hoogovens
       +objElectronics.amount * objElectronics.energy * f("Electronics-col") +
       +objScanner.amount * objScanner.energy * f("Prospecting-col") +
       +objIronMelter.controlled *
@@ -4159,12 +4144,10 @@ var objEnergy = {
       Math.min(+objPlasticFactory.workers, +objPlasticFactory.amount) *
         +objPlasticFactory.energy *
         f("platicFactory-col") +
-      // In de beta gebruiken splijtstoffabrieken hun stroom per tick
-      (BETA
-        ? +objFuelCellFactory.amount *
-          objFuelCellFactory.energyPerTick() *
-          f("fuelRodFactory")
-        : 0)
+      // Splijtstoffabrieken gebruiken hun stroom per tick
+      +objFuelCellFactory.amount *
+        objFuelCellFactory.energyPerTick() *
+        f("fuelRodFactory")
     );
   },
   init: function () {
@@ -4373,9 +4356,9 @@ var objEgg = {
   storageCap: 100000,
   storageUnitCost: 500000,
   price: 0.1,
-  // Overschot (wat niet in de opslag past) levert in de beta de helft op, zoals de kaart
-  // vroeger al beloofde (#96); in het gewone spel nog de volle prijs
-  overflowFactor: BETA ? 0.5 : 1,
+  // Overschot (wat niet in de opslag past) levert de helft op, zoals de kaart
+  // vroeger al beloofde (#96)
+  overflowFactor: 0.5,
   add: function (aantal) {
     aantal = parseInt(aantal);
     var eieren = parseInt(objEgg.amount);
@@ -4444,11 +4427,7 @@ var objEgg = {
         ],
         ["Prijs per ei", FixMoney(+objEgg.price)],
       ]) +
-      renderHint(
-        BETA
-          ? "Wat niet past wordt direct verkocht voor 50% van de prijs."
-          : "Wat niet past wordt direct verkocht."
-      );
+      renderHint("Wat niet past wordt direct verkocht voor 50% van de prijs.");
     objEgg.visual();
   },
   init: function () {
@@ -4988,9 +4967,8 @@ var objSalesComputer = {
     ["Pasta", "SliderPasta", 3],
     ["Kunststof", "SliderKunststof", 4],
   ],
-  // Beta: "Vanaf 2 CPU's" zolang het product op slot zit
+  // "Vanaf 2 CPU's" zolang het product op slot zit
   lockedText: function (product) {
-    if (!BETA) return null;
     var needed = objSalesComputer.products.find(function (p) {
       return p[0] === product;
     })[2];
@@ -5071,17 +5049,15 @@ var objSalesComputer = {
         document.getElementById("autoKunststofCheck").disabled = false;
         break;
     }
-    // Beta: producten die nog op slot zitten duidelijk tonen, met de schuif uit (issue #67)
-    if (BETA) {
-      objSalesComputer.products.forEach(function (p) {
-        var locked = +objSalesComputer.cpu < p[2];
-        var slider = document.getElementById(p[1]);
-        slider.disabled = locked;
-        slider
-          .closest(".autosell-item")
-          .classList.toggle("autosell-locked", locked);
-      });
-    }
+    // producten die nog op slot zitten duidelijk tonen, met de schuif uit (issue #67)
+    objSalesComputer.products.forEach(function (p) {
+      var locked = +objSalesComputer.cpu < p[2];
+      var slider = document.getElementById(p[1]);
+      slider.disabled = locked;
+      slider
+        .closest(".autosell-item")
+        .classList.toggle("autosell-locked", locked);
+    });
     var inputOil = document.getElementById("SliderOil").value;
     objSalesComputer.showOil(inputOil);
     var inputFlour = document.getElementById("SliderFlour").value;
@@ -5182,8 +5158,8 @@ var objSalesComputer = {
       }
     }
     if (objSalesComputer.autoSellFlour == true && +objSalesComputer.cpu > 1) {
-      // In de beta niet "verkopen" als er niets is (issue #66)
-      var hasFlour = !BETA || +objFlourSilo.contents > 0;
+      // Niet "verkopen" als er niets is (issue #66)
+      var hasFlour = +objFlourSilo.contents > 0;
       if (+objFlour.price >= +objSalesComputer.flourValue && hasFlour) {
         var amount = +objFlourSilo.contents;
         objMoney.add(
@@ -5206,7 +5182,7 @@ var objSalesComputer = {
       +objSalesComputer.cpu > 3
     ) {
       var pp = objPlastic.price;
-      var hasPlastic = !BETA || +objPlastic.amount > 0;
+      var hasPlastic = +objPlastic.amount > 0;
       if (+pp >= +objSalesComputer.kunststofValue && hasPlastic) {
         objPlastic.sell(0, "Computerverkoop Plastic");
       }
@@ -5223,15 +5199,13 @@ var objSalesComputer = {
       objSalesComputer.autoSellOil;
     document.getElementById("SliderOil").value = +objSalesComputer.oilValue;
 
-    // Beta: de schuiven voor bloem en pasta volgen de prijzen vanaf level 4 (issue #65).
+    // de schuiven voor bloem en pasta volgen de prijzen vanaf level 4 (issue #65).
     // Een eerder bewaarde, te hoge drempel wordt begrensd.
-    var flourMax = BETA ? 450 : 875;
-    var pastaMax = BETA ? 225 : 450;
-    if (BETA) {
-      document.getElementById("SliderFlour").max = flourMax;
-      document.getElementById("SliderPasta").max = pastaMax;
-      document.getElementById("SliderPasta").step = 5;
-    }
+    var flourMax = 450;
+    var pastaMax = 225;
+    document.getElementById("SliderFlour").max = flourMax;
+    document.getElementById("SliderPasta").max = pastaMax;
+    document.getElementById("SliderPasta").step = 5;
 
     //bloem
     objSalesComputer.flourValue = Math.min(
@@ -5436,9 +5410,8 @@ var objMines = {
   goldMineCost: 600000000,
   diamondMineCost: 600000000,
   prospectCost: 50000000,
-  // Beta: goedkoper beginnen met mijnbouw (10 mln op level 8, 25 mln op level 9)
+  // goedkoper beginnen met mijnbouw (10 mln op level 8, 25 mln op level 9)
   prospectPrice: function () {
-    if (!BETA) return +objMines.prospectCost;
     if (+objPlayerInfo.level <= 8) return 10000000;
     if (+objPlayerInfo.level === 9) return 25000000;
     return +objMines.prospectCost;
@@ -5740,7 +5713,7 @@ var objMines = {
       "uraniumMineButton",
       "Uraniummijnen"
     );
-    // Kopermijnen: in de beta vanaf level 12
+    // Kopermijnen: vanaf level 12
     if (objCopperMine.unlocked()) {
       generateText(
         "copper-mines",
@@ -5755,7 +5728,7 @@ var objMines = {
     } else {
       document.getElementById("copper-mines").innerHTML = "";
     }
-    // Goudmijnen: in de beta vanaf level 14
+    // Goudmijnen: vanaf level 14
     if (objGoldMine.unlocked()) {
       generateText(
         "gold-mines",
@@ -5770,7 +5743,7 @@ var objMines = {
     } else {
       document.getElementById("gold-mines").innerHTML = "";
     }
-    // Diamantmijnen: in de beta vanaf level 15
+    // Diamantmijnen: vanaf level 15
     if (objDiamondMine.unlocked()) {
       generateText(
         "diamond-mines",
@@ -5842,11 +5815,9 @@ var objMines = {
     objMines.copperMineCost =
       parseInt(store.getItem("copperMineCost")) || 150000000;
     objMines.goldMineCost =
-      parseInt(store.getItem("goldMineCost")) ||
-      (BETA ? 2000000000 : 600000000);
+      parseInt(store.getItem("goldMineCost")) || 2000000000;
     objMines.diamondMineCost =
-      parseInt(store.getItem("diamondMineCost")) ||
-      (BETA ? 5000000000 : 600000000);
+      parseInt(store.getItem("diamondMineCost")) || 5000000000;
     objMines.prospectTimerActive = parseInt(store.getItem("pTimer")) || 0;
     objMines.prospecting = parseInt(store.getItem("prospecting")) || 0;
     document.getElementById("Prospecting-col").style.display = "none";
@@ -6122,7 +6093,7 @@ var objIronMelter = {
   coalNeeded: 1000,
   energy: 5000,
   activeSmelters: 0,
-  // Hoogovenbesturing (beta, vanaf level 13): bestuurde hoogovens maken iedere tick zelf staal
+  // Hoogovenbesturing (vanaf level 13): bestuurde hoogovens maken iedere tick zelf staal
   controlled: 0,
   controlPCB: 5000,
   autoActive: 0,
@@ -6316,7 +6287,7 @@ var objIronMelter = {
         " " +
         "<button type='button' class='btn btn-danger' onClick='objIronMelter.add(-1);' id='sellIronMelter'>Verkoop hoogoven</button>" +
         "</div>";
-      // Maak staal gebruikt alleen de hoogovens zonder besturing (beta)
+      // Maak staal gebruikt alleen de hoogovens zonder besturing
       var manual = +objIronMelter.amount - +objIronMelter.controlled;
       document.getElementById("steelProductionStats").innerHTML =
         "<h3>Totaal per run" +
@@ -6335,9 +6306,10 @@ var objIronMelter = {
   },
   init: function () {
     objIronMelter.amount = store.getItem("ironSmelters") || 0;
-    objIronMelter.controlled = BETA
-      ? Math.min(+store.getItem("smelterControls") || 0, +objIronMelter.amount)
-      : 0;
+    objIronMelter.controlled = Math.min(
+      +store.getItem("smelterControls") || 0,
+      +objIronMelter.amount
+    );
     objIronMelter.show();
   },
 };
@@ -6789,14 +6761,14 @@ var objPlastic = {
 
 // Uranium
 
-// Uraniummijn: draait in diensten van `period` ticks. In de beta eet het personeel een
-// tiende van de pasta: 20 dozen per dienst in plaats van 200 (#82).
+// Uraniummijn: draait in diensten van `period` ticks. Het personeel eet een
+// tiende van de oorspronkelijke pasta: 20 dozen per dienst in plaats van 200 (#82).
 var objUraniumMine = {
   period: 10,
   production: 100,
   energy: 2500,
   workers: 20,
-  workerFood: BETA ? 1 : 10,
+  workerFood: 1,
   produce: function () {
     if (objPause.is("Uranium-col")) return 0;
     var activeMines = objMines.uraniumAmountActive;
@@ -6925,7 +6897,7 @@ var objUraniumOre = {
   },
 };
 
-// Koper (alleen in de beta, vanaf level 12): kopermijn -> kopererts -> kopersmelterij -> koper
+// Koper (vanaf level 12): kopermijn -> kopererts -> kopersmelterij -> koper
 var objCopperMine = {
   production: 1000,
   energy: 600,
@@ -6933,7 +6905,7 @@ var objCopperMine = {
   steelNeeded: 25000,
   activeMines: 0,
   unlocked: function () {
-    return BETA && +objPlayerInfo.level >= 12 && +objResearch.level > 3;
+    return +objPlayerInfo.level >= 12 && +objResearch.level > 3;
   },
   // Pasta die de kopermijnen laten liggen: het uraniumpersoneel gaat voor (60 ticks voorraad),
   // anders vallen bij een tekort de kerncentrales stil
@@ -7283,7 +7255,7 @@ var objCopper = {
   },
 };
 
-// Elektronica (alleen in de beta, vanaf level 13): koper + kunststof + energie -> printplaten.
+// Elektronica (vanaf level 13): koper + kunststof + energie -> printplaten.
 // Printplaten zijn te verkopen en nodig voor de hoogovenbesturing, de seismische scanner
 // en zonneparken.
 var objElectronics = {
@@ -7296,7 +7268,7 @@ var objElectronics = {
   production: 100,
   active: 0,
   unlocked: function () {
-    return BETA && +objPlayerInfo.level >= 13;
+    return +objPlayerInfo.level >= 13;
   },
   add: function (amount) {
     if (!objElectronics.unlocked()) return 0;
@@ -7516,7 +7488,7 @@ var objPCB = {
   },
 };
 
-// Zonnepark (alleen in de beta, vanaf level 13): stroom zonder brandstof
+// Zonnepark (vanaf level 13): stroom zonder brandstof
 var objSolar = {
   amount: 0,
   price: 2000000000,
@@ -7608,7 +7580,7 @@ var objSolar = {
   },
 };
 
-// Seismische scanner (alleen in de beta, vanaf level 13): prospect automatisch achter elkaar
+// Seismische scanner (vanaf level 13): prospect automatisch achter elkaar
 // door, eventueel gericht op één grondstof (kans x4). Iedere zoektocht kost nog steeds geld;
 // een scanner gebruikt energie zolang hij zoekt.
 var objScanner = {
@@ -7727,7 +7699,7 @@ var objScanner = {
     ]);
   },
   init: function () {
-    objScanner.amount = BETA ? +store.getItem("scanners") || 0 : 0;
+    objScanner.amount = +store.getItem("scanners") || 0;
     objScanner.target = +store.getItem("scannerTarget") || 0;
     var timers = [];
     try {
@@ -7746,7 +7718,7 @@ var objScanner = {
   },
 };
 
-// Goud (alleen in de beta, vanaf level 14): goudmijn -> gouderts -> goudraffinaderij -> goud.
+// Goud (vanaf level 14): goudmijn -> gouderts -> goudraffinaderij -> goud.
 // Goud is te verkopen en nodig voor de reactorbesturing.
 var objGoldMine = {
   production: 500,
@@ -7755,7 +7727,7 @@ var objGoldMine = {
   steelNeeded: 100000,
   activeMines: 0,
   unlocked: function () {
-    return BETA && +objPlayerInfo.level >= 14 && +objResearch.level > 3;
+    return +objPlayerInfo.level >= 14 && +objResearch.level > 3;
   },
   produce: function () {
     if (objPause.is("Gold-col")) {
@@ -8077,7 +8049,7 @@ var objGold = {
   },
 };
 
-// Diamant (alleen in de beta, vanaf level 15): diamantmijn -> ruwe diamant -> slijperij ->
+// Diamant (vanaf level 15): diamantmijn -> ruwe diamant -> slijperij ->
 // edelstenen (om te verkopen) en industriële diamant (voor diamantboren).
 var objDiamondMine = {
   production: 10, // karaat ruwe diamant per tick
@@ -8086,7 +8058,7 @@ var objDiamondMine = {
   steelNeeded: 200000,
   activeMines: 0,
   unlocked: function () {
-    return BETA && +objPlayerInfo.level >= 15 && +objResearch.level > 3;
+    return +objPlayerInfo.level >= 15 && +objResearch.level > 3;
   },
   produce: function () {
     if (objPause.is("Diamond-col")) {
@@ -8524,7 +8496,7 @@ var objDiamondDrill = {
     }[type];
   },
   has: function (type) {
-    return BETA && objDiamondDrill.owned.indexOf(type) !== -1;
+    return objDiamondDrill.owned.indexOf(type) !== -1;
   },
   // Zet de productie per mijn op basis van de gekochte boren
   apply: function () {
@@ -8622,7 +8594,7 @@ var objDiamondDrill = {
   },
 };
 
-// Level 16 (alleen in de beta): chipfabriek -> chips -> datacenter (geld en AICoin),
+// Level 16: chipfabriek -> chips -> datacenter (geld en AICoin),
 // en de fusiecentrale die de stroom voor het datacenter levert.
 var objChipFactory = {
   amount: 0,
@@ -8639,7 +8611,7 @@ var objChipFactory = {
   isotopeBonus: 0.25,
   inspected: 0,
   unlocked: function () {
-    return BETA && +objPlayerInfo.level >= 16 && +objResearch.level > 3;
+    return +objPlayerInfo.level >= 16 && +objResearch.level > 3;
   },
   add: function (amount) {
     if (!objChipFactory.unlocked()) return 0;
@@ -9109,7 +9081,7 @@ var objAICoin = {
   },
 };
 
-// Isotopenlab (beta, level 16): maakt van uranium medische isotopen, die vervallen en
+// Isotopenlab (level 16): maakt van uranium medische isotopen, die vervallen en
 // dus meteen aan ziekenhuizen worden verkocht, en industriële isotopen voor de
 // materiaalinspectie in de chipfabrieken (#118). De opbrengst wordt net als bij het
 // datacenter iedere 10 ticks in één keer uitbetaald.
@@ -9261,7 +9233,7 @@ var objIsotopeLab = {
   },
 };
 
-// Industriële isotopen (beta, level 16): een chipfabriek die er 0,05 per tick van krijgt,
+// Industriële isotopen (level 16): een chipfabriek die er 0,05 per tick van krijgt,
 // maakt 25% meer chips (materiaalinspectie). Isotopen die niet gebruikt worden vervallen
 // (halveringstijd 600 ticks); wat niet in de opslag past, is meteen verloren.
 var objIsotopes = {
@@ -9567,10 +9539,8 @@ var objFuelCellFactory = {
         }
       }
 
-      // Beschikbaarheid energie bepalen (in de beta: genoeg voor de eerste tick)
-      var batchEnergy = BETA
-        ? objFuelCellFactory.energyPerTick()
-        : +objFuelCellFactory.energy;
+      // Beschikbaarheid energie bepalen (genoeg voor de eerste tick)
+      var batchEnergy = objFuelCellFactory.energyPerTick();
       if (
         +objFuelCellFactory.activeFactories * batchEnergy >
         +objEnergy.available
@@ -9627,29 +9597,24 @@ var objFuelCellFactory = {
         objFuelCellFactory.activeFactories
       );
       // Werkelijk benodigde hoeveelheden bepalen
-      var EN = +objFuelCellFactory.energy * +objFuelCellFactory.activeFactories;
       var UN =
         +objFuelCellFactory.urianiumOreNeeded *
         +objFuelCellFactory.activeFactories;
       var SN =
         +objFuelCellFactory.steelNeeded * +objFuelCellFactory.activeFactories;
 
-      // Werkelijk gebruiken resources (in de beta komt de stroom per tick, zie hieronder)
-      if (!BETA) objEnergy.use(EN, "Fuelcellfactory");
+      // Werkelijk gebruiken resources (de stroom komt per tick, zie hieronder)
       objUraniumOre.use(UN);
       objSteel.use(SN);
     }
 
-    // Beta: iedere tick een deel van de stroom; is die er niet, dan wacht de batch
-    if (BETA) {
-      var tickEnergy =
-        objFuelCellFactory.energyPerTick() *
-        +objFuelCellFactory.activeFactories;
-      if (objEnergy.use(tickEnergy, "Fuelcellfactory") !== tickEnergy) {
-        document.getElementById("fuelRodCounter").innerHTML =
-          "Wacht op stroom (" + FixNumber(tickEnergy) + " per tick)";
-        return 0;
-      }
+    // Iedere tick een deel van de stroom; is die er niet, dan wacht de batch
+    var tickEnergy =
+      objFuelCellFactory.energyPerTick() * +objFuelCellFactory.activeFactories;
+    if (objEnergy.use(tickEnergy, "Fuelcellfactory") !== tickEnergy) {
+      document.getElementById("fuelRodCounter").innerHTML =
+        "Wacht op stroom (" + FixNumber(tickEnergy) + " per tick)";
+      return 0;
     }
 
     // Aflopen productie timer
@@ -9686,9 +9651,7 @@ var objFuelCellFactory = {
         ["Opbrengst", "1 staaf"],
       ]) +
       renderHint(
-        BETA
-          ? "Fabrieken draaien altijd door. Uranium en staal worden aan het begin van een run afgeschreven, de stroom per tick."
-          : "Fabrieken draaien altijd door; alle grondstoffen worden aan het begin van een run afgeschreven."
+        "Fabrieken draaien altijd door. Uranium en staal worden aan het begin van een run afgeschreven, de stroom per tick."
       );
     document.getElementById("fuelRod2").innerHTML =
       "<h3>Totaal per run</h3>" +
@@ -9861,12 +9824,12 @@ var objNuclearPowerPlant = {
   reactorSteelNeeded: 500000,
   plantReactorCap: 5,
   reactorProduction: 5000,
-  // Reactorbesturing (beta, vanaf level 14): een bestuurde reactor levert het dubbele
+  // Reactorbesturing (vanaf level 14): een bestuurde reactor levert het dubbele
   controlled: 0,
   controlPCB: 2000,
   controlGold: 50,
   controlUnlocked: function () {
-    return BETA && +objPlayerInfo.level >= 14;
+    return +objPlayerInfo.level >= 14;
   },
   // Extra energie door besturing: alleen voor reactoren die draaien
   controlBonus: function () {
@@ -10151,12 +10114,10 @@ var objNuclearPowerPlant = {
     objNuclearPowerPlant.fuelRods = store.getItem("ppFuelRods") || 0;
     objNuclearPowerPlant.amount = store.getItem("nppAmount") || 0;
     objNuclearPowerPlant.reactors = store.getItem("nrAmount") || 0;
-    objNuclearPowerPlant.controlled = BETA
-      ? Math.min(
-          +store.getItem("reactorControls") || 0,
-          +objNuclearPowerPlant.reactors
-        )
-      : 0;
+    objNuclearPowerPlant.controlled = Math.min(
+      +store.getItem("reactorControls") || 0,
+      +objNuclearPowerPlant.reactors
+    );
     objNuclearPowerPlant.pelletsActive = store.getItem("pelletsActive") || 0;
     // Schatting tot de eerste tick, zodat de energiekaart direct klopt (#116)
     objNuclearPowerPlant.activeReactors = Math.min(
@@ -10460,11 +10421,11 @@ function FixDuration(minutes) {
   return Math.floor(hours / 24) + "d " + (hours % 24) + "u";
 }
 
-// Statistieken (beta): speeltijd, mijlpalen, totale productie en een compacte geschiedenis
+// Statistieken: speeltijd, mijlpalen, totale productie en een compacte geschiedenis
 // voor het dashboard (Game opties → Statistieken). De geschiedenis heeft een vaste omvang,
 // hoe lang er ook gespeeld wordt, en gaat gewoon mee in de save-code.
 var objStats = {
-  enabled: BETA,
+  enabled: true,
   budget: 20000, // maximale lengte van statsHistory in tekens
   ticks: 0, // speeltijd: ticks waarin het spel niet gepauzeerd was
   start: 0, // begin van de statistieken, in seconden
@@ -11892,9 +11853,7 @@ var objMarket = {
         ],
       ]) +
       renderHint(
-        BETA
-          ? "Wat niet past wordt direct weer verkocht, voor 50% van de normale prijs."
-          : "Wat niet past wordt direct weer verkocht."
+        "Wat niet past wordt direct weer verkocht, voor 50% van de normale prijs."
       );
     document.getElementById("buySteel").innerHTML =
       renderStats([
@@ -12020,8 +11979,6 @@ function turnAutoClose(input) {
 
 function turnShortNumbers(input) {
   var btn = document.getElementById("shortNumbersBTN");
-  btn.hidden = !BETA;
-  if (!BETA) return;
   if (input) {
     store.setItem("shortNumbers", shortNumbers ? "0" : "1");
     // Alles opnieuw tekenen gaat het eenvoudigst via herladen; de voortgang staat al in de opslag
@@ -12251,10 +12208,8 @@ var loopsProduction = setInterval(function () {
     var energyBefore = +objEnergy.available;
     objEnergy.produce();
     objStats.count("energie", +objEnergy.available - energyBefore);
-    if (BETA) {
-      objEnergy.track();
-      objEnergy.show();
-    }
+    objEnergy.track();
+    objEnergy.show();
     if (objFarmRobot.robotTimer > 0) objFarmRobot.work_loop();
     if (objFarmRobot.robots > 0 && objFarmRobot.robotTimer === 0)
       objFarmRobot.work();
@@ -12287,8 +12242,8 @@ var loopsProduction = setInterval(function () {
       if (+objFuelCellFactory.amount > 0 || +objFuelRod.waste > 0)
         objFuelRod.calculateWastePrice(50000, 99999);
     }
-    // Nieuwe marktprijzen: in de beta iedere 5 seconden, zoals in de oorspronkelijke versie (#83)
-    if (+timerCounter % (BETA ? 5 : 10) === 0) getPrice();
+    // Nieuwe marktprijzen iedere 5 seconden, zoals in de oorspronkelijke versie (#83)
+    if (+timerCounter % 5 === 0) getPrice();
     if (
       +timerCounter % objUraniumMine.period === 0 &&
       +objMines.uraniumAmountActive >= 1

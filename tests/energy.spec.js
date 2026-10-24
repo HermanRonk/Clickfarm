@@ -73,12 +73,6 @@ test.describe("Energie: productie en piekvraag (#116)", () => {
 });
 
 test.describe("Energie: netto per tick (beta, #116)", () => {
-  test("het gewone spel toont geen netto per tick", async ({ page }) => {
-    await startGame(page, { state: pumps });
-    await tick(page, 5);
-    await expect(page.locator("#TotalEnergyProduction")).not.toContainText("Netto");
-  });
-
   test("een leeglopende opslag toont ▼ en hoe lang hij het nog volhoudt", async ({ page }) => {
     await startGame(page, { beta: true, state: pumps });
     await expect(page.locator("#TotalEnergyProduction")).toContainText("Netto per tick–");

@@ -66,7 +66,7 @@ test.describe("Level up", () => {
       expect(await game(page, () => +objPlayerInfo.level), `na drempel van level ${level}`).toBe(level + 1);
       await expectSections(page, level + 1);
     }
-    await expect(stat(page, "#nextlevel", "Volgend level")).toHaveText("€ 281.250.000.000,00");
+    await expect(stat(page, "#nextlevel", "Volgend level")).toHaveText("€ 281 mld");
     expect(pageErrors).toEqual([]);
   });
 

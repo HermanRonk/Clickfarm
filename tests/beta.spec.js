@@ -114,7 +114,6 @@ test.describe("Beta: balans", () => {
     [8, true, 10000000],
     [9, true, 25000000],
     [10, true, 50000000],
-    [8, false, 50000000],
   ]) {
     test(`prospecten kost ${price / 1e6} mln op level ${lvl} (${beta ? "beta" : "gewoon spel"})`, async ({ page }) => {
       await startGame(page, { beta, state: level(lvl, { Rlevel: 3, Money: 1e9 }) });
@@ -138,14 +137,6 @@ test.describe("Beta: balans", () => {
     expect(await game(page, () => +objUraniumOre.amount)).toBe(0);
     await tick(page, 1);
     expect(await game(page, () => [+objUraniumOre.amount, +objStorehouse.pasta])).toEqual([100, 980]);
-  });
-
-  test("gewoon spel: een uraniummijn draait eens per 10 ticks en eet 200 dozen", async ({ page }) => {
-    await startGame(page, { state: uranium });
-    await tick(page, 9);
-    expect(await game(page, () => +objUraniumOre.amount)).toBe(0);
-    await tick(page, 1);
-    expect(await game(page, () => [+objUraniumOre.amount, +objStorehouse.pasta])).toEqual([100, 800]);
   });
 
   // 100.000 stroom op voorraad: minder dan de 150.000 die een batch in één keer vroeg
@@ -181,11 +172,6 @@ test.describe("Beta: balans", () => {
     expect(await game(page, () => +objFuelCellFactory.counter)).toBe(7);
   });
 
-  test("gewoon spel: de splijtstoffabriek start pas met 150.000 stroom in één keer", async ({ page }) => {
-    await startGame(page, { state: fuel });
-    await tick(page, 50);
-    expect(await game(page, () => [+objFuelCellFactory.counter, +objEnergy.available])).toEqual([0, 100000]);
-  });
 });
 
 test.describe("Beta: koper (level 12)", () => {
@@ -209,14 +195,6 @@ test.describe("Beta: koper (level 12)", () => {
       steel: +objSteel.amount,
       pasta: +objStorehouse.pasta,
     }));
-
-  test("kopermijnen zijn er alleen in de beta en vanaf level 12", async ({ page }) => {
-    await startGame(page, { state: copper() });
-    await game(page, () => objMines.addMine(4, 1));
-    expect(await game(page, () => +objMines.copperAmountActive)).toBe(0);
-    expect(await game(page, () => document.getElementById("Copper-col").checkVisibility())).toBe(false);
-    expect(await game(page, () => document.getElementById("koper-row").checkVisibility())).toBe(false);
-  });
 
   test("op level 11 nog niet, ook niet in de beta", async ({ page }) => {
     await startGame(page, { beta: true, state: copper({ PlayerLevel: 11, NextLevel: threshold(11) }) });
@@ -369,14 +347,6 @@ test.describe("Beta: pauzeren per kaart", () => {
     ["CopperSmelter-col", { copperSmelters: 1, copperOreAmount: 50000, coalAmount: 50000 }, () => +objCopper.amount],
   ];
 
-  test("in het gewone spel zijn er geen pauzeknoppen", async ({ page }) => {
-    await startGame(page, { state: base({ coalAmountProspected: 1, coalAmountActive: 1 }) });
-    await expect(page.locator(".pause-toggle")).toHaveCount(0);
-    await game(page, () => objPause.toggle("Coal-col"));
-    await tick(page, 2);
-    expect(await game(page, () => +objCoal.amount)).toBeGreaterThan(0);
-  });
-
   for (const [cardId, extra, measure] of consumers) {
     test(`${cardId}: gepauzeerd staat hij stil en gebruikt hij geen energie, hervat draait hij weer`, async ({ page }) => {
       await startGame(page, { beta: true, state: base({ ...extra, paused: JSON.stringify([cardId]) }) });
@@ -478,23 +448,12 @@ test.describe("Beta: feedback van spelers (#64-#67)", () => {
     expect(await game(page, () => +objFlourSilo.contents)).toBe(4000 * 2);
   });
 
-  test("#64 gewoon spel: nog 8 energie per tick", async ({ page }) => {
-    await startGame(page, { state: mills });
-    expect(await energyPerTick(page)).toBe(32);
-  });
-
   test("#65 beta: de schuiven voor bloem en pasta volgen de prijzen vanaf level 4", async ({ page }) => {
     await startGame(page, { beta: true, state: level(7, { scCPU: 4, autoFlour: 875 }) });
     await expect(page.locator("#SliderFlour")).toHaveAttribute("max", "450");
     await expect(page.locator("#SliderPasta")).toHaveAttribute("max", "225");
     // Een te hoge bewaarde drempel wordt begrensd, de standaard is het maximum
     expect(await game(page, () => [+objSalesComputer.flourValue, +objSalesComputer.pastaValue])).toEqual([450, 225]);
-  });
-
-  test("#65 gewoon spel: schuiven ongewijzigd", async ({ page }) => {
-    await startGame(page, { state: level(7, { scCPU: 4 }) });
-    await expect(page.locator("#SliderFlour")).toHaveAttribute("max", "875");
-    expect(await game(page, () => +objSalesComputer.flourValue)).toBe(875);
   });
 
   test("#66 beta: niets op voorraad levert geen verkoopregel op", async ({ page }) => {
@@ -536,12 +495,6 @@ test.describe("Beta: feedback van spelers (#64-#67)", () => {
     await expect(page.locator("#SliderKunststof")).toBeEnabled();
   });
 
-  test("#67 gewoon spel: geen slot-weergave", async ({ page }) => {
-    await startGame(page, { state: level(7, { scCPU: 1 }) });
-    await expect(page.locator("#AutoSell-col .autosell-locked")).toHaveCount(0);
-    await expect(page.locator("#AutoSell-col")).not.toContainText("Vanaf 2 CPU's");
-    await expect(page.locator("#SliderFlour")).toBeEnabled();
-  });
 });
 
 test.describe("Beta: level 13 (#71-#74)", () => {
@@ -556,19 +509,6 @@ test.describe("Beta: level 13 (#71-#74)", () => {
       ...extra,
     });
   const val = (page, fn) => game(page, fn);
-
-  test("in het gewone spel en op level 12 bestaat level 13 nog niet", async ({ page }) => {
-    await startGame(page, { state: l13({ pcbAmount: 50000 }) });
-    await game(page, () => {
-      objElectronics.add(1);
-      objSolar.add();
-      objScanner.add();
-    });
-    expect(await val(page, () => [+objElectronics.amount, +objSolar.amount, +objScanner.amount])).toEqual([0, 0, 0]);
-    expect(await game(page, () => document.getElementById("elektronica-row").checkVisibility())).toBe(false);
-    expect(await game(page, () => document.getElementById("solarPark").checkVisibility())).toBe(false);
-    await expect(page.locator("#scanner")).toBeEmpty();
-  });
 
   test("beta op level 12: nog geen elektronica", async ({ page }) => {
     await startGame(page, { beta: true, state: l13({ PlayerLevel: 12, NextLevel: threshold(12) }) });
@@ -758,7 +698,7 @@ test.describe("Beta: level 13 (#71-#74)", () => {
 test.describe("Beta: wensen van spelers (#82, #83, #87, #88, #89)", () => {
   for (const [beta, every] of [
     [true, 5],
-    [false, 10],
+    [false, 5],
   ]) {
     test(`#83 marktprijzen wisselen iedere ${every} seconden (${beta ? "beta" : "gewoon spel"})`, async ({ page }) => {
       await startGame(page, { beta, state: level(5) });
@@ -815,13 +755,6 @@ test.describe("Beta: wensen van spelers (#82, #83, #87, #88, #89)", () => {
 
 test.describe("Beta: bulk bouwen (#75)", () => {
   const coal = (extra = {}) => level(12, { Rlevel: 4, coalAmountProspected: 1, coalAmountActive: 1, ...extra });
-
-  test("in het gewone spel zijn er geen +10- en Max-knoppen", async ({ page }) => {
-    await startGame(page, { state: coal({ Money: 1e12 }) });
-    await expect(page.locator(".btn-bulk")).toHaveCount(0);
-    await game(page, () => objBulk.build("coalPlant", 10));
-    expect(await game(page, () => +objCoalPowerPlant.amount)).toBe(0);
-  });
 
   test("+10 bouwt tien kolencentrales tegen de oplopende prijs", async ({ page }) => {
     await startGame(page, { beta: true, state: coal({ Money: 1e12 }) });
@@ -896,14 +829,6 @@ test.describe("Beta: goud en reactorbesturing (#76, #77)", () => {
     ...extra,
   });
   const val = (page, fn) => game(page, fn);
-
-  test("in het gewone spel en op level 13 nog geen goud", async ({ page }) => {
-    await startGame(page, { state: l14({ goldAmountProspected: 2 }) });
-    await game(page, () => objMines.addMine(5, 1));
-    expect(await val(page, () => +objMines.goldAmountActive)).toBe(0);
-    expect(await game(page, () => document.getElementById("goud-row").checkVisibility())).toBe(false);
-    await expect(page.locator("#reactorControl")).toBeEmpty();
-  });
 
   test("beta op level 13: nog geen goud", async ({ page }) => {
     await startGame(page, { beta: true, state: l14({ PlayerLevel: 13, NextLevel: threshold(13), goldAmountProspected: 2 }) });
@@ -1018,12 +943,6 @@ test.describe("Beta: overschot eieren voor 50% (#96)", () => {
     await expect(page.locator("#chicken-col")).toContainText("voor 50% van de prijs");
   });
 
-  test("gewoon spel: overschot nog voor de volle prijs", async ({ page }) => {
-    await startGame(page, { state: full() });
-    await game(page, () => objEgg.add(10000));
-    expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1000 + 10000 * 0.1, 6);
-  });
-
   test("beta: zelf verkopen levert nog steeds de volle prijs op", async ({ page }) => {
     await startGame(page, { beta: true, state: full() });
     await page.getByRole("button", { name: "Verkoop alle eieren" }).click();
@@ -1053,13 +972,6 @@ test.describe("Beta: diamant en diamantboren (#78, #79)", () => {
     ...extra,
   });
   const val = (page, fn) => game(page, fn);
-
-  test("in het gewone spel nog geen diamant", async ({ page }) => {
-    await startGame(page, { state: l15({ diamondAmountProspected: 2 }) });
-    await game(page, () => objMines.addMine(6, 1));
-    expect(await val(page, () => +objMines.diamondAmountActive)).toBe(0);
-    expect(await game(page, () => document.getElementById("diamant-row").checkVisibility())).toBe(false);
-  });
 
   test("beta op level 14: nog geen diamant", async ({ page }) => {
     await startGame(page, { beta: true, state: l15({ PlayerLevel: 14, NextLevel: threshold(13) * 5, diamondAmountProspected: 2 }) });
@@ -1177,11 +1089,6 @@ test.describe("Beta: diamant en diamantboren (#78, #79)", () => {
     expect(await val(page, () => objCoalMine.production)).toBe(3500);
   });
 
-  test("#79 in het gewone spel doet een opgeslagen boor niets", async ({ page }) => {
-    await startGame(page, { state: l15({ diamondDrills: '["coal"]' }) });
-    expect(await val(page, () => objCoalMine.production)).toBe(3500);
-  });
-
   test("diamant blijft staan na herladen", async ({ page }) => {
     await startGame(page, { beta: true, state: l15({ diamondCutters: 2, roughDiamondAmount: 77, gemsAmount: 12, industrialDiamondAmount: 5, diamondVaults: 3 }) });
     await reload(page);
@@ -1223,13 +1130,6 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     ...extra,
   });
   const val = (page, fn) => game(page, fn);
-
-  test("in het gewone spel en op level 15 nog geen chips en datacenter", async ({ page }) => {
-    await startGame(page, { state: l16({ chipsAmount: 5000 }) });
-    await game(page, () => objDatacenter.add());
-    expect(await val(page, () => +objDatacenter.racks)).toBe(0);
-    expect(await game(page, () => document.getElementById("datacenter-row").checkVisibility())).toBe(false);
-  });
 
   test("beta op level 15: nog geen chips en datacenter", async ({ page }) => {
     await startGame(page, { beta: true, state: l16({ PlayerLevel: 15, NextLevel: threshold(13) * 25, chipsAmount: 5000 }) });
@@ -1316,12 +1216,6 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     expect(range[1]).toBeLessThanOrEqual(1e10);
     // Grillig: de koers komt flink van de basiskoers af
     expect(range[1] / range[0]).toBeGreaterThan(3);
-  });
-
-  test("#80 in het gewone spel verandert de prijswissel niets aan AICoin", async ({ page }) => {
-    await startGame(page, { state: l16({ aicoinPrice: 123 }) });
-    await tick(page, 10);
-    expect(await storage(page, "aicoinPrice")).toBe("123");
   });
 
   test("#80 AICoin verkopen tegen de koers", async ({ page }) => {
