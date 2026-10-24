@@ -469,11 +469,11 @@ test.describe("Beta: feedback van spelers (#64-#67)", () => {
       }),
     });
     await tick(page, 12);
-    expect(await game(page, () => messages.filter((m) => /Computerverkoop/.test(m[0])))).toEqual([]);
+    expect(await game(page, () => messages.filter((m) => /\(computer\)/.test(m[0])))).toEqual([]);
     // Met voorraad wordt er wel verkocht
     await game(page, () => objPlastic.add(100));
     await tick(page, 5);
-    expect(await game(page, () => messages.some((m) => m[0] === "Computerverkoop Plastic"))).toBe(true);
+    expect(await game(page, () => messages.some((m) => m[0] === "Plastic (computer)"))).toBe(true);
   });
 
   test("#67 beta: producten die nog op slot zitten zijn herkenbaar en hun schuif staat uit", async ({ page }) => {
@@ -939,7 +939,7 @@ test.describe("Beta: overschot eieren voor 50% (#96)", () => {
     await startGame(page, { beta: true, state: full() });
     await game(page, () => objEgg.add(10000));
     expect(await game(page, () => +objMoney.amount)).toBeCloseTo(1000 + 10000 * 0.1 * 0.5, 6);
-    expect(await game(page, () => messages[0][0])).toBe("Overschot eieren");
+    expect(await game(page, () => messages[0][0])).toBe("Eieren (overschot)");
     await expect(page.locator("#chicken-col")).toContainText("voor 50% van de prijs");
   });
 

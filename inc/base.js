@@ -121,6 +121,7 @@ window.onload = function () {
   document.getElementById("sellMenu").style.display = "none";
   getPrice();
   objMoney.init();
+  renderHistory();
   objEnergy.init();
   objGrainSilo.init();
   objFarmland.init();
@@ -10348,9 +10349,52 @@ function showHistory(description, amount) {
   if (messages.length > 4) {
     messages.pop();
   }
-  messages.unshift([description, amount]);
+  messages.unshift([shortHistory(description), amount]);
+  renderHistory();
+}
+
+// De kaart heeft altijd plek voor 5 regels, zodat hij niet groeit bij de eerste inkomsten (#134)
+function renderHistory() {
   document.getElementById("HistoryMessages").innerHTML =
     "<h3>Laatste inkomsten</h3>" + renderStats(messages);
+}
+
+// Korte omschrijving voor Laatste inkomsten (#134): "verkoop" voegt daar weinig toe en maakt
+// de regels lang. "Handmatige verkoop steenkool" wordt "Steenkool (hand)",
+// "Verkoop overschot goud" wordt "Goud (overschot)" en "Verkoop farmrobot" "Farmrobot verkocht".
+var historyGoods = [
+  "graan",
+  "olie",
+  "aicoin",
+  "industriële isotopen",
+  "radioactief afval",
+];
+function shortHistory(description) {
+  var text = String(description || "").trim();
+  var rules = [
+    [/^handmatige verkoop (.+)$/i, "$1 (hand)"],
+    [/^handmatige verkoop$/i, "Handmatig"],
+    [/^computerverkoop (.+)$/i, "$1 (computer)"],
+    [/^(?:verkoop )?overschot (.+)$/i, "$1 (overschot)"],
+    [/^(?:verkoop restant|restant verkoop) (.+)$/i, "$1 (restant)"],
+    [/^verkoop (.+) restant$/i, "$1 (restant)"],
+    [/^reguliere? verkoop (.+)$/i, "$1"],
+    [/^verkopen mijn$/i, "Mijn verkocht"],
+    [/^topsteen verkocht$/i, "Topsteen"],
+  ];
+  var match = rules.find(function (rule) {
+    return rule[0].test(text);
+  });
+  if (match) {
+    text = text.replace(match[0], match[1]);
+  } else if (/^verkoop (.+)$/i.test(text)) {
+    var item = text.slice(8);
+    text =
+      historyGoods.indexOf(item.toLowerCase()) !== -1
+        ? item
+        : item + " verkocht";
+  }
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 //Gebruiken resources

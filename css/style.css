@@ -511,6 +511,23 @@ kbd2 {
     margin-top: 0.4rem;
 }
 
+/* Laatste inkomsten: altijd plek voor 5 regels van één regel hoog, met de bedragen in een
+   vaste kolom, zodat de kaart niet verspringt (#134) */
+#HistoryMessages .stats-list {
+    min-height: calc(5 * 1.45em + 4 * 0.2rem);
+    align-content: start;
+}
+
+#HistoryMessages .stats-list dt,
+#HistoryMessages .stats-list dd {
+    white-space: nowrap;
+}
+
+#HistoryMessages .stats-list dt {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Houdt plek vrij voor een hint die steeds komt en gaat (#120) */
 .hint-reserve {
     visibility: hidden;
