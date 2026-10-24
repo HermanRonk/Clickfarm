@@ -491,15 +491,22 @@ kbd2 {
     margin: 0 0 0.2rem;
 }
 
+/* Iedere regel blijft één regel hoog, hoe groot de getallen ook worden: anders verspringt de
+   kaart en (op iOS, zonder scroll anchoring) alles eronder (#133). Een te lange omschrijving
+   wordt afgekapt; de volledige tekst staat in de tooltip (zie renderStats). */
 .stats-list dt {
     color: var(--muted);
     font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .stats-list dd {
     margin: 0;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 }
 
 .hint {
