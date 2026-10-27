@@ -1,6 +1,6 @@
 // Minimale statische webserver voor de tests (zonder extra dependencies).
-// Serveert dezelfde bestanden als de container: index.html, info.html, favicon.ico, css/, inc/, img/ en beta/.
-// /beta/spel.html is het gewone spel (zoals in nginx.conf); inc/base.js herkent de beta aan het pad.
+// Serveert dezelfde bestanden als de container: index.html, info.html, privacy.html, support.html, favicon.ico, css/, inc/, img/ en beta/.
+// /beta/spel.html is het gewone spel en /privacy en /support zijn de .html-pagina's (zoals in nginx.conf); inc/base.js herkent de beta aan het pad.
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -10,6 +10,8 @@ const port = Number(process.env.PORT) || 8081;
 const allowed = [
   /^\/index\.html$/,
   /^\/info\.html$/,
+  /^\/privacy\.html$/,
+  /^\/support\.html$/,
   /^\/favicon\.ico$/,
   /^\/css\/[\w.-]+$/,
   /^\/inc\/[\w.-]+$/,
@@ -31,6 +33,7 @@ http
     if (urlPath === "/beta/") urlPath = "/beta/index.html";
     let file = urlPath;
     if (urlPath === "/beta/spel.html") file = "/index.html";
+    if (urlPath === "/privacy" || urlPath === "/support") file = urlPath + ".html";
     if (urlPath === "/healthz") {
       res.writeHead(200, { "Content-Type": "text/plain" });
       return res.end("ok\n");
