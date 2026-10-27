@@ -27,6 +27,18 @@ test.describe("Container", () => {
     expect(await res.text()).toContain("Spelinformatie");
   });
 
+  test("privacy en support staan op /privacy en /support", async ({ request }) => {
+    for (const [path, heading] of [["/privacy", "<h1>Privacy</h1>"], ["/support", "<h1>Support</h1>"]]) {
+      const res = await request.get(path);
+      expect(res.status(), path).toBe(200);
+      expect(res.headers()["content-type"], path).toContain("text/html");
+      expect(res.headers()["cache-control"], path).toBe("no-cache");
+      const html = await res.text();
+      expect(html, path).toContain(heading);
+      expect(html, path).toContain('href="mailto:support@clickfarm.nl"');
+    }
+  });
+
   test("de beta wordt meegeleverd: keuzepagina en spel", async ({ request }) => {
     const choice = await request.get("/beta/");
     expect(choice.status()).toBe(200);
@@ -48,14 +60,20 @@ test.describe("Container", () => {
     expect(sitemap.headers()["content-type"]).toContain("application/xml");
     const locs = [...(await sitemap.text()).matchAll(/<loc>(.*?)<\/loc>/g)].map((m) => m[1]);
     // Het spel zelf (/beta/spel.html) hoort er niet in
-    expect(locs).toEqual(["https://clickfarm.nl/", "https://clickfarm.nl/info.html", "https://clickfarm.nl/beta/"]);
+    expect(locs).toEqual([
+      "https://clickfarm.nl/",
+      "https://clickfarm.nl/info.html",
+      "https://clickfarm.nl/beta/",
+      "https://clickfarm.nl/privacy",
+      "https://clickfarm.nl/support",
+    ]);
   });
 
   test("de deelafbeelding en Open Graph-tags worden meegeleverd", async ({ request }) => {
     const image = await request.get("/img/delen.jpg");
     expect(image.status()).toBe(200);
     expect(image.headers()["content-type"]).toBe("image/jpeg");
-    for (const path of ["/", "/info.html", "/beta/"]) {
+    for (const path of ["/", "/info.html", "/beta/", "/privacy", "/support"]) {
       const html = await (await request.get(path)).text();
       expect(html, path).toContain('<meta property="og:image" content="https://clickfarm.nl/img/delen.jpg">');
       expect(html, path).toContain('<meta name="twitter:card" content="summary_large_image">');
@@ -98,7 +116,7 @@ test.describe("Container", () => {
   });
 
   test("zonder Umami-variabelen staat er geen statistiekenscript in de pagina", async ({ request }) => {
-    for (const path of ["/", "/beta/", "/beta/spel.html", "/info.html"]) {
+    for (const path of ["/", "/beta/", "/beta/spel.html", "/info.html", "/privacy", "/support"]) {
       expect(await (await request.get(path)).text(), path).not.toContain("data-website-id");
     }
   });
@@ -112,7 +130,7 @@ test.describe("Container met bezoekersstatistieken (Umami)", () => {
   const id = process.env.UMAMI_WEBSITE_ID;
 
   test("iedere pagina krijgt precies één Umami-script", async ({ request }) => {
-    for (const path of ["/", "/beta/", "/beta/spel.html", "/info.html"]) {
+    for (const path of ["/", "/beta/", "/beta/spel.html", "/info.html", "/privacy", "/support"]) {
       const html = await (await request.get(base + path)).text();
       expect(html.split(`src="${host}/script.js"`).length - 1, path).toBe(1);
       expect(html, path).toContain(`data-website-id="${id}"`);

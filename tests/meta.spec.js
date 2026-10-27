@@ -5,6 +5,8 @@ const pages = [
   { path: "/", url: "https://clickfarm.nl/", title: /idlegame/ },
   { path: "/info.html", url: "https://clickfarm.nl/info.html", title: /^Spelinformatie/ },
   { path: "/beta/", url: "https://clickfarm.nl/beta/", title: /^Beta/ },
+  { path: "/privacy", url: "https://clickfarm.nl/privacy", title: /^Privacy/ },
+  { path: "/support", url: "https://clickfarm.nl/support", title: /^Support/ },
 ];
 
 const meta = (page, attr, name) => page.locator(`meta[${attr}="${name}"]`).getAttribute("content");

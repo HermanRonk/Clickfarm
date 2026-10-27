@@ -1,7 +1,7 @@
 # Clickfarm
 Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je begint met één veld graan en bouwt via molens, kippen, pasta, olie, staal en kernenergie een industrieel imperium op, door tot koper, elektronica, goud, diamant, een datacenter dat de munt AICoin oplevert en een isotopenlab dat uranium nuttig houdt.
 
-**Spelen:** [clickfarm.nl](https://clickfarm.nl) · **Nieuwste onderdelen uitproberen:** [clickfarm.nl/beta](https://clickfarm.nl/beta/) · **Spelinformatie:** [clickfarm.nl/info.html](https://clickfarm.nl/info.html)
+**Spelen:** [clickfarm.nl](https://clickfarm.nl) · **Nieuwste onderdelen uitproberen:** [clickfarm.nl/beta](https://clickfarm.nl/beta/) · **Spelinformatie:** [clickfarm.nl/info.html](https://clickfarm.nl/info.html) · **Privacy:** [clickfarm.nl/privacy](https://clickfarm.nl/privacy) · **Support:** [clickfarm.nl/support](https://clickfarm.nl/support)
 
 Geen account en geen advertenties: je spel staat in je eigen browser. Op clickfarm.nl worden bezoeken anoniem en zonder cookies geteld met een eigen [Umami](https://umami.is); de code in deze repository bevat zelf geen tracking (zie [Bezoekersstatistieken](#bezoekersstatistieken-optioneel)).
 
@@ -45,6 +45,7 @@ De bestanden:
 | --- | --- |
 | `index.html` | De pagina, inclusief de iconen (geen externe bibliotheken of CDN) |
 | `info.html` | Spelinformatie: hoe het spel werkt en wat ieder level brengt |
+| `privacy.html`, `support.html` | Privacyverklaring en support (Nederlands en Engels), op `/privacy` en `/support` (zie `nginx.conf`); ook voor de iOS-app en de App Store. Contact: `support@clickfarm.nl` |
 | `img/delen.jpg` | Afbeelding (1200×630) voor de preview als iemand een link deelt |
 | `robots.txt`, `sitemap.xml` | Voor zoekmachines: alles mag worden geïndexeerd, met de openbare pagina's |
 | `beta/index.html` | Keuzepagina van de beta: je huidige spel meenemen of opnieuw beginnen |
@@ -62,7 +63,7 @@ Zonder installatie: open `index.html` in je browser, of start een simpele webser
 python3 -m http.server 8080
 ```
 
-De beta (`/beta/spel.html`) bestaat niet als bestand: nginx serveert er `index.html` voor. Lokaal werkt hij met Docker (hieronder) of met de testserver: `node tests/helpers/serve.js` (http://localhost:8081).
+De beta (`/beta/spel.html`) bestaat niet als bestand: nginx serveert er `index.html` voor. Net zo zijn `/privacy` en `/support` de bestanden `privacy.html` en `support.html`. Lokaal werken die adressen met Docker (hieronder) of met de testserver: `node tests/helpers/serve.js` (http://localhost:8081).
 
 Met Docker:
 

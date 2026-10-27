@@ -37,9 +37,10 @@ In GitHub Actions (`.github/workflows/tests.yml`) draaien de tests bij iedere pu
 | `layout-edit.spec.js` | Indeling bewerken: inklappen, verplaatsen binnen een rij (pijlen en slepen), bewaren, save-code, herstellen, alleen op desktop. Rijen inklappen, op desktop en mobiel |
 | `help.spec.js` | ?-knoppen met uitleg per kaart |
 | `info.spec.js` | Informatiepagina: ingeklapte levels zonder spoilers, drempels gelijk aan het spel, uitleg over pauzeren |
+| `privacy-support.spec.js` | Privacy (`/privacy`) en support (`/support`): supportadres, Nederlands en Engels, ingeklapte vragen, geen externe requests en geen donatielink, links vanaf de informatiepagina |
 | `beta.spec.js` | Beta (`/beta/`): label en menu, gescheiden saves (`beta:`), reset en save-code alleen voor het eigen spel, keuzepagina (meenemen, opnieuw beginnen, verder), de balanswijzigingen naast het gewone spel, de koperketen (level 12), level 13 (elektronica, hoogovenbesturing, seismische scanner, zonneparken), level 14 (goud, reactorbesturing), level 15 (diamant, slijperij, diamantboren), level 16 (chips, datacenter, AICoin, fusiecentrale), pauzeknoppen per energieverbruiker, en bulk bouwen (+10 en Max) |
 | `known-issues.spec.js` | Bekende, nog niet opgeloste problemen (zie hieronder) |
-| `container.spec.js` | Alleen tegen de container: health check, beveiligingsheaders, CSP, de beta-pagina's, en dat testbestanden niet worden meegeleverd |
+| `container.spec.js` | Alleen tegen de container: health check, beveiligingsheaders, CSP, de beta-pagina's, privacy en support, en dat testbestanden niet worden meegeleverd |
 
 Met `startGame(page, { beta: true })` start een test de beta; de begintoestand komt dan onder `beta:` in de opslag.
 
