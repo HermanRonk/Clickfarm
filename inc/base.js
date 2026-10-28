@@ -186,6 +186,7 @@ window.onload = function () {
   objEnergy.show();
   objStats.init();
   objGrain.priceCalc();
+  objSteel.priceCalc();
   objMarket.init();
   showQuickSell(0);
   turnAutoClose(0);
@@ -6115,8 +6116,7 @@ var objIronMelter = {
   autoActive: 0,
   add: function (amount) {
     if (amount < 0) {
-      imPrice = +objIronMelter.cost * 0.75;
-      if (objIronMelter.amount == 0) {
+      if (+objIronMelter.amount < -amount) {
         notificationOverlay(
           "Geen hoogovens om te verkopen",
           "Hoogoven",
@@ -6124,16 +6124,16 @@ var objIronMelter = {
         );
         return 0;
       }
-    } else {
-      imPrice = +objIronMelter.cost;
-    }
-    if (+objMoney.amount > +imPrice * +amount) {
-      objMoney.use(+imPrice * +amount);
+      // Verkopen is inkomsten, geen negatieve uitgave
+      objMoney.add(+objIronMelter.cost * 0.75 * -amount, "Verkoop hoogoven", 13, -amount);
       objIronMelter.amount = +objIronMelter.amount + +amount;
       if (+objIronMelter.controlled > +objIronMelter.amount) {
         objIronMelter.controlled = +objIronMelter.amount;
         store.setItem("smelterControls", objIronMelter.controlled);
       }
+    } else if (+objMoney.amount > +objIronMelter.cost * +amount) {
+      objMoney.use(+objIronMelter.cost * +amount);
+      objIronMelter.amount = +objIronMelter.amount + +amount;
     } else {
       notificationOverlay("Niet genoeg doekoe!", "Hoogoven", "fa-euro-sign");
     }
@@ -6402,6 +6402,10 @@ var objSteel = {
       "<button type='button' class='btn btn-primary' onClick='objSteel.addStorage();' id='addSteelStorage'>Koop staalopslag</button>" +
       "</div>";
   },
+  // Ook bij het laden, anders is staal tot de eerste prijswissel gratis op de markt
+  priceCalc: function () {
+    objSteel.price = (objIronOre.price * 10 + +objCoal.price) * 1.25;
+  },
   showPrice: function () {
     document.getElementById("steelPrice").innerHTML = renderStats([
       ["Prijs per ton", FixMoney(objSteel.price)],
@@ -6458,8 +6462,6 @@ var objPlasticFactory = {
   },
   addWorker: function (amount) {
     if (amount == 0) {
-      Price = 0;
-      amount = -1;
       if (objPlasticFactory.workers < 1) {
         notificationOverlay(
           "Geen medewerkers om te ontslaan",
@@ -6468,6 +6470,11 @@ var objPlasticFactory = {
         );
         return 0;
       }
+      // Ontslaan kost niets en levert niets op, dus ook zonder geld
+      objPlasticFactory.workers = +objPlasticFactory.workers - 1;
+      store.setItem("plasticWorkers", objPlasticFactory.workers);
+      objPlasticFactory.show();
+      return 1;
     } else {
       Price = +objPlasticFactory.workerCost;
       // Een medewerker bedient één fabriek
@@ -12336,7 +12343,7 @@ var loopsProduction = setInterval(function () {
       if (+objPlasticFactory.amount > 0 || +objPlastic.amount > 0)
         objPlastic.showPrice();
       objGrain.priceCalc();
-      objSteel.price = (objIronOre.price * 10 + +objCoal.price) * 1.25;
+      objSteel.priceCalc();
       if (+objIronMelter.amount > 0) {
         objSteel.showPrice();
       }

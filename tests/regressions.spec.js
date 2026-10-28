@@ -473,3 +473,40 @@ test.describe("Energie wordt bewaard als de opslag vol raakt (#110)", () => {
     expect(saved).toBe(`EnergyAvailable:${await game(page, () => objEnergy.available)}`);
   });
 });
+
+// Eigenaardigheden E1, E3 en E4 uit de spelspec van de iOS-app (HermanRonk/clickfarm-ios, docs/spelspec.md)
+test.describe("Staalprijs, hoogoven verkopen en ontslaan", () => {
+  test("de staalprijs staat er direct na het laden, niet pas na de eerste prijswissel (E1)", async ({ page }) => {
+    await startGame(page, { state: atLevel(12, { Rlevel: 4 }) });
+    expect(await game(page, () => objSteel.price)).toBe((175 * 10 + 50) * 1.25);
+  });
+
+  test("een hoogoven verkopen telt als inkomsten, niet als negatieve uitgave (E3)", async ({ page }) => {
+    await startGame(page, { state: miningUnlocked({ Money: 1000, ironSmelters: 2 }) });
+    const before = await game(page, () => ({ made, spend }));
+    await game(page, () => objIronMelter.add(-1));
+    expect(await game(page, () => +objIronMelter.amount)).toBe(1);
+    expect(await game(page, () => objMoney.amount)).toBe(1000 + 250000000 * 0.75);
+    const after = await game(page, () => ({ made, spend }));
+    expect(after.made).toBe(before.made + 250000000 * 0.75);
+    expect(after.spend).toBe(before.spend);
+    await expect(page.locator("#HistoryMessages")).toContainText("Hoogoven");
+  });
+
+  test("zonder hoogovens valt er niets te verkopen", async ({ page }) => {
+    await startGame(page, { state: miningUnlocked({ Money: 1000, ironSmelters: 0 }) });
+    await game(page, () => objIronMelter.add(-1));
+    expect(await game(page, () => +objIronMelter.amount)).toBe(0);
+    expect(await game(page, () => objMoney.amount)).toBe(1000);
+  });
+
+  test("een kunststofmedewerker ontslaan kan ook zonder geld (E4)", async ({ page }) => {
+    await startGame(page, { state: atLevel(8, { plasticFactories: 1, plasticWorkers: 1 }) });
+    // Een save met 0 geld laadt als startgeld, dus pas na het laden op 0
+    await game(page, () => (objMoney.amount = 0));
+    await game(page, () => objPlasticFactory.addWorker(0));
+    expect(await game(page, () => +objPlasticFactory.workers)).toBe(0);
+    expect(await storage(page, "plasticWorkers")).toBe("0");
+    expect(await game(page, () => objMoney.amount)).toBe(0);
+  });
+});
