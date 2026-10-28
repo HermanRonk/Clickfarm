@@ -1115,7 +1115,7 @@ test.describe("Beta: diamant en diamantboren (#78, #79)", () => {
   });
 });
 
-test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
+test.describe("Beta: chips, datacenter, Akkercoin en fusie (#80, #81)", () => {
   // Level 16: na level 15 (multiplier 5)
   const l16 = (extra = {}) => ({
     PlayerLevel: 16,
@@ -1178,7 +1178,7 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     expect(await val(page, () => +objAICoin.amount)).toBeCloseTo(1, 6);
     expect(await val(page, () => +objChips.amount)).toBeCloseTo(499, 6);
     await expect(page.locator("#AICoinTop")).toBeVisible();
-    await expect(page.locator("#AICoinTop")).toContainText("AICoin");
+    await expect(page.locator("#AICoinTop")).toContainText("Akkercoin");
   });
 
   test("#80 zonder energie of chips, of gepauzeerd, levert een rek niets", async ({ page }) => {
@@ -1195,7 +1195,7 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     expect(await val(page, () => [+objMoney.amount, +objAICoin.amount, +objChips.amount])).toEqual([1e14, 0, 100]);
   });
 
-  test("#80 de AICoin-koers verandert bij de prijswissel en blijft binnen de grenzen", async ({ page }) => {
+  test("#80 de Akkercoin-koers verandert bij de prijswissel en blijft binnen de grenzen", async ({ page }) => {
     await startGame(page, { beta: true, state: l16() });
     expect(await val(page, () => objAICoin.price)).toBe(1e9);
     await tick(page, 5);
@@ -1218,8 +1218,10 @@ test.describe("Beta: chips, datacenter, AICoin en fusie (#80, #81)", () => {
     expect(range[1] / range[0]).toBeGreaterThan(3);
   });
 
-  test("#80 AICoin verkopen tegen de koers", async ({ page }) => {
+  test("#80 Akkercoin verkopen tegen de koers", async ({ page }) => {
     await startGame(page, { beta: true, state: l16({ aicoinAmount: 3, aicoinPrice: 2e9 }) });
+    await expect(page.locator("#AICoin")).toContainText("Verkoop 1 Akkercoin");
+    await expect(page.locator("#AICoin")).not.toContainText("AICoin");
     await page.locator("#sellAICoinOne").click();
     expect(await val(page, () => [+objAICoin.amount, +objMoney.amount])).toEqual([2, 1e14 + 2e9]);
     await page.locator("#sellAICoin").click();

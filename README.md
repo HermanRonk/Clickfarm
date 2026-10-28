@@ -1,5 +1,5 @@
 # Clickfarm
-Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je begint met één veld graan en bouwt via molens, kippen, pasta, olie, staal en kernenergie een industrieel imperium op, door tot koper, elektronica, goud, diamant, een datacenter dat de munt AICoin oplevert en een isotopenlab dat uranium nuttig houdt.
+Clickfarm is een gratis idle- en klikspel dat helemaal in je browser draait. Je begint met één veld graan en bouwt via molens, kippen, pasta, olie, staal en kernenergie een industrieel imperium op, door tot koper, elektronica, goud, diamant, een datacenter dat de munt Akkercoin oplevert en een isotopenlab dat uranium nuttig houdt.
 
 **Spelen:** [clickfarm.nl](https://clickfarm.nl) · **Nieuwste onderdelen uitproberen:** [clickfarm.nl/beta](https://clickfarm.nl/beta/) · **Spelinformatie:** [clickfarm.nl/info.html](https://clickfarm.nl/info.html) · **Privacy:** [clickfarm.nl/privacy](https://clickfarm.nl/privacy) · **Support:** [clickfarm.nl/support](https://clickfarm.nl/support)
 
