@@ -21,7 +21,7 @@ test.describe("Laatste inkomsten (#134)", () => {
       "Regulier verkoop bloem": "Bloem",
       "Reguliere verkoop Pasta": "Pasta",
       "Verkoop Graan": "Graan",
-      "Verkoop AICoin": "AICoin",
+      "Verkoop Akkercoin": "Akkercoin",
       "Verkoop farmrobot": "Farmrobot verkocht",
       "Verkopen mijn": "Mijn verkocht",
       "Topsteen verkocht": "Topsteen",

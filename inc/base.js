@@ -495,7 +495,7 @@ Object.assign(helpTexts, {
   ],
   "Datacenter-col": [
     "Datacenter",
-    "Een rek gebruikt 250.000 energie en 0,1 chip per tick en levert daarvoor € 1 miljard en 0,1 AICoin. De opbrengst wordt iedere 10 ticks uitbetaald. Ieder rek is 5% duurder dan het vorige.",
+    "Een rek gebruikt 250.000 energie en 0,1 chip per tick en levert daarvoor € 1 miljard en 0,1 Akkercoin. De opbrengst wordt iedere 10 ticks uitbetaald. Ieder rek is 5% duurder dan het vorige.",
   ],
   "IsotopeLab-col": [
     "Isotopenlab",
@@ -506,8 +506,8 @@ Object.assign(helpTexts, {
     "Industriële isotopen komen uit het isotopenlab. Een chipfabriek die er 0,05 per tick van krijgt, maakt 25% meer chips (materiaalinspectie). Ongebruikte isotopen vervallen: na 10 minuten (600 ticks) is de helft over, en wat niet in de opslag past, is meteen verloren. Verkopen levert € 100 miljoen per stuk op.",
   ],
   "AICoin-col": [
-    "AICoin",
-    "AICoin komt uit het datacenter. De koers verandert bij iedere prijswissel, met uitschieters naar boven en beneden. Verkoop als de koers hoog is, of bewaar ze.",
+    "Akkercoin",
+    "Akkercoin komt uit het datacenter. De koers verandert bij iedere prijswissel, met uitschieters naar boven en beneden. Verkoop als de koers hoog is, of bewaar ze.",
   ],
   "Fusion-col": [
     "Fusiecentrale",
@@ -1744,7 +1744,7 @@ var objFlows = {
       },
     ],
   ],
-  // Stromen van level 16: chips, datacenter, AICoin en fusie
+  // Stromen van level 16: chips, datacenter, Akkercoin en fusie
   edges16: [
     [
       "PCB-col",
@@ -8610,7 +8610,7 @@ var objDiamondDrill = {
   },
 };
 
-// Level 16: chipfabriek -> chips -> datacenter (geld en AICoin),
+// Level 16: chipfabriek -> chips -> datacenter (geld en Akkercoin),
 // en de fusiecentrale die de stroom voor het datacenter levert.
 var objChipFactory = {
   amount: 0,
@@ -8876,7 +8876,7 @@ var objChips = {
   },
 };
 
-// Het datacenter verkoopt rekenkracht en levert AICoin. De opbrengst wordt iedere
+// Het datacenter verkoopt rekenkracht en levert Akkercoin. De opbrengst wordt iedere
 // 10 ticks in één keer uitbetaald, zodat de lijst met inkomsten leesbaar blijft.
 var objDatacenter = {
   racks: 0,
@@ -8886,7 +8886,7 @@ var objDatacenter = {
   energy: 250000,
   chipUse: 0.1, // chips per rek per tick (onderhoud)
   income: 1000000000, // per rek per tick
-  coins: 0.1, // AICoin per rek per tick
+  coins: 0.1, // Akkercoin per rek per tick
   payPeriod: 10,
   active: 0,
   pending: 0,
@@ -8975,7 +8975,7 @@ var objDatacenter = {
         ["Energie", FixNumber(objDatacenter.energy)],
         ["Chips (onderhoud)", FixNumber(objDatacenter.chipUse)],
         ["Opbrengst", FixMoney(objDatacenter.income)],
-        ["AICoin", FixNumber(objDatacenter.coins)],
+        ["Akkercoin", FixNumber(objDatacenter.coins)],
       ]) +
       "<div class='actions'>" +
       "<button type='button' class='btn btn-primary' onClick='objDatacenter.add();' id='buyRack'>Bouw rek</button>" +
@@ -8989,7 +8989,7 @@ var objDatacenter = {
         ["Energie", FixNumber(a * objDatacenter.energy) + " per tick"],
         ["Chips", FixNumber(a * objDatacenter.chipUse) + " per tick"],
         ["Opbrengst", FixMoney(a * objDatacenter.income) + " per tick"],
-        ["AICoin", FixNumber(a * objDatacenter.coins) + " per tick"],
+        ["Akkercoin", FixNumber(a * objDatacenter.coins) + " per tick"],
       ]) +
       renderHint(
         "Een rek draait vanzelf zolang er energie en chips zijn. De opbrengst wordt iedere " +
@@ -9005,7 +9005,7 @@ var objDatacenter = {
   },
 };
 
-// AICoin: een eigen munt met een grillige koers. Je kunt hem verkopen of bewaren.
+// Akkercoin: een eigen munt met een grillige koers. Je kunt hem verkopen of bewaren.
 var objAICoin = {
   amount: 0,
   price: 1000000000,
@@ -9017,7 +9017,7 @@ var objAICoin = {
     objAICoin.amount = +objAICoin.amount + +amount;
     store.setItem("aicoinAmount", objAICoin.amount);
   },
-  // Voor later: onderzoek betalen met AICoin
+  // Voor later: onderzoek betalen met Akkercoin
   use: function (amount) {
     if (+objAICoin.amount < +amount) return 0;
     objAICoin.amount = +objAICoin.amount - +amount;
@@ -9044,11 +9044,11 @@ var objAICoin = {
     var coins =
       +amount > 0 ? Math.min(+amount, +objAICoin.amount) : +objAICoin.amount;
     if (coins <= 0) {
-      notificationOverlay("Geen AICoin om te verkopen", "AICoin", "fa-info");
+      notificationOverlay("Geen Akkercoin om te verkopen", "Akkercoin", "fa-info");
       return 0;
     }
     objAICoin.use(coins);
-    objMoney.add(coins * objAICoin.price, "Verkoop AICoin", 39, coins);
+    objMoney.add(coins * objAICoin.price, "Verkoop Akkercoin", 39, coins);
   },
   show: function () {
     var top = document.getElementById("AICoinTop");
@@ -9056,7 +9056,7 @@ var objAICoin = {
     var visible = objChipFactory.unlocked();
     top.style.display = visible && +objAICoin.amount > 0 ? "" : "none";
     top.innerHTML = visible
-      ? "AICoin: <kbd2>" + FixNumber(objAICoin.amount) + "</kbd2>"
+      ? "Akkercoin: <kbd2>" + FixNumber(objAICoin.amount) + "</kbd2>"
       : "";
     top.title = FixNumber(objAICoin.amount, true);
     if (!visible) {
@@ -9065,7 +9065,7 @@ var objAICoin = {
     }
     var change = (objAICoin.price / objAICoin.previous - 1) * 100;
     el.innerHTML =
-      "<h2>AICoin</h2>" +
+      "<h2>Akkercoin</h2>" +
       renderStats([
         ["In bezit", FixNumber(objAICoin.amount)],
         ["Koers", FixMoney(objAICoin.price)],
@@ -9080,12 +9080,12 @@ var objAICoin = {
         ["Waarde", FixMoney(objAICoin.amount * objAICoin.price)],
       ]) +
       renderHint(
-        "Het datacenter levert AICoin. De koers verandert bij iedere prijswissel en schommelt rond " +
+        "Het datacenter levert Akkercoin. De koers verandert bij iedere prijswissel en schommelt rond " +
           FixMoney(objAICoin.base) +
           ". Verkoop als de koers hoog is, of bewaar ze."
       ) +
       "<div class='actions'>" +
-      "<button type='button' class='btn btn-danger' onClick='objAICoin.sell(1)' id='sellAICoinOne'>Verkoop 1 AICoin</button> " +
+      "<button type='button' class='btn btn-danger' onClick='objAICoin.sell(1)' id='sellAICoinOne'>Verkoop 1 Akkercoin</button> " +
       "<button type='button' class='btn btn-danger' onClick='objAICoin.sell(0)' id='sellAICoin'>Verkoop alles</button>" +
       "</div>";
   },
@@ -10380,7 +10380,7 @@ function renderHistory() {
 var historyGoods = [
   "graan",
   "olie",
-  "aicoin",
+  "akkercoin",
   "industriële isotopen",
   "radioactief afval",
 ];
@@ -10820,7 +10820,7 @@ var objStats = {
       ],
       ["chips", "Chips", "", "chips", stock(objChips)],
       ["isotopen", "Industriële isotopen", "", "uranium", stock(objIsotopes)],
-      ["aicoin", "AICoin", "", "chips", [objAICoin.amount, 0]],
+      ["aicoin", "Akkercoin", "", "chips", [objAICoin.amount, 0]],
       [
         "energie",
         "Energie",
